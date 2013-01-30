@@ -963,6 +963,8 @@ function tipAlign()
 	
 	killwaves tempPSD						// Get rid of temporary wave
 	
+	closeOscComms()						// added by as2180 to fix crashing, 23/11/12
+	
 	// Return to root directory
 	setDataFolder root:
 	

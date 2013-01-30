@@ -3,7 +3,7 @@
 
 function hyperspec_alignment(angle1, angle2)
 	variable angle1, angle2
-	hyperspecscan(0.5, 0.025)
+	hyperspecscan(0.6, 0.03)
 	wave wr = root:hyperspecScan:w_coef_633, wb = root:hyperspecScan:w_coef_500
 	if (!waveexists(root:hyperspecScan:hyperspec_alignment_data))
 		make/o/n=(0,10) root:hyperspecScan:hyperspec_alignment_data
@@ -101,7 +101,7 @@ function HyperSpecScan(gridSize, stepSize)
 			posA += stepSize		// Increment grid position
 			movePI("A", posA); sleep/s delay		
 			q1 += 1
-		while(q1 < (gridSize/stepSize))
+		while(q1 <= (gridSize/stepSize))
 		
 		posA = initA - gridSize/2		// Reset A position
 		q1 = 0						// Reset A counter
@@ -109,7 +109,7 @@ function HyperSpecScan(gridSize, stepSize)
 		posB += stepSize		// Increment grid position
 		movePI("B", posB); sleep/s delay
 		q2 += 1					// Reset B counter
-	while(q2 < (gridSize/stepSize))
+	while(q2 <= (gridSize/stepSize))
 	
 	// Move back to initial position
 	movePI("A", initA); sleep/s delay
@@ -147,8 +147,8 @@ function fit_hyperspec(wlen)
 	// xy correlation: Set to 0
 	corr = 0
 	
-	make/d/n=7/o $("w_coef_"+num2str(wlen))
-	wave w_coef = $("w_coef_"+num2str(wlen))
+	make/d/n=7/o $("root:hyperspecScan:w_coef_"+num2str(wlen))
+	wave w_coef = $("root:hyperspecScan:w_coef_"+num2str(wlen))
 	w_coef[0] = {z0, a0, x0, y0, sigx, sigy, corr}
 	FuncFitMD/NTHR=0/Q Gauss2Dc, w_coef, w[][][wleni] /D//C=constraintWave
 end
