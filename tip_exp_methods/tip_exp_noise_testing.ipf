@@ -18,13 +18,15 @@ function append_test(n)
 		case 3:			// ac_noise
 			noise = "ac_noise"
 	endswitch
-	wave w_i = $noise
+	setdatafolder root:
+	wave w_i = $("root:" + noise + ":" + noise)
 	wave/z w = $(noise + "_tests")
 	if (!waveexists(w))
 		make/o/n=(0,0) $(noise + "_tests")
 	endif
+	wave w = $(noise + "_tests")
 	redimension/n=(numpnts(w) + 1, numpnts(w_i)) w
-	w[numpnts(w) - 1][] = w_i[p]
+	w[numpnts(w) - 1] = w_i[q]
 end
 
 // DC NOISE TESTING
@@ -41,14 +43,24 @@ function dc_noise_test()
 	endif
 	variable n = 0
 	variable/c iv
-	make/free/n=0 dc_noise_v, dc_noise_i
+	dowindow/k noise_testing
+	make/o/n=0 dc_noise_v, dc_noise_i
+	setscale d, 0, 0, "A", dc_noise_i; setscale d, 0, 0, "V", dc_noise_v
+	display/n=noise_testing dc_noise_i
+	appendtograph/w=noise_testing/r dc_noise_v
+	label left "current noise (\\U)"; label right "voltage noise (\\U)"
+	label bottom "measurement"
+	modifygraph mode=3, marker=8, msize=1.5, rgb(dc_noise_v)=(0,0,65280)
+	open_smu()
 	do
 		iv = measure_iv_smu()
 		redimension/n=(numpnts(dc_noise_v)+1) dc_noise_v, dc_noise_i
 		dc_noise_v[n] = real(iv)
 		dc_noise_i[n] = imag(iv)
+		doupdate
 		n += 1
 	while (n < 100)
+	close_smu()
 	make/o/n=6 dc_noise
 	wavestats/q dc_noise_v
 	dc_noise[0] = V_avg
@@ -70,11 +82,42 @@ function dc_amp_noise_test()
 	else
 		setdatafolder $fname
 	endif
+	variable n = 0
+	variable/c iv
+	dowindow/k noise_testing
+	make/o/n=0 dc_noise_v, dc_noise_i
+	setscale d, 0, 0, "A", dc_noise_i; setscale d, 0, 0, "V", dc_noise_v
+	display/n=noise_testing dc_noise_i
+	appendtograph/w=noise_testing/r dc_noise_v
+	label left "current noise (\\U)"; label right "voltage noise (\\U)"
+	label bottom "measurement"
+	modifygraph mode=3, marker=8, msize=1.5, rgb(dc_noise_v)=(0,0,65280)
+	open_smu()
+	do
+		iv = measure_iv_smu()
+		redimension/n=(numpnts(dc_noise_v)+1) dc_noise_v, dc_noise_i
+		dc_noise_v[n] = real(iv)
+		dc_noise_i[n] = imag(iv)
+		doupdate
+		n += 1
+	while (n < 100)
+	close_smu()
+	make/o/n=6 dc_noise
+	wavestats/q dc_noise_v
+	dc_noise[0] = V_avg
+	dc_noise[1] = V_sdev
+	dc_noise[2] = V_rms
+	wavestats/q dc_noise_i
+	dc_noise[3] = V_avg
+	dc_noise[4] = V_sdev
+	dc_noise[5] = V_rms
 	openDSO()
 	captureDSO("1")
 	importdataDSO("1", "dc_amp_noise_trace")
 	closeDSO()
 	wave dc_amp_noise_trace
+	dc_amp_noise_trace /= 1e4 // gain
+	setscale d, 0, 0, "A", dc_amp_noise_trace
 	fft/out=3/dest=dc_amp_noise_trace_fft dc_amp_noise_trace
 	make/o/n=3 dc_amp_noise
 	wavestats/q dc_amp_noise_trace
@@ -100,7 +143,13 @@ function ac_noise_dso_test()
 	importdataDSO("1", "ac_noise_trace")
 	closeDSO()
 	wave ac_noise_trace
+	ac_noise_trace /= 1e8 // gain
+	setscale d, 0, 0, "A", ac_noise_trace
 	fft/out=3/dest=ac_noise_trace_fft ac_noise_trace
+	dowindow/k noise_testing
+	display/n=noise_testing ac_noise_trace
+	label left "current (\\U)"; label bottom "time (\\U)"
+	modifygraph rgb=(0,0,0)
 	make/o/n=3 ac_noise_dso
 	wavestats/q ac_noise_trace
 	ac_noise_dso[0] = V_avg

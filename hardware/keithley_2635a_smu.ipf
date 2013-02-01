@@ -56,6 +56,24 @@ function init_smu()
 	cmd_smu("smua.measure.rangei = 10e-9") // set current measure range to 1 nA
 end
 
+// Misc Functions
+
+function read_buffer_smu()
+	variable value
+	nvar instr = root:global_variables:keithley_2635a_smu:instr
+	VISAread instr, value
+	return value
+end
+
+function empty_buffer_smu()
+	variable value
+	nvar instr = root:global_variables:keithley_2635a_smu:instr
+	do
+		VISAread instr, value
+	while (abs(value) > 1e-300)
+	return value
+end
+
 // Control Functions
 
 function output_state_smu(o)
@@ -105,7 +123,7 @@ function measure_current_smu()
 	return current
 end
 
-function measure_iv_smu()
+function/c measure_iv_smu()
 	cmd_smu("iRead, vRead = smua.measure.iv()")
 	variable v = read_smu("print(vRead)")
 	variable i = read_smu("print(iRead)")
