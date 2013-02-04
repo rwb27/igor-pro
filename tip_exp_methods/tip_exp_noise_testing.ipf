@@ -150,11 +150,12 @@ function ac_noise_dso_test()
 	display/n=noise_testing ac_noise_trace
 	label left "current (\\U)"; label bottom "time (\\U)"
 	modifygraph rgb=(0,0,0)
-	make/o/n=3 ac_noise_dso
+	make/o/n=4 ac_noise_dso
 	wavestats/q ac_noise_trace
 	ac_noise_dso[0] = V_avg
 	ac_noise_dso[1] = V_sdev
 	ac_noise_dso[2] = V_rms
+	ac_noise_dso[3] = V_adev
 end
 
 // AC noise on Lock-In Amp
@@ -168,4 +169,52 @@ function ac_noise_test()
 		setdatafolder $fname
 	endif
 	
+end
+
+//////////////
+
+function ac_noise_over_time(s)
+	struct WMBackgroundStruct &s
+	if (!waveexists(ac_noise))
+		make/o/n=(0,3) ac_noise
+		make/o/n=0 datetimes
+		make/t/o/n=0 dates_times
+		variable/g start_t = datetime, elapsed_t
+	endif
+	nvar start_t, elapsed_t
+	variable i
+	
+	openDSO()
+	captureDSO("1")
+	importdataDSO("1", "ac_noise_trace")
+	closeDSO()
+	
+	elapsed_t = datetime - start_t
+	elapsed_t /= (60 * 60)			// convert secs to hours
+	
+	wave ac_noise_trace
+	i = numpnts(datetimes)
+	redimension/n=(i + 1) datetimes, dates_times
+	redimension/n=(i + 1, 3) ac_noise
+	datetimes[i] = datetime
+	dates_times[i] = time() + " " + date()
+	wavestats/q ac_noise_trace
+	ac_noise[i][0] = V_avg
+	ac_noise[i][1] = V_sdev
+	ac_noise[i][2] = V_rms
+	if (elapsed_t > 168)			// 1 week = 7 days * 24 hours = 168 hours
+		return 1
+	else
+		return 0
+	endif
+end
+
+function start_bkgd_noise_test()
+	variable num_ticks = 60 * 60 * 15	// 15 mins
+	ctrlnamedbackground noise_test, period = num_ticks, proc = ac_noise_over_time
+	ctrlnamedbackground noise_test, start
+end
+
+function stop_bkgd_noise_test()
+	ctrlnamedbackground noise_test, stop
 end
