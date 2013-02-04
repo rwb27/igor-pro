@@ -12,6 +12,7 @@ function openDSO()
 	string resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"	// DSOX2012A
 	status = viOpenDefaultRM(session)
 	status = viOpen(session,resourceName,0,0,instr)
+	status = viClear(session)
 	variable/g root:gVariables:agilentOscilloscope:sessionDSO = session
 	variable/g root:gVariables:agilentOscilloscope:instrDSO = instr
 	

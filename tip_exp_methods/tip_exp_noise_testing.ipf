@@ -171,6 +171,36 @@ function ac_noise_test()
 	
 end
 
+function compare_systems()
+	setdatafolder root:
+	wave old_ac = old_ac_noise_dso_tests, no_ac = no_ac_noise_dso_tests, new_ac = new_ac_noise_dso_tests
+	dowindow/k noise_comparison_avg
+	display/n=noise_comparison_avg
+	appendtograph new_ac[][0], old_ac[][0], no_ac[][0]
+	errorbars/y=4/t=0.5 new_ac_noise_dso_tests, Y wave=(new_ac[][1], new_ac[][1])
+	errorbars/y=4/t=0.5 old_ac_noise_dso_tests, Y wave=(old_ac[][1], old_ac[][1])
+	errorbars/y=4/t=0.5 no_ac_noise_dso_tests, Y wave=(no_ac[][1], no_ac[][1])
+	modifygraph mode=4,marker=8,msize=1.5
+	modifygraph rgb(new_ac_noise_dso_tests)=(0,0,0), rgb(no_ac_noise_dso_tests) = (1,1,1)
+	legend/c/n=text0/a=lt "\\s(new_ac_noise_dso_tests) new switchbox\r\\s(old_ac_noise_dso_tests) old switchbox\r\\s(no_ac_noise_dso_tests) no switchbox"
+	label left "average current offset (\\U)"; label bottom "test #"
+	
+	dowindow/k noise_comparison_sdev
+	display/n=noise_comparison_sdev
+	appendtograph new_ac[][1], old_ac[][1], no_ac[][1]
+	modifygraph mode=4,marker=8,msize=1.5
+	modifygraph rgb(new_ac_noise_dso_tests)=(0,0,0), rgb(no_ac_noise_dso_tests) = (1,1,1)
+	legend/c/n=text0/a=lt "\\s(new_ac_noise_dso_tests) new switchbox\r\\s(old_ac_noise_dso_tests) old switchbox\r\\s(no_ac_noise_dso_tests) no switchbox"
+	label left "st. dev. current offset (\\U)"; label bottom "test #"
+	
+	dowindow/k noise_comparison_rms
+	display/n=noise_comparison_rms
+	appendtograph new_ac[][2], old_ac[][2], no_ac[][2]
+	modifygraph mode=4,marker=8,msize=1.5
+	modifygraph rgb(new_ac_noise_dso_tests)=(0,0,0), rgb(no_ac_noise_dso_tests) = (1,1,1)
+	legend/c/n=text0/a=lt "\\s(new_ac_noise_dso_tests) new switchbox\r\\s(old_ac_noise_dso_tests) old switchbox\r\\s(no_ac_noise_dso_tests) no switchbox"
+	label left "r.m.s. current offset (\\U)"; label bottom "test #"
+end
 //////////////
 
 function ac_noise_over_time(s)

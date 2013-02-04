@@ -3,27 +3,34 @@
 // v3, 31/01/13, AS
 //
 
-// Required Functions
+// required functions
+
+function check_folder_smu(data_folder)
+	string data_folder
+	if (!datafolderexists(data_folder))
+		newdatafolder $data_folder
+	endif
+end
 
 function open_smu()
 	variable session, instr, status
 	string resourceName = "GPIB0::26::INSTR"
-	if (!datafolderexists("root:global_variables"))
-		newdatafolder root:global_variables
-	endif
-	if (!datafolderexists("root:global_variables:keithley_2635a_smu"))
-		newdatafolder root:global_variables:keithley_2635a_smu
-	endif
+	string data_folder = "root:global_variables"
+	check_folder_dso(data_folder)
+	data_folder += ":keithley_2635a_smu"
+	check_folder_dso(data_folder)
 	status = viOpenDefaultRM(session)
 	status = viOpen(session, resourceName, 0, 0, instr)
-	variable/g root:global_variables:keithley_2635a_smu:instr = instr
-	variable/g root:global_variables:keithley_2635a_smu:session = session
+	status = viClear(session)
+	variable/g $(data_folder + ":instr") = instr
+	variable/g $(data_folder + ":session") = session
 	return status
 end
 
 function close_smu()
 	nvar session = root:global_variables:keithley_2635a_smu:session
 	variable status = viClose(session)
+	status = viClear(session)
 	return status
 end
 
@@ -51,19 +58,19 @@ function/s read_str_smu(cmd)
 	return message
 end
 
-function init_smu()
-	cmd_smu("smua.reset()") // restore to default settings
-	cmd_smu("smua.measure.rangei = 10e-9") // set current measure range to 1 nA
-end
-
-// Misc Functions
-
 function read_buffer_smu()
 	variable value
 	nvar instr = root:global_variables:keithley_2635a_smu:instr
 	VISAread instr, value
 	return value
 end
+
+function init_smu()
+	cmd_smu("smua.reset()") // restore to default settings
+	cmd_smu("smua.measure.rangei = 10e-9") // set current measure range to 1 nA
+end
+
+// misc functions
 
 function empty_buffer_smu()
 	variable value
@@ -74,7 +81,7 @@ function empty_buffer_smu()
 	return value
 end
 
-// Control Functions
+// control functions
 
 function output_state_smu(o)
 	variable o // on (o == 1) or off (o == 0)
