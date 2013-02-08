@@ -323,6 +323,8 @@ function ac_noise_over_time(s)
 	elapsed_t /= (60 * 60)			// convert secs to hours
 	
 	wave ac_noise_trace
+	setscale d, 0, 0, "A", ac_noise_trace
+	ac_noise_trace /= 1e8			// gain
 	i = numpnts(datetimes)
 	redimension/n=(i + 1) datetimes, dates_times
 	redimension/n=(i + 1, 3) ac_noise
@@ -341,6 +343,7 @@ end
 
 function start_bkgd_noise_test()
 	variable num_ticks = 60 * 60 * 15	// 15 mins
+	setdatafolder root:
 	ctrlnamedbackground noise_test, period = num_ticks, proc = ac_noise_over_time
 	ctrlnamedbackground noise_test, start
 end
