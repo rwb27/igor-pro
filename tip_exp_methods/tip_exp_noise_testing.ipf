@@ -255,7 +255,7 @@ function ac_noise_test()
 		ac_noise_theta[n] = imag(rtheta)
 		doupdate
 		n += 1
-	while (n < 100)
+	while (n < 250)
 	close_lockin()
 	ac_noise_r /= 1e8 // gain
 	make/o/n=8 ac_noise
