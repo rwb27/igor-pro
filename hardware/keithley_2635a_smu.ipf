@@ -16,9 +16,9 @@ function open_smu()
 	variable session, instr, status
 	string resourceName = "GPIB0::26::INSTR"
 	string data_folder = "root:global_variables"
-	check_folder_dso(data_folder)
+	check_folder_smu(data_folder)
 	data_folder += ":keithley_2635a_smu"
-	check_folder_dso(data_folder)
+	check_folder_smu(data_folder)
 	status = viOpenDefaultRM(session)
 	status = viOpen(session, resourceName, 0, 0, instr)
 	status = viClear(session)

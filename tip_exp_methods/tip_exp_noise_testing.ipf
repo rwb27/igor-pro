@@ -1,6 +1,74 @@
 #pragma rtGlobals=1		// Use modern global access method.
 #include "keithley_2635a_smu"
-#include "agilent infiniivision 2000 x-series dso_v2"
+#include "agilent_dsox2000_series_dso"
+#include "srs_sr830_lockin_amplifier"
+
+function test_summary()
+	setdatafolder root:
+	make/o/n=(7,4) new_switchbox_ac_noise, old_switchbox_ac_noise, no_switchbox_ac_noise
+	wave new_ac = new_switchbox_ac_noise, old_ac = old_switchbox_ac_noise, no_ac = no_switchbox_ac_noise
+	setscale d, 0, 0, "A", new_ac, old_ac, no_ac
+	string setup_new = "root:ac_new_switchbox", setup_old = "root:ac_old_switchbox", setup_no = "root:ac_no_switchbox"
+	string step
+	step = ":gnd"
+	wave w = $(setup_new + step + "_ac_noise_dso:ac_noise_dso"); new_ac[0][] = w[q]
+	wave w = $(setup_old + step + "_ac_noise_dso:ac_noise_dso"); old_ac[0][] = w[q]
+	wave w = $(setup_no + step + "_ac_noise_dso:ac_noise_dso"); no_ac[0][] = w[q]
+	step = ":amp"
+	wave w = $(setup_new + step + "_ac_noise_dso:ac_noise_dso"); new_ac[1][] = w[q]
+	wave w = $(setup_old + step + "_ac_noise_dso:ac_noise_dso"); old_ac[1][] = w[q]
+	wave w = $(setup_no + step + "_ac_noise_dso:ac_noise_dso"); no_ac[1][] = w[q]
+	step = ":cable"
+	wave w = $(setup_new + step + "_ac_noise_dso:ac_noise_dso"); new_ac[2][] = w[q]
+	wave w = $(setup_old + step + "_ac_noise_dso:ac_noise_dso"); old_ac[2][] = w[q]
+	wave w = $(setup_no + step + "_ac_noise_dso:ac_noise_dso"); no_ac[2][] = w[q]
+	step = ":acout"
+	wave w = $(setup_new + step + "_ac_noise_dso:ac_noise_dso"); new_ac[3][] = w[q]
+	wave w = $(setup_old + step + "_ac_noise_dso:ac_noise_dso"); old_ac[3][] = w[q]
+	wave w = $(setup_no + step + "_ac_noise_dso:ac_noise_dso"); no_ac[3][] = w[q]
+	step = ":tiplo"
+	wave w = $(setup_new + step + "_ac_noise_dso:ac_noise_dso"); new_ac[4][] = w[q]
+	wave w = $(setup_old + step + "_ac_noise_dso:ac_noise_dso"); old_ac[4][] = w[q]
+	wave w = $(setup_no + step + "_ac_noise_dso:ac_noise_dso"); no_ac[4][] = w[q]
+	step = ":tiphi"
+	wave w = $(setup_new + step + "_ac_noise_dso:ac_noise_dso"); new_ac[5][] = w[q]
+	wave w = $(setup_old + step + "_ac_noise_dso:ac_noise_dso"); old_ac[5][] = w[q]
+	wave w = $(setup_no + step + "_ac_noise_dso:ac_noise_dso"); no_ac[5][] = w[q]
+	step = ":acin"
+	wave w = $(setup_new + step + "_ac_noise_dso:ac_noise_dso"); new_ac[6][] = w[q]
+	wave w = $(setup_old + step + "_ac_noise_dso:ac_noise_dso"); old_ac[6][] = w[q]
+	wave w = $(setup_no + step + "_ac_noise_dso:ac_noise_dso"); no_ac[6][] = w[q]
+	
+	dowindow/k noise_comparison_avg
+	display/n=noise_comparison_avg
+	appendtograph new_ac[][0], old_ac[][0], no_ac[][0]
+	//errorbars/y=4/t=0.5 new_switchbox_ac_noise, Y wave=(new_ac[][1], new_ac[][1])
+	//errorbars/y=4/t=0.5 old_switchbox_ac_noise, Y wave=(old_ac[][1], old_ac[][1])
+	//errorbars/y=4/t=0.5 no_switchbox_ac_noise, Y wave=(no_ac[][1], no_ac[][1])
+	modifygraph mode=4,marker=8,msize=1.5
+	modifygraph rgb(new_switchbox_ac_noise)=(0,0,0), rgb(no_switchbox_ac_noise) = (0,12800,52224)
+	legend/c/n=text0/a=lt "\\s(new_switchbox_ac_noise) new switchbox\r\\s(old_switchbox_ac_noise) old switchbox\r\\s(no_switchbox_ac_noise) no switchbox"
+	label left "average current offset (\\U)"; label bottom "test #"
+	textbox/c/n=text1/a=lb "\\Z080: ground\t\t1: amp\r2: bnc cable\t3: ac out\r4: tip lo\t\t5: tip hi\r6: ac in"
+	
+	dowindow/k noise_comparison_sdev
+	display/n=noise_comparison_sdev
+	appendtograph new_ac[][1], old_ac[][1], no_ac[][1]
+	modifygraph mode=4,marker=8,msize=1.5
+	modifygraph rgb(new_switchbox_ac_noise)=(0,0,0), rgb(no_switchbox_ac_noise) = (0,12800,52224)
+	legend/c/n=text0/a=lt "\\s(new_switchbox_ac_noise) new switchbox\r\\s(old_switchbox_ac_noise) old switchbox\r\\s(no_switchbox_ac_noise) no switchbox"
+	label left "st. dev. current offset (\\U)"; label bottom "test #"
+	textbox/c/n=text1/a=lb "\\Z080: ground\t\t1: amp\r2: bnc cable\t3: ac out\r4: tip lo\t\t5: tip hi\r6: ac in"
+	
+	dowindow/k noise_comparison_rms
+	display/n=noise_comparison_rms
+	appendtograph new_ac[][2], old_ac[][2], no_ac[][2]
+	modifygraph mode=4,marker=8,msize=1.5
+	modifygraph rgb(new_switchbox_ac_noise)=(0,0,0), rgb(no_switchbox_ac_noise) = (0,12800,52224)
+	legend/c/n=text0/a=lt "\\s(new_switchbox_ac_noise) new switchbox\r\\s(old_switchbox_ac_noise) old switchbox\r\\s(no_switchbox_ac_noise) no switchbox"
+	label left "r.m.s. current offset (\\U)"; label bottom "test #"
+	textbox/c/n=text1/a=lb "\\Z080: ground\t\t1: amp\r2: bnc cable\t3: ac out\r4: tip lo\t\t5: tip hi\r6: ac in"
+end
 
 function append_test(n)
 	variable n
@@ -111,10 +179,10 @@ function dc_amp_noise_test()
 	dc_noise[3] = V_avg
 	dc_noise[4] = V_sdev
 	dc_noise[5] = V_rms
-	openDSO()
-	captureDSO("1")
-	importdataDSO("1", "dc_amp_noise_trace")
-	closeDSO()
+	open_dso()
+	capture_dso("1")
+	import_data_dso("1", "dc_amp_noise_trace")
+	close_dso()
 	wave dc_amp_noise_trace
 	dc_amp_noise_trace /= 1e4 // gain
 	setscale d, 0, 0, "A", dc_amp_noise_trace
@@ -138,10 +206,10 @@ function ac_noise_dso_test()
 	else
 		setdatafolder $fname
 	endif
-	openDSO()
-	captureDSO("1")
-	importdataDSO("1", "ac_noise_trace")
-	closeDSO()
+	open_dso()
+	capture_dso("1")
+	import_data_dso("1", "ac_noise_trace")
+	close_dso()
 	wave ac_noise_trace
 	ac_noise_trace /= 1e8 // gain
 	setscale d, 0, 0, "A", ac_noise_trace
@@ -169,6 +237,38 @@ function ac_noise_test()
 		setdatafolder $fname
 	endif
 	
+	variable n = 0
+	variable/c rtheta
+	dowindow/k noise_testing
+	make/o/n=0 ac_noise_r, ac_noise_theta
+	setscale d, 0, 0, "A", ac_noise_r
+	display/n=noise_testing ac_noise_r
+	appendtograph/w=noise_testing/r ac_noise_theta
+	label left "noise amplitude (\\U)"; label right "noise phase (\\U)"
+	label bottom "measurement"
+	modifygraph mode=3, marker=8, msize=1.5, rgb(ac_noise_theta)=(0,0,65280)
+	open_lockin()
+	do
+		rtheta = measure_rtheta_lockin()
+		redimension/n=(numpnts(ac_noise_r)+1) ac_noise_r, ac_noise_theta
+		ac_noise_r[n] = real(rtheta)
+		ac_noise_theta[n] = imag(rtheta)
+		doupdate
+		n += 1
+	while (n < 100)
+	close_lockin()
+	ac_noise_r /= 1e8 // gain
+	make/o/n=8 ac_noise
+	wavestats/q ac_noise_r
+	ac_noise[0] = V_avg
+	ac_noise[1] = V_sdev
+	ac_noise[2] = V_rms
+	ac_noise[3] = V_adev
+	wavestats/q ac_noise_theta
+	ac_noise[4] = V_avg
+	ac_noise[5] = V_sdev
+	ac_noise[6] = V_rms
+	ac_noise[7] = V_adev
 end
 
 function compare_systems()
@@ -214,10 +314,10 @@ function ac_noise_over_time(s)
 	nvar start_t, elapsed_t
 	variable i
 	
-	openDSO()
-	captureDSO("1")
-	importdataDSO("1", "ac_noise_trace")
-	closeDSO()
+	open_dso()
+	capture_dso("1")
+	import_data_dso("1", "ac_noise_trace")
+	close_dso()
 	
 	elapsed_t = datetime - start_t
 	elapsed_t /= (60 * 60)			// convert secs to hours
