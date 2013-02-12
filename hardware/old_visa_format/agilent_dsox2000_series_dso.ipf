@@ -1,11 +1,81 @@
-#pragma IndependentModule = dso
-#pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
+//
+// v3, 01/02/13, AS
+//
 
-#include "visa_basic" as visa
-strconstant hardware_id = "agilent_dsox2012a_dso"
-strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
-strconstant gv_folder = "root:global_variables:" + hardware_id
+// required functions
+
+function check_folder_dso(data_folder)
+	string data_folder
+	if (!datafolderexists(data_folder))
+		newdatafolder $data_folder
+	endif
+end
+
+function open_dso()
+	variable session, instr, status
+	string resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
+	string data_folder = "root:global_variables"
+	check_folder_dso(data_folder)
+	data_folder += ":agilent_dsox2012a_dso"
+	check_folder_dso(data_folder)
+	
+	string error_message
+	status = viOpenDefaultRM(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
+	status = viOpen(session, resourceName, 0, 0, instr)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
+	status = viClear(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
+	variable/g $(data_folder + ":instr") = instr
+	variable/g $(data_folder + ":session") = session
+	return status
+end
+
+function close_dso()
+	nvar session = root:global_variables:agilent_dsox2012a_dso:session
+	variable status
+	status = viClear(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
+	status = viCLose(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
+	return status
+end
+
+function cmd_dso(cmd)
+	string cmd
+	nvar instr = root:global_variables:agilent_dsox2012a_dso:instr
+	VISAwrite instr, cmd
+end
+
+function read_dso(cmd)
+	string cmd
+	variable value
+	nvar instr = root:global_variables:agilent_dsox2012a_dso:instr
+	VISAwrite instr, cmd
+	VISAread instr, value
+	return value
+end
 
 function/s read_str_dso(cmd)
 	string cmd
@@ -16,53 +86,50 @@ function/s read_str_dso(cmd)
 	return message
 end
 
-function open()
-	variable status
-	status = visa#open(hardware_id, resourceName)
-	return status
+function read_buffer_dso()
+	variable value
+	nvar instr = root:global_variables:agilent_dsox2012a_dso:instr
+	VISAread instr, value
+	return value
 end
 
-function close()
-	variable status
-	status = visa#close(hardware_id)
-	return status
+function reset_dso()
+	cmd_dso("*rst")
 end
 
-function initialise()
+function init_dso()
 end
 
-function reset()
-	visa#cmd(hardware_id, "*rst")
-end
+// setup functions
 
-function set_general(mode, clear)
+function set_general_dso(mode, clear)
 	string mode
 	variable clear
 	
-	visa#cmd(hardware_id, ":stop")
-	print visa#read_str(hardware_id, "*opc?")
+	cmd_dso(":stop")
+	print read_str_dso("*opc?")
 	if (!stringmatch(mode, "run") && !stringmatch(mode, "single") && !stringmatch(mode, "stop"))
 		abort "invalid mode (run | single | stop)"
 	endif
-	visa#cmd(hardware_id, ":"+mode)
+	cmd_dso(":"+mode)
 	
 	if (clear == 1)
-		visa#cmd(hardware_id, "*cls")
+		cmd_dso("*cls")
 	endif
 	
-	string/g $(gv_folder + ":mode") = mode
+	string/g root:global_variables:agilent_dsox2012a_dso:mode = mode
 end
 
-function set_timebase(mode, range, scale, delay, ref)
+function set_timebase_dso(mode, range, scale, delay, ref)
 	variable range, scale, delay
 	string mode, ref
-	string param_dir = gv_folder + ":timebase_settings"
-	visa#check_folder(param_dir)
+	string param_dir = "root:global_variables:agilent_dsox2012a_dso:timebase_settings"
+	check_folder_dso(param_dir)
 	
 	if (!stringmatch(mode, "main") && !stringmatch(mode, "window") && !stringmatch(mode, "xy") && !stringmatch(mode, "roll"))
 		abort "invalid timebase mode (main | window | xy | roll)"
 	endif
-	visa#cmd(hardware_id, ":timebase:mode " + mode)
+	cmd_dso(":timebase:mode " + mode)
 	string/g $(param_dir + ":time_mode") = mode
 	
 	if (stringmatch(mode, "window"))
@@ -70,12 +137,12 @@ function set_timebase(mode, range, scale, delay, ref)
 	endif
 	
 	if (range != 0)
-		visa#cmd(hardware_id, ":timebase:range " + num2str(range))
+		cmd_dso(":timebase:range " + num2str(range))
 		variable/g $(param_dir + ":time_range") = range
 		variable/g $(param_dir + ":time_scale") = 0
 	endif
 	if (scale != 0)
-		visa#cmd(hardware_id, ":timebase:scale " + num2str(scale))
+		cmd_dso(":timebase:scale " + num2str(scale))
 		variable/g $(param_dir + ":time_scale") = scale
 		variable/g $(param_dir + ":time_range") = 0
 	endif
@@ -83,161 +150,163 @@ function set_timebase(mode, range, scale, delay, ref)
 	if (!stringmatch(ref, "left") && !stringmatch(ref, "center") && !stringmatch(ref, "right"))
 		abort "invalid timebase reference (left | center | right)"
 	endif
-	visa#cmd(hardware_id, ":timebase:reference " + ref)
+	cmd_dso(":timebase:reference " + ref)
 	string/g $(param_dir + ":time_reference") = ref
 	
-	visa#cmd(hardware_id, ":timebase:delay " + num2str(delay))
+	cmd_dso(":timebase:delay " + num2str(delay))
 	variable/g $(param_dir + ":time_delay") = delay
 end
 
-function set_window_timebase(pos, range, scale)
+function set_window_timebase_dso(pos, range, scale)
 	variable pos, range, scale
-	visa#cmd(hardware_id, ":timebase:window:position " + num2str(pos))
-	visa#cmd(hardware_id, ":timebase:window:range " + num2str(range))
-	visa#cmd(hardware_id, ":timebase:window:scale " + num2str(scale))
+	cmd_dso(":timebase:window:position " + num2str(pos))
+	cmd_dso(":timebase:window:range " + num2str(range))
+	cmd_dso(":timebase:window:scale " + num2str(scale))
 end
 
-function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
+function set_channel_dso(ch, range, scale, offset, coupling, unit, ch_label, probe)
 	variable range, scale, offset, probe
 	string ch, coupling, unit, ch_label
 	
 	if (!stringmatch(ch, "1") && !stringmatch(ch, "2"))
 		abort "invalid channel number (1 | 2)"
 	endif
-	string param_dir = gv_folder + ":" + ch + "_settings"
-	visa#check_folder(param_dir)
+	string param_dir = "root:global_variables:agilent_dsox2012a_dso:" + ch + "_settings"
+	check_folder_dso(param_dir)
 	
 	if (probe != 0)
-		visa#cmd(hardware_id, ":channel"+ch+":probe " + num2str(probe))
+		cmd_dso(":channel"+ch+":probe " + num2str(probe))
 		variable/g $(param_dir + ":ch" + ch + "_probe") = probe
 	endif
 	if (range != 0)
-		visa#cmd(hardware_id, ":channel"+ch+":range " + num2str(range))			// 8 mV to 40 V range
+		cmd_dso(":channel"+ch+":range " + num2str(range))			// 8 mV to 40 V range
 		variable/g $(param_dir + ":ch" + ch + "_range") = range
 	endif
 	if (scale != 0)
-		visa#cmd(hardware_id, ":channel" + ch + ":scale " + num2str(scale))		// Volts/div
+		cmd_dso(":channel" + ch + ":scale " + num2str(scale))		// Volts/div
 		variable/g $(param_dir + ":ch" + ch + "_scale") = scale
 	endif
-	visa#cmd(hardware_id, ":channel" + ch + ":offset " + num2str(offset))
+	cmd_dso(":channel" + ch + ":offset " + num2str(offset))
 	variable/g $(param_dir + ":ch" + ch + "_offset") = offset
 	
 	if (!stringmatch(coupling, "ac") && !stringmatch(coupling, "dc"))
 		abort "invalid channel coupling (ac | dc)"
 	endif
-	visa#cmd(hardware_id, ":channel" + ch + ":coupling "+coupling)
+	cmd_dso(":channel" + ch + ":coupling "+coupling)
 	string/g $(param_dir + ":ch" + ch + "_coupling") = coupling
 	
 	if (stringmatch(unit, "V"))
-		visa#cmd(hardware_id, ":channel"+ch+":units volt")
+		cmd_dso(":channel"+ch+":units volt")
 		string/g $(param_dir + ":ch" + ch + "_unit") = unit
 	elseif (stringmatch(unit, "A"))
-		visa#cmd(hardware_id, ":channel"+ch+":units ampere")
+		cmd_dso(":channel"+ch+":units ampere")
 		string/g $(param_dir + ":ch" + ch + "_unit") = unit
 	else
 		abort "invalid channel unit (V | A)"
 	endif
 	
 	if (!stringmatch(ch_label, ""))
-		visa#cmd(hardware_id, ":channel"+ch+":label "+ch_label)
+		cmd_dso(":channel"+ch+":label "+ch_label)
 		string/g $(param_dir + ":ch" + ch + "_label") = ch_label
 	endif
 	
-	visa#cmd(hardware_id, ":channel"+ch+":display 1")
+	cmd_dso(":channel"+ch+":display 1")
 end
 
-function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
+function set_trigger_dso(sweep, mode, source, level, slope, rejectnoise, filter)
 	variable level
 	string sweep, mode, source, slope, rejectnoise, filter
-	string param_dir = gv_folder + ":trigger_settings"
-	visa#check_folder(param_dir)
+	string param_dir = "root:global_variables:agilent_dsox2012a_dso:trigger_settings"
+	check_folder_dso(param_dir)
 	
 	// sweep settings
 	if (!stringmatch(sweep, "normal") && !stringmatch(sweep, "auto"))
 		abort "invalid trigger sweep (normal | auto)"
 	endif
-	visa#cmd(hardware_id, ":trigger:sweep "+sweep)
+	cmd_dso(":trigger:sweep "+sweep)
 	string/g $(param_dir + ":trigger_sweep") = sweep
 	
 	// trigger mode
 	if (!stringmatch(mode, "edge") && !stringmatch(mode, "gitch") && !stringmatch(mode, "pattern") && !stringmatch(mode, "tv"))
 		abort "invalid trigger mode (edge | glitch | pattern | tv)"
 	endif
-	visa#cmd(hardware_id, ":trigger:mode "+mode)
+	cmd_dso(":trigger:mode "+mode)
 	string/g $(param_dir + ":trigger_mode") = mode
 	
 	// trigger source
 	if (!stringmatch(source, "channel*") && !stringmatch(source, "external") && !stringmatch(source, "line") && !stringmatch(source, "wgen"))
 		abort "invalid trigger source (channel<n> | external | line | wgen)"
 	endif
-	visa#cmd(hardware_id, ":trigger:source "+source)
+	cmd_dso(":trigger:source "+source)
 	string/g $(param_dir + ":trigger_source") = source
 	
 	// trigger level
-	visa#cmd(hardware_id, ":trigger:level " + num2str(level))
+	cmd_dso(":trigger:level " + num2str(level))
 	variable/g $(param_dir + ":trigger_level") = level
 	
 	// slope settings
 	if (!stringmatch(slope, "positive") && !stringmatch(slope, "negative") && !stringmatch(slope, "either") && !stringmatch(slope, "alternate"))
 		abort "invalid trigger slope (positive | negative | either | alternate)"
 	endif
-	visa#cmd(hardware_id, ":trigger:slope "+slope)
+	cmd_dso(":trigger:slope "+slope)
 	string/g $(param_dir + ":trigger_slope") = slope
 	
 	// noise rejection
 	if (!stringmatch(rejectnoise, "0") && !stringmatch(rejectnoise, "1"))
 		abort "invalid trigger noise rejection (1 | 0)"
 	endif
-	visa#cmd(hardware_id, ":trigger:nreject "+rejectnoise)
+	cmd_dso(":trigger:nreject "+rejectnoise)
 	string/g $(param_dir + ":trigger_nreject") = rejectnoise
 	
 	// high pass filter
 	if (!stringmatch(filter,"0") && !stringmatch(filter,"1"))
 		abort "invalid trigger filter (1 | 0)"
 	endif
-	visa#cmd(hardware_id, ":trigger:hfreject "+filter)
+	cmd_dso(":trigger:hfreject "+filter)
 	string/g $(param_dir + ":trigger_hfreject") = filter
 end
 
-function set_acquire(type)
+function set_acquire_dso(type)
 	string type
-	string param_dir = gv_folder + ":acquire_settings"
-	visa#check_folder(param_dir)
+	string param_dir = "root:global_variables:agilent_dsox2012a_dso:acquire_settings"
+	check_folder_dso(param_dir)
 	
 	// setup acquire type
 	if (!stringmatch(type,"normal") && !stringmatch(type,"average") && !stringmatch(type,"hresolution") && !stringmatch(type,"peak"))
 		abort "invalid acquire type (normal | average | hresolution | peak)"
 	endif
-	visa#cmd(hardware_id, ":acquire:type " + type)
+	cmd_dso(":acquire:type " + type)
 	string/g $(param_dir + ":acquire_type") = type
-	visa#cmd(hardware_id, ":acquire:complete 100")
+	cmd_dso(":acquire:complete 100")
 	variable/g $(param_dir + ":acquire_complete") = 100
 
 	if (stringmatch(type, "average"))
-		visa#cmd(hardware_id, ":acquire:count 8")
+		cmd_dso(":acquire:count 8")
 	endif
 end
 
-function capture_all()
-	visa#cmd(hardware_id, ":digitize")
+// capture functions
+
+function capture_all_dso()
+	cmd_dso(":digitize")
 end
 
-Function capture(ch)
+Function capture_dso(ch)
 	string ch
 	if (!stringmatch(ch, "1") && !stringmatch(ch, "2"))
 		abort "invalid channel number (1 | 2)"
 	endif
-	visa#cmd(hardware_id, ":digitize channel"+ch)
+	cmd_dso(":digitize channel"+ch)
 end
 
 function import_data_dso(ch, wname)
 	string ch, wname
-	nvar instr = $(gv_folder + ":instr")
-	string param_dir = gv_folder + ":import_parameters"
-	visa#check_folder(param_dir)
+	nvar instr = root:global_variables:agilent_dsox2012a_dso:instr
+	string param_dir = "root:global_variables:agilent_dsox2012a_dso:import_parameters"
+	check_folder_dso(param_dir)
 	
 	// import data
-	variable points = visa#read(hardware_id, ":acquire:points?")
+	variable points = read_dso(":acquire:points?")
 	make/o/n=(points+10) $wname
 	wave w = $wname
 	w = 0
@@ -266,11 +335,12 @@ function import_data_dso(ch, wname)
 	variable/g $(param_dir + ":x_inc") = x_inc
 end
 
-function check_trigger()
-	if ((visa#read(hardware_id, ":operegister:condition?") & 8) == 0)
+// check functions
+
+function check_trigger_dso()
+	if ((read_dso(":operegister:condition?") & 8) == 0)
 		return 1
 	else
 		return 0
 	endif
 end
-

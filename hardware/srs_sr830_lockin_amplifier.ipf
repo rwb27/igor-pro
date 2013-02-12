@@ -1,117 +1,49 @@
+#pragma IndependentModule = lockin
+#pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
-//
-// v2, 07/02/13, AS
-//
 
-// required functions
+#include "visa_basic" as visa
+strconstant hardware_id = "srs_sr830_lockin_amplifier"
+strconstant resourceName = "GPIB0::6::INSTR"
+strconstant gv_folder = "root:global_variables:" + hardware_id
 
-function check_folder_lockin(data_folder)
-	string data_folder
-	if (!datafolderexists(data_folder))
-		newdatafolder $data_folder
-	endif
-end
-
-function open_lockin()
-	variable session, instr, status
-	string resourceName = "GPIB0::6::INSTR"
-	string data_folder = "root:global_variables"
-	check_folder_lockin(data_folder)
-	data_folder += ":srs_sr830_lockin_amplifier"
-	check_folder_lockin(data_folder)
-	
-	string error_message
-	status = viOpenDefaultRM(session)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	status = viOpen(session, resourceName, 0, 0, instr)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	status = viClear(session)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	variable/g $(data_folder + ":instr") = instr
-	variable/g $(data_folder + ":session") = session
-	return status
-end
-
-function close_lockin()
-	nvar session = root:global_variables:srs_sr830_lockin_amplifier:session
+function open()
 	variable status
-	status = viClear(session)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	status = viClose(session
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
+	status = visa#open(hardware_id, resourceName)
 	return status
 end
 
-function cmd_lockin()
-	string cmd
-	nvar instr = root:global_variables:srs_sr830_lockin_amplfiier:instr
-	VISAwrite instr, cmd
+function close()
+	variable status
+	status = visa#close(hardware_id)
+	return status
 end
 
-function read_lockin(cmd)
-	string cmd
-	variable value
-	nvar instr = root:global_variables:srs_sr830_lockin_amplifier:instr
-	VISAwrite instr, cmd
-	VISAread instr, value
-	return value
-end
-
-function/s read_str_lockin(cmd)
-	string cmd
-	string message
-	nvar instr = root:global_variables:srs_sr830_lockin_amplifier:instr
-	VISAwrite instr, cmd
-	VISAread instr, message
-	return message
-end
-
-// measurement functions
-
-function/c measure_xy_lockin()
+function/c measure_xy()
 	variable x, y
 	variable/c data
-	x = read_lockin("OUTP?1\r")
-	y = read_lockin("OUTP?2\r")
+	x = visa#read(hardware_id, "OUTP?1\r")
+	y = visa#read(hardware_id, "OUTP?2\r")
+	variable/g $(gv_folder + ":x") = x
+	variable/g $(gv_folder + ":y") = y
 	data = cmplx(x, y)
 	return data
 end
 
-function/c measure_rtheta_lockin()
+function/c measure_rtheta()
 	variable r, theta
 	variable/c data
-	r = read_lockin("OUTP?3\r")
-	theta = read_lockin("OUTP?4\r")
+	r = visa#read(hardware_id, "OUTP?3\r")
+	theta = visa#read(hardware_id, "OUTP?4\r")
+	variable/g $(gv_folder + ":r") = r
+	variable/g $(gv_folder + ":theta") = theta
 	data = cmplx(r, theta)
 	return data
 end
 
-// useful functions
-
-function purge_lockin()
-	nvar instr = root:global_variables:srs_sr830_lockin_amplifier:instr
+function purge()
 	string buffer
 	do
-		VISAread instr, buffer
+		buffer = visa#read_str(hardware_id, "")
 	while (!stringmatch(buffer, ""))
 end

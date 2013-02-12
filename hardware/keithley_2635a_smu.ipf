@@ -1,180 +1,95 @@
+#pragma IndependentModule = smu
+#pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
-//
-// v3, 31/01/13, AS
-//
 
-// required functions
+#include "visa_basic" as visa
+strconstant hardware_id = "keithley_2635a_smu"
+strconstant resourceName = "GPIB0::26::INSTR"
+strconstant gv_folder = "root:global_variables:" + hardware_id
 
-function check_folder_smu(data_folder)
-	string data_folder
-	if (!datafolderexists(data_folder))
-		newdatafolder $data_folder
-	endif
-end
-
-function open_smu()
-	variable session, instr, status
-	string resourceName = "GPIB0::26::INSTR"
-	string data_folder = "root:global_variables"
-	check_folder_smu(data_folder)
-	data_folder += ":keithley_2635a_smu"
-	check_folder_smu(data_folder)
-	
-	string error_message
-	status = viOpenDefaultRM(session)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	status = viOpen(session, resourceName, 0, 0, instr)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	status = viClear(session)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	variable/g $(data_folder + ":instr") = instr
-	variable/g $(data_folder + ":session") = session
-	return status
-end
-
-function close_smu()
-	nvar session = root:global_variables:keithley_2635a_smu:session
+function open()
 	variable status
-	status = viClear(session)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
-	status = viClose(session)
-	if (status < 0)
-		string error_message
-		viStatusDesc(instr, status, error_message)
-		abort error_message
-	endif
+	status = visa#open(hardware_id, resourceName)
 	return status
 end
 
-function cmd_smu(cmd)
-	string cmd
-	nvar instr = root:global_variables:keithley_2635a_smu:instr
-	VISAwrite instr, cmd
+function close()
+	variable status
+	status = visa#close(hardware_id)
+	return status
 end
 
-function read_smu(cmd)
-	string cmd
+function initialise()
+	visa#cmd(hardware_id, "smua.reset()") // restore to default settings
+	visa#cmd(hardware_id, "smua.measure.rangei = 10e-9") // set current measure range to 1 nA
+end
+
+function empty_buffer()
 	variable value
-	nvar instr = root:global_variables:keithley_2635a_smu:instr
-	VISAwrite instr, cmd
-	VISAread instr, value
-	return value
-end
-
-function/s read_str_smu(cmd)
-	string cmd
-	string message
-	nvar instr = root:global_variables:keithley_2635a_smu:instr
-	VISAwrite instr, cmd
-	VISAread instr, message
-	return message
-end
-
-function read_buffer_smu()
-	variable value
-	nvar instr = root:global_variables:keithley_2635a_smu:instr
-	VISAread instr, value
-	return value
-end
-
-function init_smu()
-	cmd_smu("smua.reset()") // restore to default settings
-	cmd_smu("smua.measure.rangei = 10e-9") // set current measure range to 1 nA
-end
-
-// misc functions
-
-function empty_buffer_smu()
-	variable value
-	nvar instr = root:global_variables:keithley_2635a_smu:instr
 	do
-		VISAread instr, value
+		value = visa#read(hardware_id, "")
 	while (abs(value) > 1e-300)
 	return value
 end
 
-// control functions
-
-function output_state_smu(o)
+function output_state(o)
 	variable o // on (o == 1) or off (o == 0)
 	if (o == 0 || o == 1)
-		cmd_smu("smua.source.output="+num2str(o))
+		visa#cmd(hardware_id, "smua.source.output="+num2str(o))
 	else
 		print "incorrect state variable"
 	endif
-	variable/g root:global_variables:keithley_2635a_smu:output_state = o
+	variable/g $(gv_folder + ":output_state") = o
 end
 
-function/s get_error_smu()
-	cmd_smu("errorCode, message = errorqueue.next()")
-	string error = read_str_smu("print(errorCode)")
-	string message = read_str_smu("print(message)")
+function/s get_error()
+	visa#cmd(hardware_id, "errorCode, message = errorqueue.next()")
+	string error = visa#read_str(hardware_id, "print(errorCode)")
+	string message = visa#read_str(hardware_id, "print(message)")
 	string error_message = error + ": " + message
 	return error_message
 end
 
-// Set Parameters
-
-function set_current_range_smu(i_range)
+function set_current_range(i_range)
 	variable i_range
-	cmd_smu("smua.measure.rangei = " + num2str(i_range))
-	variable/g root:global_variables:keithley_2635a_smu:current_range = i_range
+	visa#cmd(hardware_id, "smua.measure.rangei = " + num2str(i_range))
+	variable/g $(gv_folder + ":current_range") = i_range
 end
 
-function set_voltage_smu(v)
+function set_voltage(v)
 	variable v
-	cmd_smu("smua.source.func=smua.OUTPUT_DCVOLTS") // set to source voltage
-	cmd_smu("smua.source.levelv = " + num2str(v))
-	variable/g root:global_variables:keithley_2635a_smu:voltage = v
+	visa#cmd(hardware_id, "smua.source.func=smua.OUTPUT_DCVOLTS") // set to source voltage
+	visa#cmd(hardware_id, "smua.source.levelv = " + num2str(v))
+	variable/g $(gv_folder + ":voltage") = v
 end
 
-// Measurement Functions
-
-function measure_voltage_smu()
-	variable voltage = read_smu("print(smua.measure.v())")
-	variable/g root:global_variables:keithley_2635a_smu:voltage = voltage
+function measure_voltage()
+	variable voltage = visa#read(hardware_id, "print(smua.measure.v())")
+	variable/g $(gv_folder + ":voltage") = voltage
 	return voltage
 end
 
-function measure_current_smu()
-	variable current = read_smu("print(smua.measure.i())")
-	variable/g root:global_variables:keithley_2635a_smu:current = current
+function measure_current()
+	variable current = visa#read(hardware_id, "print(smua.measure.i())")
+	variable/g $(gv_folder + ":current") = current
 	return current
 end
 
-function/c measure_iv_smu()
-	cmd_smu("iRead, vRead = smua.measure.iv()")
-	variable v = read_smu("print(vRead)")
-	variable i = read_smu("print(iRead)")
-	variable/g root:global_variables:keithley_2635a_smu:voltage = v
-	variable/g root:global_variables:keithley_2635a_smu:current = i
+function/c measure_iv()
+	visa#cmd(hardware_id, "iRead, vRead = smua.measure.iv()")
+	variable v = visa#read(hardware_id, "print(vRead)")
+	variable i = visa#read(hardware_id, "print(iRead)")
+	variable/g $(gv_folder + ":voltage") = v
+	variable/g $(gv_folder + ":current") = i
 	variable/c output = cmplx(v, i)
 	return output
 end
 
-function measure_resistance_smu()
-	variable resistance = read_smu("print(smua.measure.r())")
-	variable/g root:global_variables:keithley_2635a_smu:resistance = resistance
+function measure_resistance()
+	variable resistance = visa#read(hardware_id, "print(smua.measure.r())")
+	variable/g $(gv_folder + ":resistance") = resistance
 	return resistance
 end
-
-// Panel Controls
 
 function output_on_smu_button(ba) : ButtonControl	// output on
 	struct WMButtonAction &ba
@@ -186,53 +101,53 @@ function output_on_smu_button(ba) : ButtonControl	// output on
 	return 0
 end
 
-function output_off_smu_button(ba) : ButtonControl	// output off
+function output_off_button(ba) : ButtonControl	// output off
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			output_state_smu(0)
+			output_state(0)
 			break
 	endswitch
 	return 0
 end
 
-function measure_voltage_smu_button(ba) : ButtonControl	// measure voltage
+function measure_voltage_button(ba) : ButtonControl	// measure voltage
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/g root:global_variables:keithley_2635a_smu:voltage = measure_voltage_smu()
+			variable/g $(gv_folder + ":voltage") = measure_voltage()
 			break
 	endswitch
 	return 0
 end
 
-function measure_current_smu_button(ba) : ButtonControl	// measure current
+function measure_current_button(ba) : ButtonControl	// measure current
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/g root:global_variables:keithley_2635a_smu:current = measure_current_smu()
+			variable/g $(gv_folder + ":current") = measure_current()
 			break
 	endswitch
 	return 0
 end
 
-function measure_resistance_smu_button(ba) : ButtonControl	// measure resistance
+function measure_resistance_button(ba) : ButtonControl	// measure resistance
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/g root:global_variables:keithley_2635a_smu:resistance = measure_resistance_smu()
+			variable/g $(gv_folder + ":resistance") = measure_resistance()
 			break
 	endswitch
 	return 0
 end
 
-function measure_iv_smu_button(ba) : ButtonControl	// measure IV
+function measure_iv_button(ba) : ButtonControl	// measure IV
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/c measurement = measure_iv_smu()
-			variable/g root:global_variables:keithley_2635a_smu:voltage = real(measurement)
-			variable/g root:global_variables:keithley_2635a_smu:current = imag(measurement)
+			variable/c measurement = measure_iv()
+			variable/g $(gv_folder + ":voltage") = real(measurement)
+			variable/g $(gv_folder + ":current") = imag(measurement)
 			break
 	endswitch
 	return 0
