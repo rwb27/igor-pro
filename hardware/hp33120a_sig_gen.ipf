@@ -1,26 +1,25 @@
 #pragma rtGlobals=1		// Use modern global access method.
 //
-// v2, 07/02/13, AS
+// v2, 12/02/13, AS
 //
 
 // required functions
 
-function check_folder_lockin(data_folder)
+function check_folder_siggen(data_folder)
 	string data_folder
 	if (!datafolderexists(data_folder))
 		newdatafolder $data_folder
 	endif
 end
 
-function open_lockin()
+function open_siggen()
 	variable session, instr, status
-	string resourceName = "GPIB0::6::INSTR"
+	string resourceName = "GPIB0::3::INSTR"
 	string data_folder = "root:global_variables"
-	check_folder_lockin(data_folder)
-	data_folder += ":srs_sr830_lockin_amplifier"
-	check_folder_lockin(data_folder)
+	check_folder_siggen(data_folder)
+	data_folder += ":hp33120a_signal_generator"
+	check_folder_siggen(data_folder)
 	
-	string error_message
 	status = viOpenDefaultRM(session)
 	if (status < 0)
 		string error_message
@@ -44,8 +43,8 @@ function open_lockin()
 	return status
 end
 
-function close_lockin()
-	nvar session = root:global_variables:srs_sr830_lockin_amplifier:session
+function close_siggen()
+	nvar session = root:global_variables:hp33120a_signal_generator:session
 	variable status
 	status = viClear(session)
 	if (status < 0)
@@ -53,7 +52,7 @@ function close_lockin()
 		viStatusDesc(instr, status, error_message)
 		abort error_message
 	endif
-	status = viClose(session
+	status = viClose(session)
 	if (status < 0)
 		string error_message
 		viStatusDesc(instr, status, error_message)
@@ -62,56 +61,44 @@ function close_lockin()
 	return status
 end
 
-function cmd_lockin()
+function cmd_siggen(cmd)
 	string cmd
-	nvar instr = root:global_variables:srs_sr830_lockin_amplfiier:instr
+	nvar instr = root:global_variables:hp33120a_signal_generator:instr
 	VISAwrite instr, cmd
 end
 
-function read_lockin(cmd)
+function read_siggen(cmd)
 	string cmd
 	variable value
-	nvar instr = root:global_variables:srs_sr830_lockin_amplifier:instr
+	nvar instr = root:global_variables:hp33120a_signal_generator:instr
 	VISAwrite instr, cmd
 	VISAread instr, value
 	return value
 end
 
-function/s read_str_lockin(cmd)
+function/s read_str_siggen(cmd)
 	string cmd
 	string message
-	nvar instr = root:global_variables:srs_sr830_lockin_amplifier:instr
+	nvar instr = root:global_variables:hp33120a_signal_generator:instr
 	VISAwrite instr, cmd
-	VISAread instr, message
+	VISAread/t="\n" instr, message
 	return message
 end
 
-// measurement functions
+// setup functions
 
-function/c measure_xy_lockin()
-	variable x, y
-	variable/c data
-	x = read_lockin("OUTP?1\r")
-	y = read_lockin("OUTP?2\r")
-	data = cmplx(x, y)
-	return data
+function set_frequency_siggen(freq)
+	variable freq
+	cmd_siggen("FREQ " + num2str(freq) + "\n")
 end
 
-function/c measure_rtheta_lockin()
-	variable r, theta
-	variable/c data
-	r = read_lockin("OUTP?3\r")
-	theta = read_lockin("OUTP?4\r")
-	data = cmplx(r, theta)
-	return data
+function set_amplitude_siggen(volt)
+	variable volt
+	cmd_siggen("output:load inf")
+	cmd_siggen("voltage " + num2str(volt) + "\n")
 end
 
-// useful functions
-
-function purge_lockin()
-	nvar instr = root:global_variables:srs_sr830_lockin_amplifier:instr
-	string buffer
-	do
-		VISAread instr, buffer
-	while (!stringmatch(buffer, ""))
+function set_offset_siggen(offset)
+	variable offset
+	cmd_siggen("voltage:offset " + num2str(offset) + "\n")
 end

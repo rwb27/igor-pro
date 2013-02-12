@@ -70,6 +70,62 @@ function test_summary()
 	textbox/c/n=text1/a=lb "\\Z080: ground\t\t1: amp\r2: bnc cable\t3: ac out\r4: tip lo\t\t5: tip hi\r6: ac in"
 end
 
+function ac_test_summary()
+	make/o/n=(7,8) direct_noise
+	make/o/n=(7,8) bnc_noise
+	make/o/n=(7,8) oldbox_noise
+	setscale d, 0, 0, "A", direct_noise, bnc_noise, oldbox_noise
+	// direct connections
+	wave w = root:direct_connection:bm8_lockin_ac_noise:ac_noise
+	direct_noise[0][] = w[q]
+	wave w = root:direct_connection:cable_ac_noise:ac_noise
+	direct_noise[1][] = w[q]
+	wave w = root:direct_connection:amp_ac_noise:ac_noise
+	direct_noise[2][] = w[q]
+	direct_noise[3][] = 0; direct_noise[4][] = 0
+	wave w = root:direct_connection:tiplo_ac_noise:ac_noise
+	direct_noise[5][] = w[q]
+	wave w = root:direct_connection:tip_ac_noise:ac_noise
+	direct_noise[6][] = w[q]
+	// bnc connections
+	wave w = root:direct_connection:bm8_lockin_ac_noise:ac_noise
+	bnc_noise[0][] = w[q]
+	wave w = root:direct_connection:cable_ac_noise:ac_noise
+	bnc_noise[1][] = w[q]
+	wave w = root:direct_connection:amp_ac_noise:ac_noise
+	bnc_noise[2][] = w[q]
+	wave w = root:bnc_connector:amp_cable_ac_noise:ac_noise
+	bnc_noise[3][] = w[q]
+	bnc_noise[4][] = 0
+	wave w = root:bnc_connector:tiplo_ac_noise:ac_noise
+	bnc_noise[5][] = w[q]
+	wave w = root:bnc_connector:tip_ac_noise:ac_noise
+	bnc_noise[6][] = w[q]
+	// old switchbox
+	wave w = root:direct_connection:bm8_lockin_ac_noise:ac_noise
+	oldbox_noise[0][] = w[q]
+	wave w = root:direct_connection:cable_ac_noise:ac_noise
+	oldbox_noise[1][] = w[q]
+	wave w = root:direct_connection:amp_ac_noise:ac_noise
+	oldbox_noise[2][] = w[q]
+	wave w = root:bnc_connector:amp_cable_ac_noise:ac_noise
+	oldbox_noise[3][] = w[q]
+	wave w = root:old_switchbox:acout_ac_noise:ac_noise
+	oldbox_noise[4][] = w[q]
+	wave w = root:old_switchbox:tiplo_ac_noise:ac_noise
+	oldbox_noise[5][] = w[q]
+	wave w = root:old_switchbox:tip_ac_noise:ac_noise
+	oldbox_noise[6][] = w[q]
+	
+	// display
+	dowindow/k ac_noise_tests
+	display/n=ac_noise_tests
+	appendtograph direct_noise[][1], bnc_noise[][1], oldbox_noise[][1]
+	modifygraph mode=4,marker=8,msize=1.2,rgb(direct_noise)=(0,0,0)
+	modifygraph rgb(bnc_noise)=(0,15872,65280)
+	label left "current noise (\\U)"; label bottom "test"
+end
+
 function append_test(n)
 	variable n
 	string noise

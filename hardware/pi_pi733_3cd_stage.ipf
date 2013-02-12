@@ -14,25 +14,31 @@ end
 
 function open_pi()
 	variable session, instr, status
-	string error
 	string resourceName = "ASRL2::INSTR"
 	string data_folder = "root:global_variables"
 	check_folder_pi(data_folder)
 	data_folder += ":pi_pi733_3cd_stage"
 	check_folder_pi(data_folder)
+	
+	string error_message
 	status = viOpenDefaultRM(session)
-	if (status < 0)																//Error handling
-		viStatusDesc(instr, status, error)
-  		print error
-  		abort "no comms1"
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
 	endif
 	status = viOpen(session, resourceName, 0, 0, instr)
-	if (status < 0)																//Error handling
-		viStatusDesc(instr, status, error)
-  		print error
-  		abort "no comms2"
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
 	endif
 	status = viClear(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
 	variable/g $(data_folder + ":instr") = instr
 	variable/g $(data_folder + ":session") = session
 	return status
@@ -40,8 +46,19 @@ end
 
 function close_pi()
 	nvar session = root:global_variables:pi_pi733_3cd_stage:session
-	variable status = viClose(session)
+	variable status
 	status = viClear(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
+	status = viClose(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
 	return status
 end
 

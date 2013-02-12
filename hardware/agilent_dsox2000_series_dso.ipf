@@ -19,9 +19,26 @@ function open_dso()
 	check_folder_dso(data_folder)
 	data_folder += ":agilent_dsox2012a_dso"
 	check_folder_dso(data_folder)
+	
+	string error_message
 	status = viOpenDefaultRM(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
 	status = viOpen(session, resourceName, 0, 0, instr)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
 	status = viClear(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
 	variable/g $(data_folder + ":instr") = instr
 	variable/g $(data_folder + ":session") = session
 	return status
@@ -29,8 +46,19 @@ end
 
 function close_dso()
 	nvar session = root:global_variables:agilent_dsox2012a_dso:session
-	variable status = viClose(session)
+	variable status
 	status = viClear(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
+	status = viCLose(session)
+	if (status < 0)
+		string error_message
+		viStatusDesc(instr, status, error_message)
+		abort error_message
+	endif
 	return status
 end
 
