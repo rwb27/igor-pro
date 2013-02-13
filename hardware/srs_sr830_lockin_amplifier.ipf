@@ -1,21 +1,21 @@
-#pragma IndependentModule = lockin
+#pragma ModuleName = lockin
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa_basic" as visa
-strconstant hardware_id = "srs_sr830_lockin_amplifier"
-strconstant resourceName = "GPIB0::6::INSTR"
-strconstant gv_folder = "root:global_variables:" + hardware_id
+#include "visa"
+static strconstant hardware_id = "srs_sr830_lockin_amplifier"
+static strconstant resourceName = "GPIB0::6::INSTR"
+static strconstant gv_folder = "root:global_variables:srs_sr830_lockin_amplifier"
 
-function open()
+static function open_comms()
 	variable status
-	status = visa#open(hardware_id, resourceName)
+	status = visa#open_comms(hardware_id, resourceName)
 	return status
 end
 
-function close()
+static function close_comms()
 	variable status
-	status = visa#close(hardware_id)
+	status = visa#close_comms(hardware_id)
 	return status
 end
 

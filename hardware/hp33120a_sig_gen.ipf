@@ -1,22 +1,23 @@
-#pragma IndependentModule = sig_gen
+#pragma ModuleName = sig_gen
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa_basic" as visa
-strconstant hardware_id = "hp33120a_signal_generator"
-strconstant resourceName = "GPIB0::3::INSTR"
-strconstant gv_folder = "root:global_variables:" + hardware_id
+#include "visa"
+static strconstant hardware_id = "hp33120a_signal_generator"
+static strconstant resourceName = "GPIB0::3::INSTR"
+static strconstant gv_folder = "root:global_variables:hp33120a_signal_generator"
 
-function open()
+static function open_comms()
 	variable status
-	status = visa#open(hardware_id, resourceName)
+	status = visa#open_comms(hardware_id, resourceName)
 	return status
 end
 
-function close()
+static function close_comms()
 	variable status
-	status = visa#close(hardware_id)
+	status = visa#close_comms(hardware_id)
 	return status
+end
 
 function set_frequency(freq)
 	variable freq

@@ -1,25 +1,25 @@
-#pragma IndependentModule = smu
+#pragma ModuleName = smu
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa_basic" as visa
-strconstant hardware_id = "keithley_2635a_smu"
-strconstant resourceName = "GPIB0::26::INSTR"
-strconstant gv_folder = "root:global_variables:" + hardware_id
+#include "visa"
+static strconstant hardware_id = "keithley_2635a_smu"
+static strconstant resourceName = "GPIB0::26::INSTR"
+static strconstant gv_folder = "root:global_variables:keithley_2635a_smu"
 
-function open()
+static function open_comms()
 	variable status
-	status = visa#open(hardware_id, resourceName)
+	status = visa#open_comms(hardware_id, resourceName)
 	return status
 end
 
-function close()
+static function close_comms()
 	variable status
-	status = visa#close(hardware_id)
+	status = visa#close_comms(hardware_id)
 	return status
 end
 
-function initialise()
+static function initialise()
 	visa#cmd(hardware_id, "smua.reset()") // restore to default settings
 	visa#cmd(hardware_id, "smua.measure.rangei = 10e-9") // set current measure range to 1 nA
 end
@@ -91,11 +91,11 @@ function measure_resistance()
 	return resistance
 end
 
-function output_on_smu_button(ba) : ButtonControl	// output on
+function output_on_button(ba) : ButtonControl	// output on
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			output_state_smu(1)
+			output_state(1)
 			break
 	endswitch
 	return 0

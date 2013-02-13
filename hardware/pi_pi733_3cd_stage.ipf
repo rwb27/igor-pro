@@ -1,25 +1,25 @@
-#pragma IndependentModule = smu
+#pragma ModuleName = pi_stage
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa_basic" as visa
-strconstant hardware_id = "pi_pi733_3cd_stage"
-strconstant resourceName = "ASRL2::INSTR"
-strconstant gv_folder = "root:global_variables:" + hardware_id
+#include "visa"
+static strconstant hardware_id = "pi_pi733_3cd_stage"
+static strconstant resourceName = "ASRL2::INSTR"
+static strconstant gv_folder = "root:global_variables:pi_pi733_3cd_stage"
 
-function open()
+static function open_comms()
 	variable status
-	status = visa#open(hardware_id, resourceName)
+	status = visa#open_comms(hardware_id, resourceName)
 	return status
 end
 
-function close()
+static function close_comms()
 	variable status
-	status = visa#close(hardware_id)
+	status = visa#close_comms(hardware_id)
 	return status
 end
 
-function initialise()
+static function initialise()
 end
 
 function start_up()

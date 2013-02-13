@@ -9,7 +9,7 @@ function check_folder(data_folder)
     endif
 end
 
-function open(hardware_id, resourceName)
+function open_comms(hardware_id, resourceName)
     string hardware_id, resourceName
     variable session, instr, status
     string data_folder = "root:global_variables"
@@ -20,19 +20,16 @@ function open(hardware_id, resourceName)
     string error_message
     status = viOpenDefaultRM(session)
     if (status < 0)
-	    string error_message
 	    viStatusDesc(instr, status, error_message)
 	    abort error_message
     endif
     status = viOpen(session, resourceName, 0, 0, instr)
     if (status < 0)
-	string error_message
 	viStatusDesc(instr, status, error_message)
 	abort error_message
     endif
     status = viClear(session)
     if (status < 0)
-    	string error_message
     	viStatusDesc(instr, status, error_message)
     	abort error_message
     endif
@@ -42,19 +39,19 @@ function open(hardware_id, resourceName)
     return status
 end
 
-function close(hardware_id)
+function close_comms(hardware_id)
     string hardware_id
     nvar session = $("root:global_variables:" + hardware_id + ":session")
+    nvar instr = $("root:global_variables:" + hardware_id + ":instr")
     variable status
+    string error_message
     status = viClear(session)
     if (status < 0)
-	    string error_message
 	    viStatusDesc(instr, status, error_message)
 	    abort error_message
     endif
     status = viClose(session)
     if (status < 0)
-	    string error_message
 	    viStatusDesc(instr, status, error_message)
 	    abort error_message
     endif

@@ -1,34 +1,25 @@
-#pragma IndependentModule = dso
+#pragma ModuleName = dso
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa_basic" as visa
-strconstant hardware_id = "agilent_dsox2012a_dso"
-strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
-strconstant gv_folder = "root:global_variables:" + hardware_id
+#include "visa"
+static strconstant hardware_id = "agilent_dsox2012a_dso"
+static strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
+static strconstant gv_folder = "root:global_variables:agilent_dsox2012a_dso"
 
-function/s read_str_dso(cmd)
-	string cmd
-	string message
-	nvar instr = root:global_variables:agilent_dsox2012a_dso:instr
-	VISAwrite instr, cmd
-	VISAread/t="\n" instr, message
-	return message
-end
-
-function open()
+static function open_comms()
 	variable status
-	status = visa#open(hardware_id, resourceName)
+	status = visa#open_comms(hardware_id, resourceName)
 	return status
 end
 
-function close()
+static function close_comms()
 	variable status
-	status = visa#close(hardware_id)
+	status = visa#close_comms(hardware_id)
 	return status
 end
 
-function initialise()
+static function initialise()
 end
 
 function reset()
@@ -251,11 +242,11 @@ function import_data_dso(ch, wname)
 	
 	// scale data
 	variable y_or, y_inc, y_ref, x_or, x_inc
-	y_or = read_dso("waveform:yorigin?")
-	y_inc = read_dso("waveform:yincrement?")
-	y_ref = read_dso("waveform:yreference?")
-	x_or = read_dso("waveform:xorigin?")
-	x_inc = read_dso("waveform:xincrement?")
+	y_or = visa#read(hardware_id, "waveform:yorigin?")
+	y_inc = visa#read(hardware_id, "waveform:yincrement?")
+	y_ref = visa#read(hardware_id, "waveform:yreference?")
+	x_or = visa#read(hardware_id, "waveform:xorigin?")
+	x_inc = visa#read(hardware_id, "waveform:xincrement?")
 	w = y_or + (y_inc * (w - y_ref))
 	setscale d, 0, 0, "V", w
 	setscale/p x, x_or, x_inc, "s", w
