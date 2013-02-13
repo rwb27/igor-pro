@@ -3,9 +3,9 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
 #include "visa"
-static strconstant hardware_id = "keithley_2635a_smu"
-static strconstant resourceName = "GPIB0::26::INSTR"
-static strconstant gv_folder = "root:global_variables:keithley_2635a_smu"
+	static strconstant hardware_id = "keithley_2635a_smu"
+	static strconstant resourceName = "GPIB0::26::INSTR"
+	static strconstant gv_folder = "root:global_variables:keithley_2635a_smu"
 
 static function open_comms()
 	variable status

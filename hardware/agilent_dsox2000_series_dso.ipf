@@ -3,9 +3,9 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
 #include "visa"
-static strconstant hardware_id = "agilent_dsox2012a_dso"
-static strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
-static strconstant gv_folder = "root:global_variables:agilent_dsox2012a_dso"
+	static strconstant hardware_id = "agilent_dsox2012a_dso"
+	static strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
+	static strconstant gv_folder = "root:global_variables:agilent_dsox2012a_dso"
 
 static function open_comms()
 	variable status
@@ -20,6 +20,7 @@ static function close_comms()
 end
 
 static function initialise()
+	visa#cmd(hardware_id, "*rst")
 end
 
 function reset()

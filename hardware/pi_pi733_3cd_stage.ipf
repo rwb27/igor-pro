@@ -22,33 +22,41 @@ end
 static function initialise()
 end
 
-function start_up()
-	visa#cmd(hardware_id, "onl 1")
+function startup()
+	visa#cmd(hardware_id, "onl 1\n")
 	sleep/s 0.5
 	close_loop()
 	sleep/s 0.5
 	zero_stage_pos()
 end
 
+function shutdown()
+	zero_stage_pos()
+	sleep/s 20.0
+	open_loop()
+	sleep/s 0.5
+	visa#cmd(hardware_id, "onl 0\n")
+end
+
 // set pi stage to 'closed-loop' operation (required for 'move_pi' command to work)
 function close_loop()
-	visa#cmd(hardware_id, "svo a1")
-	visa#cmd(hardware_id, "svo b1")
-	visa#cmd(hardware_id, "svo c1")
+	visa#cmd(hardware_id, "svo a1\n")
+	visa#cmd(hardware_id, "svo b1\n")
+	visa#cmd(hardware_id, "svo c1\n")
 end
 
 // set pi stage to 'open-loop' operation
 // (always run before turning the controller to 'offline mode' and then powering down)
 function open_loop()
-	visa#cmd(hardware_id, "svo a0")
-	visa#cmd(hardware_id, "svo b0")
-	visa#cmd(hardware_id, "svo c0")
+	visa#cmd(hardware_id, "svo a0\n")
+	visa#cmd(hardware_id, "svo b0\n")
+	visa#cmd(hardware_id, "svo c0\n")
 end
 
 function get_pos()
-	variable/g $(gv_folder + ":pos_a") = visa#read(hardware_id, "pos? a")
-	variable/g $(gv_folder + ":pos_b") = visa#read(hardware_id, "pos? b")
-	variable/g $(gv_folder + ":pos_c") = visa#read(hardware_id, "pos? c")
+	variable/g $(gv_folder + ":pos_a") = visa#read(hardware_id, "pos? a\n")
+	variable/g $(gv_folder + ":pos_b") = visa#read(hardware_id, "pos? b\n")
+	variable/g $(gv_folder + ":pos_c") = visa#read(hardware_id, "pos? c\n")
 end
 
 function move(ch, pos)
@@ -63,33 +71,25 @@ function move(ch, pos)
 	    		abort "out of range (z)"
 		endif
 	endif
-	visa#cmd(hardware_id, "mov " + ch + num2str(pos))
-	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch)
+	visa#cmd(hardware_id, "mov " + ch + num2str(pos) + "\n")
+	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
 function move_rel(ch, rpos)
 	string ch
 	variable rpos
-	visa#cmd(hardware_id, "mvr " + ch + num2str(rpos))
-	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch)
+	visa#cmd(hardware_id, "mvr " + ch + num2str(rpos) + "\n")
+	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
 function zero_stage_pos()
-	visa#cmd(hardware_id, "mov a0")
-	visa#cmd(hardware_id, "mov b0")
-	visa#cmd(hardware_id, "mov c0")
-end
-
-function shutdown()
-	zero_stage_pos()
-	sleep/s 20.0
-	open_loop()
-	sleep/s 0.5
-	visa#cmd(hardware_id, "onl 0")
+	visa#cmd(hardware_id, "mov a0\n")
+	visa#cmd(hardware_id, "mov b0\n")
+	visa#cmd(hardware_id, "mov c0\n")
 end
 
 function stop()
-	visa#cmd(hardware_id, "stp a")
+	visa#cmd(hardware_id, "stp a\n")
 end
 
 function set_step_pi(step)
@@ -102,10 +102,10 @@ end
 function set_velocity_pi(v)
 	variable v
 	string v_s = num2str(v)
-	visa#cmd(hardware_id, "vco a1")
-	visa#cmd(hardware_id, "vco b1")
-	visa#cmd(hardware_id, "vco c1")
-	visa#cmd(hardware_id, "vel a" + v_s)
-	visa#cmd(hardware_id, "vel b" + v_s)
-	visa#cmd(hardware_id, "vel c" + v_s)
+	visa#cmd(hardware_id, "vco a1\n")
+	visa#cmd(hardware_id, "vco b1\n")
+	visa#cmd(hardware_id, "vco c1\n")
+	visa#cmd(hardware_id, "vel a" + v_s + "\n")
+	visa#cmd(hardware_id, "vel b" + v_s + "\n")
+	visa#cmd(hardware_id, "vel c" + v_s + "\n")
 end
