@@ -21,6 +21,7 @@ end
 
 static function initialise()
 	visa#cmd(hardware_id, "*rst")
+	sleep/s 1
 	get_timebase()
 	get_channel("1")
 	get_channel("2")
@@ -110,7 +111,7 @@ function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
 	if (!stringmatch(ch, "1") && !stringmatch(ch, "2"))
 		abort "invalid channel number (1 | 2)"
 	endif
-	string param_dir = gv_folder + ":" + ch + "_settings"
+	string param_dir = gv_folder + ":ch" + ch + "_settings"
 	visa#check_folder(param_dir)
 	
 	if (probe != 0)
@@ -157,7 +158,7 @@ function get_channel(ch)
 	if (!stringmatch(ch, "1") && !stringmatch(ch, "2"))
 		abort "invalid channel number (1 | 2)"
 	endif
-	string param_dir = gv_folder + ":" + ch + "_settings"
+	string param_dir = gv_folder + ":ch" + ch + "_settings"
 	visa#check_folder(param_dir)
 	variable/g $(param_dir + ":ch" + ch + "_probe") = visa#read(hardware_id, ":channel"+ch+":probe?")
 	variable/g $(param_dir + ":ch" + ch + "_range") = visa#read(hardware_id, ":channel"+ch+":range?")
@@ -225,6 +226,12 @@ function get_trigger()
 	string param_dir = gv_folder + ":trigger_settings"
 	visa#check_folder(param_dir)
 	variable/g $(param_dir + ":trigger_level") = visa#read(hardware_id, ":trigger:level?")
+	string/g $(param_dir + ":trigger_sweep") = visa#read_str(hardware_id, ":trigger:sweep?")
+	string/g $(param_dir + ":trigger_mode") = visa#read_str(hardware_id, ":trigger:mode?")
+	string/g $(param_dir + ":trigger_source") = visa#read_str(hardware_id, ":trigger:source?")
+	string/g $(param_dir + ":trigger_slope") = visa#read_str(hardware_id, ":trigger:slope?")
+	string/g $(param_dir + ":trigger_nreject") = visa#read_str(hardware_id, ":trigger:nreject?")
+	string/g $(param_dir + ":trigger_hfreject") = visa#read_str(hardware_id, ":trigger:hfreject?")
 end
 
 function set_acquire(type)
