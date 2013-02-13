@@ -3,9 +3,10 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
 #include "visa"
-	static strconstant hardware_id = "agilent_dsox2012a_dso"
-	static strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
-	static strconstant gv_folder = "root:global_variables:agilent_dsox2012a_dso"
+static strconstant hardware_id = "agilent_dsox2012a_dso"
+static strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
+static strconstant gv_folder = "root:global_variables:agilent_dsox2012a_dso"
+static strconstant data_folder = "root:agilent_dsox2012a_dso"
 
 static function open_comms()
 	variable status
@@ -265,14 +266,17 @@ Function capture(ch)
 	visa#cmd(hardware_id, ":digitize channel"+ch)
 end
 
-function import_data_dso(ch, wname)
+function import_data(ch, wname)
 	string ch, wname
 	nvar instr = $(gv_folder + ":instr")
 	string param_dir = gv_folder + ":import_parameters"
 	visa#check_folder(param_dir)
+	visa#check_folder(data_folder)
 	
 	// import data
 	variable points = visa#read(hardware_id, ":acquire:points?")
+	variable/g $(param_dir + ":points") = points
+	wname = data_folder + ":" + wname
 	make/o/n=(points+10) $wname
 	wave w = $wname
 	w = 0
