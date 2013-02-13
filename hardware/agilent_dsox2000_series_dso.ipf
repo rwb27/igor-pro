@@ -21,6 +21,10 @@ end
 
 static function initialise()
 	visa#cmd(hardware_id, "*rst")
+	get_timebase()
+	get_channel("1")
+	get_channel("2")
+	get_trigger()
 end
 
 function reset()
@@ -82,6 +86,16 @@ function set_timebase(mode, range, scale, delay, ref)
 	variable/g $(param_dir + ":time_delay") = delay
 end
 
+function get_timebase()
+	string param_dir = gv_folder + ":timebase_settings"
+	visa#check_folder(param_dir)
+	string/g $(param_dir + ":time_mode") = visa#read_str(hardware_id, ":timebase:mode?")
+	variable/g $(param_dir + ":time_range") = visa#read(hardware_id, ":timebase:range?")
+	variable/g $(param_dir + ":time_scale") = visa#read(hardware_id, ":timebase:scale?")
+	string/g $(param_dir + ":time_reference") = visa#read_str(hardware_id, ":timebase:reference?")
+	variable/g $(param_dir + ":time_delay") = visa#read(hardware_id, ":timebase:delay?")
+end
+
 function set_window_timebase(pos, range, scale)
 	variable pos, range, scale
 	visa#cmd(hardware_id, ":timebase:window:position " + num2str(pos))
@@ -117,7 +131,7 @@ function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
 	if (!stringmatch(coupling, "ac") && !stringmatch(coupling, "dc"))
 		abort "invalid channel coupling (ac | dc)"
 	endif
-	visa#cmd(hardware_id, ":channel" + ch + ":coupling "+coupling)
+	visa#cmd(hardware_id, ":channel" + ch + ":coupling " + coupling)
 	string/g $(param_dir + ":ch" + ch + "_coupling") = coupling
 	
 	if (stringmatch(unit, "V"))
@@ -136,6 +150,22 @@ function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
 	endif
 	
 	visa#cmd(hardware_id, ":channel"+ch+":display 1")
+end
+
+function get_channel(ch)
+	string ch
+	if (!stringmatch(ch, "1") && !stringmatch(ch, "2"))
+		abort "invalid channel number (1 | 2)"
+	endif
+	string param_dir = gv_folder + ":" + ch + "_settings"
+	visa#check_folder(param_dir)
+	variable/g $(param_dir + ":ch" + ch + "_probe") = visa#read(hardware_id, ":channel"+ch+":probe?")
+	variable/g $(param_dir + ":ch" + ch + "_range") = visa#read(hardware_id, ":channel"+ch+":range?")
+	variable/g $(param_dir + ":ch" + ch + "_scale") = visa#read(hardware_id, ":channel" + ch + ":scale?")
+	variable/g $(param_dir + ":ch" + ch + "_offset") = visa#read(hardware_id, ":channel" + ch + ":offset?")
+	string/g $(param_dir + ":ch" + ch + "_coupling") = visa#read_str(hardware_id, ":channel" + ch + ":coupling?")
+	string/g $(param_dir + ":ch" + ch + "_unit") = visa#read_str(hardware_id, ":channel"+ch+":units?")
+	string/g $(param_dir + ":ch" + ch + "_label") = visa#read_str(hardware_id, ":channel"+ch+":label?")
 end
 
 function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
@@ -189,6 +219,12 @@ function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
 	endif
 	visa#cmd(hardware_id, ":trigger:hfreject "+filter)
 	string/g $(param_dir + ":trigger_hfreject") = filter
+end
+
+function get_trigger()
+	string param_dir = gv_folder + ":trigger_settings"
+	visa#check_folder(param_dir)
+	variable/g $(param_dir + ":trigger_level") = visa#read(hardware_id, ":trigger:level?")
 end
 
 function set_acquire(type)
