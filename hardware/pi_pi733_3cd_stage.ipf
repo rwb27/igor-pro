@@ -20,6 +20,14 @@ static function close_comms()
 end
 
 static function initialise()
+	variable/g $(gv_folder + ":pos_a"), $(gv_folder + ":pos_b"), $(gv_folder + ":pos_c")
+	variable/g $(gv_folder + ":step_a"), $(gv_folder + ":step_b"), $(gv_folder + ":step_c")
+	get_pos()
+	get_velocity()
+end
+
+static function/s gv_path()
+	return gv_folder
 end
 
 function startup()
@@ -53,13 +61,7 @@ function open_loop()
 	visa#cmd(hardware_id, "svo c0\n")
 end
 
-function get_pos()
-	variable/g $(gv_folder + ":pos_a") = visa#read(hardware_id, "pos? a\n")
-	variable/g $(gv_folder + ":pos_b") = visa#read(hardware_id, "pos? b\n")
-	variable/g $(gv_folder + ":pos_c") = visa#read(hardware_id, "pos? c\n")
-end
-
-function move(ch, pos)
+static function move(ch, pos)
 	string ch
 	variable pos
 	if  ((stringmatch(ch, "A") == 1) || (stringmatch(ch, "B") == 1))		//Stops the stage being commanded to move beyond its limits of movement	
@@ -82,6 +84,48 @@ function move_rel(ch, rpos)
 	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
+static function get_pos()
+	variable/g $(gv_folder + ":pos_a") = visa#read(hardware_id, "pos? a\n")
+	variable/g $(gv_folder + ":pos_b") = visa#read(hardware_id, "pos? b\n")
+	variable/g $(gv_folder + ":pos_c") = visa#read(hardware_id, "pos? c\n")
+end
+
+static function get_velocity()
+	variable/g $(gv_folder + ":vel_a") = visa#read(hardware_id, "vel? a\n")
+	variable/g $(gv_folder + ":vel_b") = visa#read(hardware_id, "vel? b\n")
+	variable/g $(gv_folder + ":vel_c") = visa#read(hardware_id, "vel? c\n")
+end
+
+static function get_dco()
+	variable/g $(gv_folder + ":dco_a") = visa#read(hardware_id, "dco? a\n")
+	variable/g $(gv_folder + ":dco_b") = visa#read(hardware_id, "dco? b\n")
+	variable/g $(gv_folder + ":dco_c") = visa#read(hardware_id, "dco? c\n")
+end
+
+function set_step(step)
+	variable step
+	variable/g $(gv_folder + ":step_a") = step
+	variable/g $(gv_folder + ":step_b") = step
+	variable/g $(gv_folder + ":step_c") = step
+end
+
+function set_velocity(v)
+	variable v
+	visa#cmd(hardware_id, "vco a1\n")
+	visa#cmd(hardware_id, "vco b1\n")
+	visa#cmd(hardware_id, "vco c1\n")
+	visa#cmd(hardware_id, "vel a" + num2str(v) + "\n")
+	visa#cmd(hardware_id, "vel b" + num2str(v) + "\n")
+	visa#cmd(hardware_id, "vel c" + num2str(v) + "\n")
+end
+
+function set_dco(dco)
+	variable dco
+	visa#cmd(hardware_id, "dco a" + num2str(dco) + "\n")
+	visa#cmd(hardware_id, "dco b" + num2str(dco) + "\n")
+	visa#cmd(hardware_id, "dco c" + num2str(dco) + "\n")
+end
+
 function zero_stage_pos()
 	visa#cmd(hardware_id, "mov a0\n")
 	visa#cmd(hardware_id, "mov b0\n")
@@ -92,20 +136,4 @@ function stop()
 	visa#cmd(hardware_id, "stp a\n")
 end
 
-function set_step_pi(step)
-	variable step
-	variable/g step_a
-	variable/g step_b
-	variable/g step_c
-end
-
-function set_velocity_pi(v)
-	variable v
-	string v_s = num2str(v)
-	visa#cmd(hardware_id, "vco a1\n")
-	visa#cmd(hardware_id, "vco b1\n")
-	visa#cmd(hardware_id, "vco c1\n")
-	visa#cmd(hardware_id, "vel a" + v_s + "\n")
-	visa#cmd(hardware_id, "vel b" + v_s + "\n")
-	visa#cmd(hardware_id, "vel c" + v_s + "\n")
-end
+// Panel //
