@@ -19,6 +19,10 @@ static function close_comms()
 	return status
 end
 
+static function/s gv_path()
+	return gv_folder
+end
+
 static function initialise()
 	visa#cmd(hardware_id, "smua.reset()") // restore to default settings
 	visa#cmd(hardware_id, "smua.measure.rangei = 10e-9") // set current measure range to 1 nA
@@ -56,6 +60,12 @@ function set_current_range(i_range)
 	variable/g $(gv_folder + ":current_range") = i_range
 end
 
+function get_current_range()
+	variable i_range = visa#read(hardware_id, "print(smua.measure.rangei)")
+	variable/g $(gv_folder + ":current_range") = i_range
+	return i_range
+end
+
 function set_voltage(v)
 	variable v
 	visa#cmd(hardware_id, "smua.source.func=smua.OUTPUT_DCVOLTS") // set to source voltage
@@ -90,6 +100,24 @@ function measure_resistance()
 	variable/g $(gv_folder + ":resistance") = resistance
 	return resistance
 end
+
+function check_current_range()
+	variable i_range = get_current_range()
+	variable/c data = measure_iv()
+	do
+		if (imag(data) > 1e12)
+			break
+		endif
+		i_range *= 10
+		set_current_range(i_range)
+		sleep/s 0.2
+		data = measure_iv()
+		sleep/s 0.2
+	while (1)
+	return i_range
+end
+
+// Panel Controls
 
 function output_on_button(ba) : ButtonControl	// output on
 	struct WMButtonAction &ba

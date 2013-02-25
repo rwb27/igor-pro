@@ -55,6 +55,7 @@ function close_comms(hardware_id)
 		viStatusDesc(instr, status, error_message)
 		abort "Close error: " + error_message
 	endif
+	session = -1; instr = -1
 	return status
 end
 

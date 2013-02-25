@@ -20,6 +20,7 @@ static function close_comms()
 end
 
 static function initialise()
+	data#check_gvpath(gv_folder)
 	variable/g $(gv_folder + ":pos_a"), $(gv_folder + ":pos_b"), $(gv_folder + ":pos_c")
 	variable/g $(gv_folder + ":step_a"), $(gv_folder + ":step_b"), $(gv_folder + ":step_c")
 	get_pos()
@@ -36,6 +37,8 @@ function startup()
 	close_loop()
 	sleep/s 0.5
 	zero_stage_pos()
+	get_pos()
+	get_velocity()
 end
 
 function shutdown()
@@ -73,7 +76,10 @@ static function move(ch, pos)
 	    		abort "out of range (z)"
 		endif
 	endif
+	variable pos0 = visa#read(hardware_id, "pos? " + ch + "\n")
 	visa#cmd(hardware_id, "mov " + ch + num2str(pos) + "\n")
+	nvar vel = $(gv_folder + ":vel_" + ch)
+	sleep/s 0.1 + abs((pos - pos0) / vel)
 	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
@@ -81,7 +87,21 @@ function move_rel(ch, rpos)
 	string ch
 	variable rpos
 	visa#cmd(hardware_id, "mvr " + ch + num2str(rpos) + "\n")
+	nvar vel = $(gv_folder + ":vel_" + ch)
+	sleep/s 0.1 + abs(rpos / vel)
 	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
+end
+
+static function get_pos_ch(ch)
+	string ch
+	variable pos
+	if (stringmatch(ch, "a") || stringmatch(ch, "b") || stringmatch(ch, "c"))
+		pos =  visa#read(hardware_id, "pos? " + ch + "\n")
+		variable/g $(gv_folder + ":pos_" + ch) = pos
+	else
+		print "error: '", ch, "' not a valid channel."
+		pos = -1
+	return pos
 end
 
 static function get_pos()
@@ -109,14 +129,33 @@ function set_step(step)
 	variable/g $(gv_folder + ":step_c") = step
 end
 
-function set_velocity(v)
+static function set_velocity_a(v)
 	variable v
 	visa#cmd(hardware_id, "vco a1\n")
-	visa#cmd(hardware_id, "vco b1\n")
-	visa#cmd(hardware_id, "vco c1\n")
 	visa#cmd(hardware_id, "vel a" + num2str(v) + "\n")
+	variable/g $(gv_folder + ":vel_a") = visa#read(hardware_id, "vel? a\n")
+end
+
+static function set_velocity_b(v)
+	variable v
+	visa#cmd(hardware_id, "vco b1\n")
 	visa#cmd(hardware_id, "vel b" + num2str(v) + "\n")
+	variable/g $(gv_folder + ":vel_b") = visa#read(hardware_id, "vel? b\n")
+end
+
+static function set_velocity_c(v)
+	variable v
+	visa#cmd(hardware_id, "vco c1\n")
 	visa#cmd(hardware_id, "vel c" + num2str(v) + "\n")
+	variable/g $(gv_folder + ":vel_c") = visa#read(hardware_id, "vel? c\n")
+end
+
+static function set_velocity(v)
+	variable v
+	set_velocity_a(v)
+	set_velocity_b(v)
+	set_velocity_c(v)
+	get_velocity()
 end
 
 function set_dco(dco)
@@ -136,4 +175,248 @@ function stop()
 	visa#cmd(hardware_id, "stp a\n")
 end
 
-// Panel //
+// Panel Controls
+
+static function startup_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			startup()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function shutdown_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			shutdown()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_left_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar rpos = $(gv_folder + ":step_a")
+			open_comms()
+			move_rel("A", rpos)
+			//get_pos()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_right_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar rpos = $(gv_folder + ":step_a")
+			open_comms()
+			move_rel("A", -rpos)
+			//get_pos()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_up_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar rpos = $(gv_folder + ":step_b")
+			open_comms()
+			move_rel("B", rpos)
+			//get_pos()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_down_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar rpos = $(gv_folder + ":step_b")
+			open_comms()
+			move_rel("B", -rpos)
+			//get_pos
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_focusup_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar rpos = $(gv_folder + ":step_c")
+			open_comms()
+			move_rel("C", rpos)
+			//get_pos()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_focusdown_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar rpos = $(gv_folder + ":step_c")
+			open_comms()
+			move_rel("C", -rpos)
+			//get_pos()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function update_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			get_pos()
+			get_velocity()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function get_pos_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			get_pos()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function get_velocity_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			get_velocity()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+
+static function set_velocity_a_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_velocity_a(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_velocity_b_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_velocity_b(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_velocity_c_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_velocity_c(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_dco_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_dco(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end

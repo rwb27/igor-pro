@@ -32,10 +32,24 @@ static function close_comms()
 	return status
 end
 
+static function/s gv_path(ch)
+	string ch
+	if (stringmatch(ch, "x"))
+		return gv_folder_x
+	elseif (stringmatch(ch, "y"))
+		return gv_folder_y
+	elseif (stringmatch(ch, "z"))
+		return gv_folder_z
+	endif
+end
+
 static function initialise()
+	data#check_gvpath(gv_folder_x)
+	data#check_gvpath(gv_folder_y)
+	data#check_gvpath(gv_folder_z)
 	variable/g $(gv_folder_x + ":pos_x"), $(gv_folder_y + ":pos_y"), $(gv_folder_z + ":pos_z")
-	get_pos("x"); get_pos("y"); get_pos("z")
 	variable/g $(gv_folder_x + ":step_x") = 500.0, $(gv_folder_y + ":step_y") = 500.0, $(gv_folder_z + ":step_z") = 500.0
+	get_pos("x"); get_pos("y"); get_pos("z")
 end
 
 static function setup(ch)
@@ -61,22 +75,28 @@ end
 
 static function get_pos(ch)
 	string ch
+	string pos_str
+	variable pos
 	if (stringmatch(ch, "x"))
 		// hlx pos x
-		string pos_x_str = visa#read_str(hardware_id_x, actuator_id_x + "tp?\r\n")
-		variable pos_x = str2num(pos_x_str[3, (strlen(pos_x_str) - 1)])
-		variable/g $(gv_folder_x + ":pos_x") = 1000 * pos_x
+		pos_str = visa#read_str(hardware_id_x, actuator_id_x + "tp?\r\n")
+		pos = str2num(pos_str[3, (strlen(pos_str) - 1)])
+		pos *= 1000
+		variable/g $(gv_folder_x + ":pos_x") = pos
 	elseif (stringmatch(ch, "x"))
 		// nanopz pos y
-		string pos_y_str = visa#read_str(hardware_id_y, actuator_id_y + "tp?\r\n")
-		variable pos_y = str2num(pos_y_str[5, (strlen(pos_y_str) - 1)])
-		variable/g $(gv_folder_y + ":pos_y") = pos_y / 80
+		pos_str = visa#read_str(hardware_id_y, actuator_id_y + "tp?\r\n")
+		pos = str2num(pos_str[5, (strlen(pos_str) - 1)])
+		pos /= 80
+		variable/g $(gv_folder_y + ":pos_y") = pos
 	elseif (stringmatch(ch, "x"))
 		// nanopz pos z
-		string pos_z_str = visa#read_str(hardware_id_z, actuator_id_z + "tp?\r\n")
-		variable pos_z = str2num(pos_z_str[5, (strlen(pos_z_str) - 1)])
-		variable/g $(gv_folder_z + ":pos_z") = pos_z / 60
+		pos_str = visa#read_str(hardware_id_z, actuator_id_z + "tp?\r\n")
+		pos = str2num(pos_str[5, (strlen(pos_str) - 1)])
+		pos *= 60
+		variable/g $(gv_folder_z + ":pos_z") = pos
 	endif
+	return pos
 end
 	
 static function move(ch, pos)
@@ -86,20 +106,21 @@ static function move(ch, pos)
 	if (stringmatch(ch, "x"))
 		pos /= 1000
 		visa#cmd(hardware_id_x, actuator_id_x + "pr" + num2str(pos) + "\r\n")
-		variable/g $(gv_folder_x + ":pos_x") = get_pos("x")
+		get_pos("x")
 	elseif (stringmatch(ch, "y"))
 		pos *= 80
 		pos = round(pos)
 		sprintf pos_str, "%8d\r", pos
 		visa#cmd(hardware_id_y, actuator_id_y + "pr" + pos_str + "\r\n")
-		variable/g $(gv_folder_y + ":pos_y") = get_pos("y")
+		get_pos("y")
 	elseif (stringmatch(ch, "z"))
 		pos *= 60
 		pos = round(pos)
 		sprintf pos_str, "%8d\r", pos
 		visa#cmd(hardware_id_z, actuator_id_z + "pr" + pos_str + "\r\n")
-		variable/g $(gv_folder_z + ":pos_z") = get_pos("z")
+		get_pos("z")
 	endif
+	sleep/s pos/1000
 end
 
 function/s ready_status(ch)
@@ -156,4 +177,136 @@ static function stop()
 	visa#cmd(hardware_id_z, actuator_id_z + "st\r\n")
 end
 
-// Panel //
+// Panel Controls
+
+static function startup_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			motors_on()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function shutdown_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			motors_off()
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_left_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar step = $(gv_folder_x + ":step_x")
+			open_comms()
+			move("x", step)
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_right_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar step = $(gv_folder_x + ":step_x")
+			open_comms()
+			move("x", -step)
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_up_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar step = $(gv_folder_z + ":step_z")
+			open_comms()
+			move("z", step)
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_down_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar step = $(gv_folder_z + ":step_z")
+			open_comms()
+			move("z", -step)
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_focusup_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar step = $(gv_folder_y + ":step_y")
+			open_comms()
+			move("y", step)
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function move_focusdown_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar step = $(gv_folder_y + ":step_y")
+			open_comms()
+			move("y", -step)
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function update_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			get_pos("x"); get_pos("y"); get_pos("z")
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end

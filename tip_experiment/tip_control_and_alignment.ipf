@@ -4,663 +4,227 @@
 
 #include "data_handling"
 #include "pi_pi733_3cd_stage"
+#include "newport_actuators"
+#include "tip_alignment"
 
 function starting_pos()
+	pi_stage#open_comms()
 	pi_stage#move("a", 20)
 	pi_stage#move("b", 20)
 	pi_stage#move("c", 5)
+	pi_stage#close_comms()
+end
+
+function starting_pos_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			starting_pos()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function set_x20_amplitude_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar volt = $(sig_gen#gv_path() + ":amplitude")
+			sig_gen#open_comms()
+			sig_gen#set_amplitude(volt/20)
+			sig_gen#close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function set_x20_amplitude_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			sig_gen#open_comms()
+			sig_gen#set_amplitude(dval/20)
+			sig_gen#close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
 end
 
 // Panel //
 
-Window ActuatorsAndAlignment() : Panel
-	PauseUpdate; Silent 1		// building window...
-	NewPanel /W=(715,297,1255,872)
-	ShowTools/A
-	SetDrawLayer UserBack
-	SetDrawEnv fsize= 14,fstyle= 1
-	DrawText 19,27,"Newport Actuator Control (coarse movement, both tips)"
-	SetDrawEnv linethick= 4
-	DrawLine 9,151,465,151
-	SetDrawEnv fsize= 14,fstyle= 1
-	DrawText 16,179,"PZ Actuator Control (fine movement, left tip only)"
-	DrawText 410,66,"Right/Left"
-	DrawText 410,94,"Focus (Away/Towards)"
-	DrawText 410,124,"Up/Down"
-	DrawText 413,213,"Left/Right"
-	DrawText 413,243,"Down/Up"
-	DrawText 414,271,"Focus"
-	SetDrawEnv fstyle= 4
-	DrawText 409,43,"Sample Moves:"
-	SetDrawEnv fstyle= 4
-	DrawText 381,182,"Sample Moves:"
-	SetDrawEnv linethick= 4
-	DrawLine 9,386,465,386
-	SetDrawEnv fsize= 14,fstyle= 1
-	DrawText 17,414,"Alignment Electronics"
-	SetDrawEnv fsize= 14,fstyle= 1
-	DrawText 16,511,"Tip Alignment Scan"
-	ValDisplay valdisp0,pos={81,49},size={112,17},bodyWidth=60,title="PZZpos"
-	ValDisplay valdisp0,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp0,value= #"root:gVariables:newPortActuators:PZZpos"
-	ValDisplay valdisp1,pos={80,78},size={113,17},bodyWidth=60,title="PZYpos"
-	ValDisplay valdisp1,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp1,value= #"root:gVariables:newPortActuators:PZYpos"
-	ValDisplay valdisp2,pos={81,107},size={112,17},bodyWidth=60,title="HLXpos"
-	ValDisplay valdisp2,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp2,value= #"root:gVariables:newPortActuators:HLXpos"
-	SetVariable setvar0,pos={312,48},size={95,20},bodyWidth=40,title="PZZstep"
-	SetVariable setvar0,fSize=14
-	SetVariable setvar0,limits={-inf,inf,0},value= root:gVariables:newPortActuators:PZZstep
-	SetVariable setvar1,pos={312,77},size={96,20},bodyWidth=40,title="PZYstep"
-	SetVariable setvar1,fSize=14
-	SetVariable setvar1,limits={-inf,inf,0},value= root:gVariables:newPortActuators:PZYstep
-	SetVariable setvar2,pos={312,106},size={95,20},bodyWidth=40,title="HLXstep"
-	SetVariable setvar2,fSize=14
-	SetVariable setvar2,limits={-inf,inf,0},value= root:gVariables:newPortActuators:HLXstep
-	Button button0,pos={13,35},size={60,50},proc=ButtonProc,title="Startup",fSize=12
-	Button button0,fColor=(0,52224,0)
-	Button button1,pos={13,90},size={60,50},proc=ButtonProc_1,title="Shutdown"
-	Button button1,fSize=12,fColor=(65280,0,0)
-	Button PZZposUP,pos={201,45},size={50,25},proc=ButtonProc_2,title="Up",fSize=14
-	Button PZZposDOWN,pos={255,45},size={50,25},proc=ButtonProc_3,title="Down"
-	Button PZZposDOWN,fSize=14
-	Button PZYposUP,pos={201,74},size={50,25},proc=ButtonProc_4,title="Up",fSize=14
-	Button PZYposDOWN,pos={255,74},size={50,25},proc=ButtonProc_5,title="Down"
-	Button PZYposDOWN,fSize=14
-	Button HLXposUP,pos={201,103},size={50,25},proc=ButtonProc_6,title="Up",fSize=14
-	Button HLXposDOWN,pos={255,103},size={50,25},proc=ButtonProc_7,title="Down"
-	Button HLXposDOWN,fSize=14
-	Button button2,pos={13,192},size={92,50},proc=ButtonProc_8,title="Startup"
-	Button button2,fSize=12,fColor=(0,52224,0)
-	Button button3,pos={13,322},size={92,50},proc=ButtonProc_9,title="Shutdown"
-	Button button3,fSize=12,fColor=(65280,0,0)
-	ValDisplay valdisp3,pos={126,196},size={96,17},bodyWidth=60,title="posA"
-	ValDisplay valdisp3,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp3,value= #"root:gVariables:PZactuators:posA"
-	ValDisplay valdisp4,pos={126,226},size={96,17},bodyWidth=60,title="posB"
-	ValDisplay valdisp4,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp4,value= #"root:gVariables:PZactuators:posB"
-	ValDisplay valdisp5,pos={126,255},size={96,17},bodyWidth=60,title="posC"
-	ValDisplay valdisp5,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp5,value= #"root:gVariables:PZactuators:posC"
-	SetVariable setvar3,pos={331,195},size={79,20},bodyWidth=40,title="stepA"
-	SetVariable setvar3,fSize=14
-	SetVariable setvar3,limits={-inf,inf,0},value= root:gVariables:PZactuators:stepA
-	SetVariable setvar4,pos={331,225},size={79,20},bodyWidth=40,title="stepB"
-	SetVariable setvar4,fSize=14
-	SetVariable setvar4,limits={-inf,inf,0},value= root:gVariables:PZactuators:stepB
-	SetVariable setvar5,pos={331,255},size={79,20},bodyWidth=40,title="stepC"
-	SetVariable setvar5,fSize=14
-	SetVariable setvar5,limits={-inf,inf,0},value= root:gVariables:PZactuators:stepC
-	Button button4,pos={13,257},size={92,50},proc=ButtonProc_10,title="Starting\rPositions"
-	Button button4,fSize=12
-	Button button5,pos={162,281},size={248,36},proc=ButtonProc_11,title="UpdatePositions"
-	Button button5,fSize=12
-	Button button6,pos={223,192},size={50,25},proc=ButtonProc_12,title="Up",fSize=14
-	Button button7,pos={276,192},size={50,25},proc=ButtonProc_13,title="Down"
-	Button button7,fSize=14
-	Button button8,pos={223,222},size={50,25},proc=ButtonProc_14,title="Up",fSize=14
-	Button button9,pos={276,222},size={50,25},proc=ButtonProc_15,title="Down"
-	Button button9,fSize=14
-	Button button09,pos={223,251},size={50,25},proc=ButtonProc_16,title="Up"
-	Button button09,fSize=14
-	Button button10,pos={277,251},size={50,25},proc=ButtonProc_17,title="Down"
-	Button button10,fSize=14
-	SetVariable setvar6,pos={17,416},size={145,20},bodyWidth=50,title="Frequency (Hz)"
-	SetVariable setvar6,fSize=14
-	SetVariable setvar6,limits={0,1.5e+07,0},value= root:gVariables:HPsigGenerator:sigGenFrequency
-	Button button11,pos={172,416},size={50,20},proc=ButtonProc_20,title="Set"
-	Button button11,fSize=14
-	SetVariable setvar7,pos={12,440},size={150,20},bodyWidth=50,title="Amplitude (Vpp)"
-	SetVariable setvar7,fSize=14
-	SetVariable setvar7,limits={0,50,0},value= root:gVariables:HPsigGenerator:sigGenAmplitude
-	SetVariable setvar8,pos={34,465},size={128,20},bodyWidth=50,title="DC offset (V)"
-	SetVariable setvar8,fSize=14
-	SetVariable setvar8,limits={-inf,inf,0},value= root:gVariables:HPsigGenerator:sigGenDC
-	SetVariable setvar9,pos={238,416},size={175,20},bodyWidth=50,title="Start Frequency (Hz)"
-	SetVariable setvar9,fSize=14
-	SetVariable setvar9,limits={-inf,inf,0},value= root:gVariables:HPsigGenerator:sigGenFreqStart
-	SetVariable setvar10,pos={237,440},size={176,20},bodyWidth=50,title="Stop Frequency (Hz)"
-	SetVariable setvar10,fSize=14
-	SetVariable setvar10,limits={-inf,inf,0},value= root:gVariables:HPsigGenerator:sigGenFreqStop
-	SetVariable setvar11,pos={237,465},size={176,20},bodyWidth=50,title="Frequency Step (Hz)"
-	SetVariable setvar11,fSize=14
-	SetVariable setvar11,limits={-inf,inf,0},value= root:gVariables:HPsigGenerator:sigGenFreqStep
-	Button button14,pos={420,416},size={50,70},proc=ButtonProc_23,title="Run\rScan"
-	Button button14,fSize=14
-	Button button12,pos={172,440},size={50,20},proc=ButtonProc_21,title="Set"
-	Button button12,fSize=14
-	Button button13,pos={172,465},size={50,20},proc=ButtonProc_22,title="Set"
-	Button button13,fSize=14
-	SetVariable setvar12,pos={25,518},size={137,20},bodyWidth=50,title="Grid Size (um)"
-	SetVariable setvar12,fSize=14
-	SetVariable setvar12,limits={0,inf,0},value= root:gVariables:tipAlignment:gridSize
-	SetVariable setvar13,pos={23,542},size={139,20},bodyWidth=50,title="Grid Step (um)"
-	SetVariable setvar13,fSize=14
-	SetVariable setvar13,limits={0,inf,0},value= root:gVariables:tipAlignment:gridStep
-	Button button15,pos={169,515},size={70,50},proc=ButtonProc_18,title="Run\rScan"
-	Button button15,fSize=14
-	ValDisplay valdisp6,pos={254,520},size={116,17},bodyWidth=50,title="Centroid B"
-	ValDisplay valdisp6,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp6,value= #"root:gVariables:tipAlignment:centroidB"
-	ValDisplay valdisp7,pos={254,546},size={116,17},bodyWidth=50,title="Centroid C"
-	ValDisplay valdisp7,fSize=14,limits={0,0,0},barmisc={0,1000}
-	ValDisplay valdisp7,value= #"root:gVariables:tipAlignment:centroidC"
-	Button button16,pos={378,516},size={70,50},proc=ButtonProc_19,title="Move To\rCentroid"
-	Button button16,fSize=14
-	Button button17,pos={333,327},size={50,20},proc=ButtonProc_40,title="Query"
-	Button button17,fSize=14
-	SetVariable setvar14,pos={131,327},size={61,20},bodyWidth=30,title="velA"
-	SetVariable setvar14,fSize=14
-	SetVariable setvar14,limits={0,inf,0},value= root:gVariables:PZactuators:velA
-	SetVariable setvar15,pos={197,327},size={61,20},bodyWidth=30,title="velB"
-	SetVariable setvar15,fSize=14
-	SetVariable setvar15,limits={0,inf,0},value= root:gVariables:PZactuators:velB
-	SetVariable setvar16,pos={264,327},size={61,20},bodyWidth=30,title="velC"
-	SetVariable setvar16,fSize=14
-	SetVariable setvar16,limits={0,inf,0},value= root:gVariables:PZactuators:velC
-	Button button18,pos={388,327},size={50,20},proc=ButtonProc_41,title="Set"
-	Button button18,fSize=14
-	SetVariable setvar17,pos={126,352},size={66,20},bodyWidth=30,title="dcoA"
-	SetVariable setvar17,fSize=14
-	SetVariable setvar17,limits={0,inf,0},value= root:gVariables:PZactuators:dcoA
-	SetVariable setvar18,pos={192,352},size={66,20},bodyWidth=30,title="dcoB"
-	SetVariable setvar18,fSize=14
-	SetVariable setvar18,limits={0,inf,0},value= root:gVariables:PZactuators:dcoB
-	SetVariable setvar19,pos={259,352},size={66,20},bodyWidth=30,title="dcoC"
-	SetVariable setvar19,fSize=14
-	SetVariable setvar19,limits={0,inf,0},value= root:gVariables:PZactuators:dcoC
-	Button button19,pos={388,352},size={50,20},proc=ButtonProc_43,title="Set"
-	Button button19,fSize=14
-	Button button20,pos={333,352},size={50,20},proc=ButtonProc_42,title="Query"
-	Button button20,fSize=14
-EndMacro
-
-// Newport actuator controls
-Function ButtonProc(ba) : ButtonControl
-	// Newport AC startup button
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			newportAC_startUp()			
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_1(ba) : ButtonControl
-	// Newport AC shutdown button
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			newportAC_shutDown()
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_2(ba) : ButtonControl
-	// Increment PZZposition by PZZstep
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR PZZstep = root:gVariables:newPortActuators:PZZstep
-			PZZmove(PZZstep)
-			sleep/s PZZstep/1000		// Delay (10s/mm) to allow stable movement
-			newportAC_currPos()		// Update position variables
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_3(ba) : ButtonControl
-	// Decrement PZZposition by PZZstep
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR PZZstep = root:gVariables:newPortActuators:PZZstep
-			PZZmove(-PZZstep)
-			sleep/s PZZstep/1000		// Delay (10s/mm) to allow stable movement			
-			newportAC_currPos()		// Update position variables
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_4(ba) : ButtonControl
-	// Increment PZYposition by PZYstep
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR PZYstep = root:gVariables:newPortActuators:PZYstep
-			PZYmove(PZYstep)
-			sleep/s PZYstep/1000		// Delay (10s/mm) to allow stable movement
-			newportAC_currPos()		// Update position variables			
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_5(ba) : ButtonControl
-	// Decrement PZYposition by PZYstep
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR PZYstep = root:gVariables:newPortActuators:PZYstep
-			PZYmove(-PZYstep)
-			sleep/s PZYstep/1000		// Delay (10s/mm) to allow stable movement
-			newportAC_currPos()		// Update position variables			
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_6(ba) : ButtonControl
-	// Increment HLXposition by HLXstep
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			NVAR HLXstep = root:gVariables:newPortActuators:HLXstep
-			HLXmove(HLXstep)
-			sleep/s HLXstep/1000		// Delay (10s/mm) to allow stable movement			
-			newportAC_currPos()		// Update position variables			
-			// click code here
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_7(ba) : ButtonControl
-	// Decrement HLXposition by HLXstep
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			NVAR HLXstep = root:gVariables:newPortActuators:HLXstep
-			HLXmove(-HLXstep)
-			sleep/s HLXstep/1000		// Delay (10s/mm) to allow stable movement			
-			newportAC_currPos()		// Update position variables		
-			// click code here
-			break
-	endswitch
-
-	return 0
-End
-
-
-//=========================================================
-// PZ actuator controls
-
-Function ButtonProc_8(ba) : ButtonControl
-	// PZ actuator startup
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			PZactuator_startUp()
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_9(ba) : ButtonControl
-	// PZ actuator shutdown
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			PZactuator_shutDown()
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_10(ba) : ButtonControl
-	// PZ actuator - go to starting positions (20,20,5)
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			 PZactuator_startingPos()
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_11(ba) : ButtonControl
-	// Update PZ actuator positions
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			PZactuator_currPos()
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_12(ba) : ButtonControl
-	// Increment PZ channel A by stepA and update posA variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR stepA = root:gVariables:PZactuators:stepA
-			NVAR posA = root:gVariables:PZactuators:posA
-			NVAR delay = root:gVariables:PZactuators:delay
-			// movePI("A", posA+stepA)
-			moveRelPI("A",stepA)
-			sleep/s stepA/10+delay
-			posA = str2num(cmdPI("pos? A"))
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_13(ba) : ButtonControl
-	// Decrement PZ channel A by stepA and update posA variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR stepA = root:gVariables:PZactuators:stepA
-			NVAR posA = root:gVariables:PZactuators:posA
-			NVAR delay = root:gVariables:PZactuators:delay
-			// movePI("A", posA-stepA)
-			moveRelPI("A",-stepA)
-			sleep/s stepA/10+delay			
-			posA = str2num(cmdPI("pos? A"))
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_14(ba) : ButtonControl
-	// Increment PZ channel B by stepB and update posB variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			NVAR stepB = root:gVariables:PZactuators:stepB
-			NVAR posB = root:gVariables:PZactuators:posB
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("B", posB+stepB)
-			moveRelPI("B",stepB)
-			sleep/s stepB/10+delay				
-			posB = str2num(cmdPI("pos? B"))
-			// click code here
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_15(ba) : ButtonControl
-	// Decrement PZ channel B by stepB and update posB variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			NVAR stepB = root:gVariables:PZactuators:stepB
-			NVAR posB = root:gVariables:PZactuators:posB
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("B", posB-stepB)
-			moveRelPI("B",-stepB)
-			sleep/s stepB/10+delay
-			posB = str2num(cmdPI("pos? B"))
-			// click code here
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_16(ba) : ButtonControl
-	// Increment PZ channel C by stepC and update posC variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR stepC = root:gVariables:PZactuators:stepC
-			NVAR posC = root:gVariables:PZactuators:posC
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("C", posC+stepC)
-			moveRelPI("C",stepC)
-			sleep/s stepC/10+delay
-			posC = str2num(cmdPI("pos? C"))			
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_17(ba) : ButtonControl
-	// Decrement PZ channel C by stepC and update posC variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR stepC = root:gVariables:PZactuators:stepC
-			NVAR posC = root:gVariables:PZactuators:posC
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("C", posC-stepC)
-			moveRelPI("C",-stepC)
-			sleep/s stepC/10+delay
-			posC = str2num(cmdPI("pos? C"))
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_40(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-				// Query controller for velocities and update global variables
-				PZactuator_velocityQuery()
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_41(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-				// Query controller for velocities and update global variables
-	return 0
-End
-
-Function ButtonProc_14(ba) : ButtonControl
-	// Increment PZ channel B by stepB and update posB variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			NVAR stepB = root:gVariables:PZactuators:stepB
-			NVAR posB = root:gVariables:PZactuators:posB
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("B", posB+stepB)
-			moveRelPI("B",stepB)
-			sleep/s stepB/10+delay				
-			posB = str2num(cmdPI("pos? B"))
-			// click code here
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_15(ba) : ButtonControl
-	// Decrement PZ channel B by stepB and update posB variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			NVAR stepB = root:gVariables:PZactuators:stepB
-			NVAR posB = root:gVariables:PZactuators:posB
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("B", posB-stepB)
-			moveRelPI("B",-stepB)
-			sleep/s stepB/10+delay
-			posB = str2num(cmdPI("pos? B"))
-			// click code here
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_16(ba) : ButtonControl
-	// Increment PZ channel C by stepC and update posC variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR stepC = root:gVariables:PZactuators:stepC
-			NVAR posC = root:gVariables:PZactuators:posC
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("C", posC+stepC)
-			moveRelPI("C",stepC)
-			sleep/s stepC/10+delay
-			posC = str2num(cmdPI("pos? C"))			
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_17(ba) : ButtonControl
-	// Decrement PZ channel C by stepC and update posC variable
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR stepC = root:gVariables:PZactuators:stepC
-			NVAR posC = root:gVariables:PZactuators:posC
-			NVAR delay = root:gVariables:PZactuators:delay
-			//movePI("C", posC-stepC)
-			moveRelPI("C",-stepC)
-			sleep/s stepC/10+delay
-			posC = str2num(cmdPI("pos? C"))
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_40(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-				// Query controller for velocities and update global variables
-				PZactuator_velocityQuery()
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_41(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-				// Query controller for velocities and update global variables
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR amplitude = root:gVariables:HPsigGenerator:sigGenAmplitude
-			SetAmplitudePP(amplitude)	
-			
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_22(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			NVAR DCoffset = root:gVariables:HPsigGenerator:sigGenDC
-			SetDCOffset(DCoffset)
-			
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_23(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			
-			// Run scan
-			sigResScan()
-			
-			// Update frequency global variable
-			NVAR freq = root:gVariables:HPsigGenerator:sigGenFrequency 
-			freq = str2num(cmdSig("FREQ?"))
-			
-			break
-	endswitch
-
-	return 0
-End
+#pragma rtGlobals=1		// Use modern global access method.
+
+function tip_control_and_alignment() : panel
+	variable left, right, top, bottom
+	dowindow/k tip_control
+	
+	// panel layout
+	newpanel/w=(500,80,850,580)/n=tip_control as "Tip Control and Alignment"
+	modifypanel cbRGB=(60928,60928,60928), framestyle=1
+	setdrawlayer UserBack
+	
+	// title
+	left = 5; top = 5
+	titlebox title, pos={left,top}, size={130,25}, title="Tip Control and Alignment"
+	
+	// newport actuators
+	top = 30
+	variable l_size = 340, t_size = 195 - top
+	groupbox newport_group, pos={left, top}, size={l_size, t_size}, title="Newport NanoPZ/HLX Actuators"
+	groupbox newport_group, labelBack=(56576,56576,56576), fStyle=1
+		// buttons
+	left = 10; top += 20
+	button startup_actuators, pos={left, top}, size={60,20}, proc=actuators#startup_button, title="Startup"
+	button startup_actuators, fColor=(32768,65280,0)
+	top += 20
+	button shutdown_actuators, pos={left, top}, size={60,20}, proc=actuators#shutdown_button, title="Shutdown"
+	button shutdown_actuators, fColor=(65280,0,0)
+	top += 20
+	button actuators_update, pos={left,top}, size={60,20}, proc=actuators#update_button, title="Update"
+		// position display
+	left += 65; top -= 40
+	valdisplay actuator_x, pos={left, top}, size={110,15}, bodyWidth=60, title="x-position"
+	valdisplay actuator_x, limits={0,0,0}, barmisc={0,1000}
+	valdisplay actuator_x, value= #"root:global_variables:newport_actuators_x:pos_x"
+	top += 20
+	valdisplay actuator_y, pos={left, top}, size={110,15}, bodyWidth=60, title="y-position"
+	valdisplay actuator_y, limits={0,0,0}, barmisc={0,1000}
+	valdisplay actuator_y, value= #"root:global_variables:newport_actuators_y:pos_y"
+	top += 20
+	valdisplay actuator_z, pos={left, top}, size={110,15}, bodyWidth=60, title="z-position"
+	valdisplay actuator_z, limits={0,0,0}, barmisc={0,1000}
+	valdisplay actuator_z, value= #"root:global_variables:newport_actuators_z:pos_z"
+		// step display
+	left += 115; top -= 40
+	setvariable actuators_step_x, pos={left, top}, size={92,15}, bodyWidth=60, title="x-step"
+	setvariable actuators_step_x, value= root:global_variables:newport_actuators_x:step_x
+	top += 20
+	setvariable actuators_step_y, pos={left, top},size={92,15},bodyWidth=60,title="y-step"
+	setvariable actuators_step_y, value= root:global_variables:newport_actuators_y:step_y
+	top += 20
+	setvariable actuators_step_z, pos={left, top},size={92,15},bodyWidth=60,title="z-step"
+	setvariable actuators_step_z, value= root:global_variables:newport_actuators_z:step_z
+		// movement controls
+	left = 190; top += 20
+	variable t_spacer = 25, l_spacer = 50, t_spacer2 = t_spacer + 5
+	variable up_l = left + l_spacer, up_t = top, in_l = left + 2*l_spacer, in_t = top	// top row
+	variable left_l = left, left_t = top + t_spacer2, right_l = left + 2*l_spacer, right_t = top + t_spacer2	// middle row
+	variable out_l = left, out_t = top + 2*t_spacer, down_l = left + l_spacer, down_t = top + 2*t_spacer	// bottom row
+	button actuators_left, pos={left_l, left_t}, size={50,20}, proc=actuators#move_left_button, title="Left"
+	button actuators_focusout, pos={out_l, out_t}, size={50,30}, proc=actuators#move_focusdown_button, title="Focus\rOut"
+	button actuators_down, pos={down_l, down_t}, size={50,20}, proc=actuators#move_down_button, title="Down"
+	button actuators_up, pos={up_l, up_t}, size={50,20}, proc=actuators#move_up_button, title="Up"
+	button actuators_right, pos={right_l, right_t}, size={50,20}, proc=actuators#move_right_button, title="Right"
+	button actuators_focusin, pos={in_l, in_t}, size={50,30}, proc=actuators#move_focusup_button, title="Focus\rIn"
+	
+	// pi stage
+	left = 5; top = 200
+	l_size = 340; t_size = 365 - top
+	groupbox pi_group,pos={left, top},size={l_size, t_size},title="PI PI733.3CD Stage"
+	groupbox pi_group, labelBack=(56576,56576,56576), fStyle=1
+		// main buttons
+	left += 5; top += 20
+	button startup_stage ,pos={left, top}, size={60,20}, proc=pi_stage#startup_button, title="Startup"
+	button startup_stage, fColor=(32768,65280,0)
+	top += 20
+	button shutdown_stage, pos={left, top}, size={60,20}, proc=pi_stage#shutdown_button, title="Shutdown"
+	button shutdown_stage, fColor=(65280,0,0)
+	top += 20
+	button stage_update, pos={left, top}, size={60,20}, proc=pi_stage#update_button, title="Update"
+	top += 20
+	button stage_starting_pos, pos={left, top}, size={60,30}, proc=starting_pos_button, title="Starting\rPositions"
+		// position display
+	left += 65; top -= 60
+	valdisplay stage_a, pos={left, top}, size={110,15}, bodyWidth=60, title="a-position"
+	valdisplay stage_a, limits={0,0,0}, barmisc={0,1000}
+	valdisplay stage_a, value= #"root:global_variables:pi_pi733_3cd_stage:pos_a"
+	top += 20
+	valdisplay stage_b, pos={left, top}, size={110,15}, bodyWidth=60, title="b-position"
+	valdisplay stage_b, limits={0,0,0}, barmisc={0,1000}
+	valdisplay stage_b, value= #"root:global_variables:pi_pi733_3cd_stage:pos_b"
+	top += 20
+	valdisplay stage_c,pos={left, top},size={110,15},bodyWidth=60,title="c-position"
+	valdisplay stage_c,limits={0,0,0},barmisc={0,1000}
+	valdisplay stage_c,value= #"root:global_variables:pi_pi733_3cd_stage:pos_c"
+		// velocity display
+	top += 20
+	setvariable stage_vel_a, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_velocity_a_panel,title="a-velocity"
+	setvariable stage_vel_a, value= root:global_variables:pi_pi733_3cd_stage:vel_a
+	top += 20
+	setvariable stage_vel_b, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_velocity_b_panel,title="b-velocity"
+	setvariable stage_vel_b, value= root:global_variables:pi_pi733_3cd_stage:vel_b
+	top += 20
+	setvariable stage_vel_c, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_velocity_c_panel,title="c-velocity"
+	setvariable stage_vel_c, value= root:global_variables:pi_pi733_3cd_stage:vel_c
+	top += 20
+	setvariable stage_dco, pos={left, top}, size={82,16}, bodyWidth=60, proc=pi_stage#set_dco_panel, title="dco"
+	setvariable stage_dco, value= root:global_variables:pi_pi733_3cd_stage:dco
+		// step display
+	left += 115; top -= 120
+	setvariable stage_step_a, pos={left, top}, size={93,16}, bodyWidth=60, title="a-step"
+	setvariable stage_step_a, value= root:global_variables:pi_pi733_3cd_stage:step_a
+	top += 20
+	setvariable stage_step_b, pos={left, top}, size={93,16}, bodyWidth=60, title="b-step"
+	setvariable stage_step_b, value= root:global_variables:pi_pi733_3cd_stage:step_b
+	top += 20
+	setvariable stage_step_c, pos={left, top}, size={93,16}, bodyWidth=60, title="c-step"
+	setvariable stage_step_c, value= root:global_variables:pi_pi733_3cd_stage:step_c
+		// movement control
+	left = 190; top += 20
+	t_spacer = 25; l_spacer = 50; t_spacer2 = t_spacer + 5
+	up_l = left + l_spacer; up_t = top; in_l = left + 2*l_spacer; in_t = top	// top row
+	left_l = left; left_t = top + t_spacer2; right_l = left + 2*l_spacer; right_t = top + t_spacer2	// middle row
+	out_l = left; out_t = top + 2*t_spacer; down_l = left + l_spacer; down_t = top + 2*t_spacer	// bottom row
+	button stage_left, pos={left_l, left_t}, size={50,20}, proc=pi_stage#move_left_button, title="Left"
+	button stage_down, pos={down_l, down_t}, size={50,20}, proc=pi_stage#move_down_button, title="Down"
+	button stage_up, pos={up_l, up_t}, size={50,20}, proc=pi_stage#move_up_button, title="Up"
+	button stage_right, pos={right_l, right_t}, size={50,20}, proc=pi_stage#move_right_button, title="Right"
+	button stage_focusin, pos={in_l, in_t}, size={50,30}, proc=pi_stage#move_focusup_button, title="Focus\rIn"
+	button stage_focusout, pos={out_l, out_t}, size={50,30}, proc=pi_stage#move_focusdown_button, title="Focus\rOut"
+	
+	// alignment controls
+	left = 5; top = 370
+	l_size = 340; t_size = 125
+	groupbox alignment_group, pos={left, top}, size={l_size, t_size}, title="Tip Alignment"
+	groupbox alignment_group, labelBack=(56576,56576,56576), fStyle=1
+		// alignment controls
+	left += 5; top += 20
+	setvariable set_scan_size, pos={left, top}, size={105,15}, bodyWidth=50, title="Scan Size"
+	setvariable set_scan_size, value= root:global_variables:tip_alignment:scan_size
+	top += 20
+	setvariable set_scan_step, pos={left, top}, size={105,15}, bodyWidth=50, title="Scan Step"
+	setvariable set_scan_step, value= root:global_variables:tip_alignment:scan_step
+	top += 20
+	button align_tips, pos={left, top}, size={50,40}, proc=align_tips_button,title="Align\rTips"
+	button align_tips, fColor=(65280,65280,0)
+		// resonance scan controls
+	left += 110; top -= 40
+	setvariable set_freq_start, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Start"
+	setvariable set_freq_start, value= root:global_variables:tip_alignment:freq_start
+	top += 20
+	setvariable set_freq_stop, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Stop"
+	setvariable set_freq_stop, value= root:global_variables:tip_alignment:freq_stop
+	top += 20
+	setvariable set_freq_inc, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Step"
+	setvariable set_freq_inc, value= root:global_variables:tip_alignment:freq_inc
+	top += 20
+	button res_scan, pos={left, top}, size={70,40}, proc=resonance_scan_button, title="Resonance\rScan"
+	button res_scan, fColor=(65280,65280,0)
+		// hp signal generator controls
+	left += 110; top -= 3*20
+	setvariable x20_amplitude, pos={left, top}, size={105,15}, bodyWidth=50, proc=set_x20_amplitude_panel, title="Amplitude"
+	setvariable x20_amplitude, value= root:global_variables:hp33120a_signal_generator:amplitude
+	top += 20
+	setvariable frequency, pos={left, top}, size={105,15}, bodyWidth=50, proc=sig_gen#set_frequency_panel, title="Frequency"
+	setvariable frequency, value= root:global_variables:hp33120a_signal_generator:frequency
+end

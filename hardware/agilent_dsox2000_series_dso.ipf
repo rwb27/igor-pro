@@ -20,6 +20,10 @@ static function close_comms()
 	return status
 end
 
+static function/s gv_path()
+	return gv_folder
+end
+
 static function initialise()
 	visa#cmd(hardware_id, "*rst")
 	sleep/s 1
@@ -305,11 +309,14 @@ function import_data(ch, wname)
 	variable/g $(param_dir + ":x_inc") = x_inc
 end
 
-function check_trigger()
+function check_trigger(force)
+	variable force
 	if ((visa#read(hardware_id, ":operegister:condition?") & 8) == 0)
 		return 1
 	else
+		if (force)
+			visa#cmd(hardware_id, ":trigger:force")
+		endif
 		return 0
 	endif
 end
-

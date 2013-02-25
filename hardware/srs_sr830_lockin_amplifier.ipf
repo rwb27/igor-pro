@@ -47,3 +47,7 @@ function purge()
 		buffer = visa#read_str(hardware_id, "")
 	while (!stringmatch(buffer, ""))
 end
+
+function aphs()
+	visa#cmd(hardware_id, "APHS\r")
+end

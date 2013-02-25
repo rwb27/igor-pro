@@ -13,6 +13,12 @@ function/s check_folder(data_folder)
 	return data_folder
 end
 
+function check_gvpath(gv_folder)
+	string gv_folder
+	check_folder("root:global_variables")
+	check_folder(gv_folder)
+end
+
 function/s check_data_folder()
 	string day, month, year
 	string expr = "([[:digit:]]+) ([[:alpha:]]+) ([[:digit:]]+)"
