@@ -63,6 +63,7 @@ function cmd(hardware_id, cmd)
 	string hardware_id, cmd
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	VISAwrite instr, cmd
+	return 0
 end
 
 function read(hardware_id, cmd)
@@ -79,6 +80,32 @@ function/s read_str(hardware_id, cmd)
 	string message
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	VISAwrite instr, cmd
+	VISAread/t="\n" instr, message //  possibly use /t="\n"
+	return message
+end
+
+function/s read_only(hardware_id)
+	string hardware_id
+	string message
+	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
+	VISAread/t="\n" instr, message //  possibly use /t="\n"
+	return message
+end
+
+function binary_write(hardware_id, cmd)
+	string hardware_id
+	variable cmd
+	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
+	VISAwritebinary instr, cmd
+	return 0
+end
+
+function/s binary_read(hardware_id, cmd)
+	string hardware_id
+	variable cmd
+	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
+	VISAwritebinary instr, cmd
+	string message
 	VISAread/t="\n" instr, message //  possibly use /t="\n"
 	return message
 end
