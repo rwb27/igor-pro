@@ -35,6 +35,7 @@ function align_tips(scan_size, scan_step)
 	string scan_folder = data#check_data_folder()
 	scan_folder = data#check_folder(scan_folder + ":alignment_scans")
 	scan_folder = data#new_data_folder(scan_folder + ":scan_")
+	string/g $(gv_folder + ":current_scan_folder") = scan_folder
 	
 	// store scan parameters
 	variable/g $(scan_folder + ":scan_size") = scan_size
@@ -168,8 +169,8 @@ function fit_alignment_data(scan_folder, data)
 	//modifycontour $(scan_folder + ":fit_" + data) labels=0, ctabLines={*,*,Geo32,0}
 	
 	wave w_sigma
-	variable/g $(scan_folder + ":x0") = w_coef[2]
-	variable/g $(scan_folder + ":y0") = w_coef[3]
+	variable/g $(gv_folder + ":x0") = w_coef[2]
+	variable/g $(gv_folder + ":y0") = w_coef[3]
 end
 
 function plot_scan(scan_folder)
@@ -194,6 +195,16 @@ function plot_scan(scan_folder)
 	modifyimage ''#2 ctab={*,*,geo32,0}
 	modifyimage ''#3 ctab={*,*,geo32,0}
 	modifyimage ''#4 ctab={*,*,coldwarm,0}
+end
+
+function move_to_centre()
+	//string scan_folder
+	//nvar x0 = $(scan_folder + ":x0")
+	//nvar y0 = $(scan_folder + ":y0")
+	nvar x0 = $(gv_folder + ":x0")
+	nvar y0 = $(gv_folder + ":y0")
+	pi_stage#move("B", x0)
+	pi_stage#move("C", y0)
 end
 
 function resonance_scan(freq_start, freq_stop, freq_inc)
@@ -280,6 +291,18 @@ function align_tips_button(ba) : buttoncontrol
 	return 0
 end
 
+function move_to_centre_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			move_to_centre()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
 function resonance_scan_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
@@ -287,6 +310,76 @@ function resonance_scan_button(ba) : buttoncontrol
 			nvar freq_start = $(gv_folder + ":freq_start"), freq_stop = $(gv_folder + ":freq_stop")
 			nvar freq_inc = $(gv_folder + ":freq_inc")
 			resonance_scan(freq_start, freq_stop, freq_inc)
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function fit_alignment_data_x_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			svar scan_folder = $(gv_folder + ":current_scan_folder")
+			wave data = $(scan_folder + ":alignment_scan_x")
+			fit_alignment_data(scan_folder, data)
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function fit_alignment_data_y_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			svar scan_folder = $(gv_folder + ":current_scan_folder")
+			wave data = $(scan_folder + ":alignment_scan_y")
+			fit_alignment_data(scan_folder, data)
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function fit_alignment_data_r_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			svar scan_folder = $(gv_folder + ":current_scan_folder")
+			wave data = $(scan_folder + ":alignment_scan_r")
+			fit_alignment_data(scan_folder, data)
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function fit_alignment_data_theta_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			svar scan_folder = $(gv_folder + ":current_scan_folder")
+			wave data = $(scan_folder + ":alignment_scan_theta")
+			fit_alignment_data(scan_folder, data)
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function fit_alignment_data_y_psd_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			svar scan_folder = $(gv_folder + ":current_scan_folder")
+			wave data = $(scan_folder + ":alignment_scan_y_psd")
+			fit_alignment_data(scan_folder, data)
 			break
 		case -1:
 			break

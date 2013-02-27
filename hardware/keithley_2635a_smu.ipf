@@ -36,14 +36,14 @@ function empty_buffer()
 	return value
 end
 
-function output_state(o)
+function output(o)
 	variable o // on (o == 1) or off (o == 0)
 	if (o == 0 || o == 1)
 		visa#cmd(hardware_id, "smua.source.output="+num2str(o))
 	else
 		print "incorrect state variable"
 	endif
-	variable/g $(gv_folder + ":output_state") = o
+	variable/g $(gv_folder + ":output") = o
 end
 
 function/s get_error()
@@ -123,7 +123,7 @@ function output_on_button(ba) : ButtonControl	// output on
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			output_state(1)
+			output(1)
 			break
 	endswitch
 	return 0
@@ -133,7 +133,7 @@ function output_off_button(ba) : ButtonControl	// output off
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			output_state(0)
+			output(0)
 			break
 	endswitch
 	return 0

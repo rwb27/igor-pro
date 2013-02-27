@@ -40,7 +40,7 @@ function/s new_data_folder(name)
 		i += 1
 		data_folder = name + num2str(i)
 	while (datafolderexists(data_folder))
-	newdatafolder data_folder
+	newdatafolder $data_folder
 	return data_folder
 end
 

@@ -166,6 +166,6 @@ static function/c wave_stats(ch)
 	wave w
 	w = import_data_free(ch)
 	wavestats/q w
-	variable/c stats = cmplx(V_avg, V_stdev)
+	variable/c stats = cmplx(V_avg, V_sdev)
 	return stats
 end

@@ -69,7 +69,7 @@ function tip_control_and_alignment() : panel
 	dowindow/k tip_control
 	
 	// panel layout
-	newpanel/w=(500,80,850,580)/n=tip_control as "Tip Control and Alignment"
+	newpanel/w=(500,80,850,600)/n=tip_control as "Tip Control and Alignment"
 	modifypanel cbRGB=(60928,60928,60928), framestyle=1
 	setdrawlayer UserBack
 	
@@ -194,7 +194,7 @@ function tip_control_and_alignment() : panel
 	
 	// alignment controls
 	left = 5; top = 370
-	l_size = 340; t_size = 125
+	l_size = 340; t_size = 145
 	groupbox alignment_group, pos={left, top}, size={l_size, t_size}, title="Tip Alignment"
 	groupbox alignment_group, labelBack=(56576,56576,56576), fStyle=1
 		// alignment controls
@@ -205,8 +205,19 @@ function tip_control_and_alignment() : panel
 	setvariable set_scan_step, pos={left, top}, size={105,15}, bodyWidth=50, title="Scan Step"
 	setvariable set_scan_step, value= root:global_variables:tip_alignment:scan_step
 	top += 20
-	button align_tips, pos={left, top}, size={50,40}, proc=align_tips_button,title="Align\rTips"
+	button align_tips, pos={left, top}, size={50,40}, proc=align_tips_button, title="Align\rTips"
 	button align_tips, fColor=(65280,65280,0)
+	left += 50
+	button centre_tips, pos={left, top}, size={50,40}, proc=move_to_centre_button, title="Move to\rCentre"
+	button centre_tips, fColor=(32768,65280,0)
+	left -= 50; top += 40
+	button fit_x, pos={left, top}, size={30,20}, proc=fit_alignment_data_x_button, title="Fit X"; left += 30
+	button fit_y, pos={left, top}, size={30,20}, proc=fit_alignment_data_y_button, title="Fit Y"; left += 30
+	button fit_r, pos={left, top}, size={30,20}, proc=fit_alignment_data_r_button, title="Fit R"
+	left -= 60; top += 20
+	button fit_theta, pos={left, top}, size={50,20}, proc=fit_alignment_data_theta_button, title="Fit Theta"; left += 50
+	button fit_y_psd, pos={left, top}, size={50,20}, proc=fit_alignment_data_Y_psd_button, title="Fit yPSD"
+	left -= 50; top -= 60
 		// resonance scan controls
 	left += 110; top -= 40
 	setvariable set_freq_start, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Start"

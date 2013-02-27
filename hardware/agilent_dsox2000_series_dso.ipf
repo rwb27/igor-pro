@@ -309,7 +309,7 @@ function import_data(ch, wname)
 	variable/g $(param_dir + ":x_inc") = x_inc
 end
 
-function check_trigger(force)
+static function check_trigger(force)
 	variable force
 	if ((visa#read(hardware_id, ":operegister:condition?") & 8) == 0)
 		return 1
@@ -319,4 +319,8 @@ function check_trigger(force)
 		endif
 		return 0
 	endif
+end
+
+static function arm_trigger()
+	visa#cmd(hardware_id, ":single")
 end

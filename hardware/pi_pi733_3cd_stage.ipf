@@ -101,6 +101,7 @@ static function get_pos_ch(ch)
 	else
 		print "error: '", ch, "' not a valid channel."
 		pos = -1
+	endif
 	return pos
 end
 

@@ -1,5 +1,9 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
+// v4.2 Jan Mertens (jm806) (20Nov2012)
+// added ability to swap between different reference spectra - requires user to save reference spectra with button "save spectra". Different reference spectra can be choosen by setting the Ref Index to the scan index
+// and pressing button "Set Ref 1"
+// v4.1 PF added ability to export data to text files
 // Version 4 - James Hugall
 // v4.0 (08Feb2011)- Changed to work with new v5 XOP functions, OOIgor_Open(), OOIgor_GetPixels(OOsnum), OOIgor_GetName(OOsnum), OOIgor_Close() - should be better memory handling in XOP.
 // (created OOIgor_Config2, which also intializes integration time to 100ms as a fall back)
@@ -146,6 +150,7 @@ Function OO_Init_Globals()												//initialise all global variables etc
 	Variable/G TECtemp = -10
 	Variable/G Absorbance_checked=0
 	Variable/G Absorbance_toggled=0
+	Variable/G RefIndex = 0
 	SetDataFolder savDF
 	Return 0
 End
@@ -230,7 +235,7 @@ End
 /////////////////////////////////////////////////////////////////////// Spectrometer code ////////////////////////////////
 
 Function OO_Read()
-								
+						
 	String savDF= GetDataFolder(1)
 	SetDataFolder root:OO:GlobalVariables					//Then create globalvariables folder
 	Nvar NumSpectrometers, MultiIntTimes, swapped; Svar Spectrometer, Spectrometer_2
@@ -316,6 +321,17 @@ End
 ///////////////////////////////////////
 //    Panel functions
 //////////////////////////////////////
+
+// sets the current reference spectrum to the spectrum with "index"
+Function OO_SetRef(index)
+	variable index
+	String newRefPath = "root:OO:Data:Scan"+num2str(index)+":Spectra"
+	wave Spectra = root:OO:Data:Scan
+	wave Ref = root:OO:Data:Current:Ref
+	Nvar Ref1Exists = root:OO:GlobalVariables:Ref1Exists
+	Duplicate/O Spectra Ref
+	Ref1Exists = 1		//sets ref exists variable to 1 		
+End
 
 Function OO_AutoProc(ctrlNameAuto,checked) : CheckBoxControl          		//Graph autoscale check box
 	String ctrlNameAuto
@@ -669,102 +685,103 @@ Window OO_LiveSpectraGraph() : Graph
 	PauseUpdate; Silent 1		// building window...
 	String fldrSav0= GetDataFolder(1)
 	SetDataFolder root:OO:Data:Current:
-	Display /W=(438,45.5,951.75,409.25)/N=OOspectrometer Spectra vs wl_wave
+	Display /W=(204,61.25,717.75,425) Spectra vs wl_wave
 	SetDataFolder fldrSav0
+	ModifyGraph cbRGB=(48896,59904,65280)
 	ModifyGraph mirror=2
 	ModifyGraph lblMargin(left)=5
 	ModifyGraph lblLatPos(left)=-1
 	Label left "Intensity"
 	Label bottom "Wavelength (nm)"
-	SetAxis left 120,198
+	SetAxis left -5.875,614.27490234375
+	SetAxis bottom 450,700
 	Cursor/P A Spectra 435
 	ShowInfo
 	ControlBar 154
-	ModifyGraph cbRGB=(48896,59904,65280) // nice colour
 	Button reintiate,pos={5,5},size={18,18},proc=OO_ButtonProc,title="\\W619"
 	Button reintiate,fSize=14,fColor=(0,65280,0),valueColor=(0,52224,26368)
-	Button StartButton,pos={211,106},size={50,20},proc=OO_StartButton,title="Live"
-	CheckBox AutoscaleYButton,pos={533,110},size={82,15},proc=OO_AutoProc,title="Autoscale Y"
+	Button StartButton,pos={182,106},size={50,20},proc=OO_StartButton,title="Live"
+	CheckBox AutoscaleYButton,pos={533,110},size={75,14},proc=OO_AutoProc,title="Autoscale Y"
 	CheckBox AutoscaleYButton,value= 1
 	CheckBox AverageButton,pos={188,26},size={58,14},proc=OO_AutoProc,title="Average"
-	CheckBox AverageButton,value= 1
+	CheckBox AverageButton,value= 0
 	SetVariable Int__Setnumb,pos={139,5},size={107,16},title="Number of int"
 	SetVariable Int__Setnumb,limits={1,inf,1},value= root:OO:GlobalVariables:numberint
-	Button Read_Button,pos={260,106},size={50,20},proc=OO_ButtonProc,title="Read"
-	Button kinetics_Button,pos={18,113},size={50,20},proc=OO_ButtonProc,title="kinetics"
+	Button Read_Button,pos={231,106},size={50,20},proc=OO_ButtonProc,title="Read"
+	Button kinetics_Button,pos={7,107},size={50,20},proc=OO_ButtonProc,title="kinetics"
 	Button button101,pos={127,2},size={50,20},disable=1
-	SetVariable Int__SetVariable,pos={55,47},size={100,18},proc=OO_SetVarProc,title="Int (ms)"
+	SetVariable Int__SetVariable,pos={63,47},size={88,16},bodyWidth=50,proc=OO_SetVarProc,title="Int (ms)"
 	SetVariable Int__SetVariable,limits={3,inf,1},value= root:OO:GlobalVariables:IntT
 	Button Zero_Background_Button,pos={252,2},size={80,20},proc=OO_ButtonProc,title="Zero Bkgd 1"
-	SetVariable Ymin_SetVariable,pos={396,48},size={130,18},proc=OO_SetVarProc,title="Y axis 1 min"
+	SetVariable Ymin_SetVariable,pos={396,48},size={130,16},proc=OO_SetVarProc,title="Y axis 1 min"
 	SetVariable Ymin_SetVariable,value= root:OO:GlobalVariables:Ymin
-	SetVariable Ymax_SetVariable,pos={394,68},size={132,18},proc=OO_SetVarProc,title="Y axis 1 max"
+	SetVariable Ymax_SetVariable,pos={394,68},size={132,16},proc=OO_SetVarProc,title="Y axis 1 max"
 	SetVariable Ymax_SetVariable,value= root:OO:GlobalVariables:Ymax
 	Button Store_Background_Button,pos={252,22},size={80,20},proc=OO_ButtonProc,title="Store Bkgd 1"
-	Button Save_Spectra_Button,pos={209,82},size={80,20},proc=OO_ButtonProc,title="Save Spectra"
+	Button Save_Spectra_Button,pos={180,82},size={80,20},proc=OO_ButtonProc,title="Save Spectra"
 	Button Store_Ref_Button,pos={336,21},size={80,20},proc=OO_ButtonProc,title="Store Ref 1"
 	Button Zero_Ref_Button,pos={336,1},size={80,20},proc=OO_ButtonProc,title="Zero Ref 1"
-	SetVariable Data_save_name,pos={185,43},size={190,18},title="Scan description"
+	Button Set_Ref_Button,pos={425,2},size={88,20},proc=OO_ButtonProc,title="Set Ref 1"
+	SetVariable NumSpectra1,pos={428,24},size={84,16},bodyWidth=35,title="Ref index"
+	SetVariable NumSpectra1,limits={0,inf,1},value= root:OO:GlobalVariables:RefIndex,live= 1
+	SetVariable Data_save_name,pos={177,45},size={203,16},bodyWidth=120,title="Scan description"
 	SetVariable Data_save_name,value= root:OO:GlobalVariables:DataWaveName
-	SetVariable Xmin_SetVariable,pos={406,87},size={120,18},proc=OO_SetVarProc,title="X axis min"
+	SetVariable Xmin_SetVariable,pos={406,87},size={120,16},proc=OO_SetVarProc,title="X axis min"
 	SetVariable Xmin_SetVariable,value= root:OO:GlobalVariables:Xmin
-	SetVariable Xmax_SetVariable,pos={404,107},size={122,18},proc=OO_SetVarProc,title="X axis max"
+	SetVariable Xmax_SetVariable,pos={404,107},size={122,16},proc=OO_SetVarProc,title="X axis max"
 	SetVariable Xmax_SetVariable,value= root:OO:GlobalVariables:Xmax
-	CheckBox AutoscaleXButton,pos={534,90},size={82,15},proc=OO_AutoProc,title="Autoscale X"
+	CheckBox AutoscaleXButton,pos={534,90},size={75,14},proc=OO_AutoProc,title="Autoscale X"
 	CheckBox AutoscaleXButton,value= 1
-	Button Save_data_folders,pos={314,106},size={73,20},proc=OO_ButtonProc,title="Save folders"
+	Button Save_data_folders,pos={285,106},size={73,20},proc=OO_ButtonProc,title="Save folders"
 	Button Save_data_folders,labelBack=(65280,0,0),fColor=(65280,21760,0)
-	PopupMenu Multiple_Spectrometers_popup,pos={26,3},size={106,21},proc=OO_PopMenuProc,title="Spectrometers"
-	PopupMenu Multiple_Spectrometers_popup,mode=1,popvalue="1",value= #"\"1;2\""
+	PopupMenu Multiple_Spectrometers_popup,pos={26,3},size={116,21},proc=OO_PopMenuProc,title="Spectrometers"
+	PopupMenu Multiple_Spectrometers_popup,mode=1,popvalue="1",value= #"\"1\""
 	Button Init_spectrometer_Button_2,pos={181,77},size={50,20},disable=1,proc=OO_ButtonProc,title="Init #2"
-	SetVariable Int__SetVariable_2,pos={46,91},size={110,18},disable=1,proc=OO_SetVarProc,title="Int #2 (ms)"
+	SetVariable Int__SetVariable_2,pos={47,83},size={104,16},bodyWidth=50,disable=1,proc=OO_SetVarProc,title="Int #2 (ms)"
 	SetVariable Int__SetVariable_2,limits={3,inf,1},value= root:OO:GlobalVariables:IntT_2
-	SetVariable ScanTime,pos={91,112},size={116,18},proc=OO_SetVarProc,title="Delay time (s)"
+	SetVariable ScanTime,pos={64,112},size={107,16},bodyWidth=40,proc=OO_SetVarProc,title="Delay time (s)"
 	SetVariable ScanTime,limits={1,inf,1},value= root:OO:GlobalVariables:ScanTime,live= 1
-	SetVariable NumSpectra,pos={65,132},size={147,18},title="Number of Spectra"
+	SetVariable NumSpectra,pos={38,132},size={133,16},bodyWidth=40,title="Number of Spectra"
 	SetVariable NumSpectra,limits={1,inf,1},value= root:OO:GlobalVariables:NumSpectra,live= 1
-	SetVariable Ymin2_SetVariable,pos={532,50},size={130,18},disable=1,proc=OO_SetVarProc,title="Y axis 2 min"
+	SetVariable Ymin2_SetVariable,pos={532,50},size={130,16},disable=1,proc=OO_SetVarProc,title="Y axis 2 min"
 	SetVariable Ymin2_SetVariable,value= root:OO:GlobalVariables:Ymin_2
-	SetVariable Ymax2_SetVariable,pos={530,69},size={132,18},disable=1,proc=OO_SetVarProc,title="Y axis 2 max"
+	SetVariable Ymax2_SetVariable,pos={530,69},size={132,16},disable=1,proc=OO_SetVarProc,title="Y axis 2 max"
 	SetVariable Ymax2_SetVariable,value= root:OO:GlobalVariables:Ymax_2
 	Button Zero_Background2_Button,pos={418,2},size={80,20},disable=1,proc=OO_ButtonProc,title="Zero Bkgd 2"
 	Button Store_Background2_Button,pos={418,21},size={80,20},disable=1,proc=OO_ButtonProc,title="Store Bkgd 2"
 	Button Zero_Ref2_Button,pos={499,1},size={80,20},disable=1,proc=OO_ButtonProc,title="Zero Ref 2"
 	Button Store_Ref2_Button,pos={500,22},size={80,20},disable=1,proc=OO_ButtonProc,title="Store Ref 2"
-	CheckBox Logged_check,pos={623,110},size={39,15},proc=OO_AutoProc,title="Log"
+	CheckBox Logged_check,pos={623,110},size={36,14},proc=OO_AutoProc,title="Log"
 	CheckBox Logged_check,labelBack=(65535,65535,65535),value= 0
-	SetVariable OneNotePath,pos={200,62},size={170,18},proc=OO_SetVarProc,title="OneNote Path"
+	SetVariable OneNotePath,pos={188,64},size={192,16},bodyWidth=120,proc=OO_SetVarProc,title="OneNote Path"
 	SetVariable OneNotePath,value= root:OO:GlobalVariables:OneNotePath
 	Button AutoIntTimesButton,pos={589,29},size={70,21},proc=OO_ButtonProc,title="Auto Times"
-	TitleBox title0,pos={31,29},size={76,15},fSize=12,frame=0,fstyle=1
+	TitleBox title0,pos={31,29},size={53,13},fSize=12,frame=0,fStyle=1
 	TitleBox title0,variable= root:OO:GlobalVariables:Spectrometer
-	TitleBox title1,pos={32,74},size={1,1},frame=0
-	TitleBox title1,variable= root:OO:GlobalVariables:Spectrometer_2,fstyle=1
-	CheckBox swap_check,pos={116,28},size={48,15},proc=OO_AutoProc,title="swap"
-	CheckBox swap_check,value= 0
-	CheckBox swap_check variable=:OO:GlobalVariables:Swapped
-	SetVariable setvar0,pos={294,83},size={70,18},title="Spec:"
+	TitleBox title1,pos={32,68},size={63,13},disable=1,frame=0,fStyle=1
+	TitleBox title1,variable= root:OO:GlobalVariables:Spectrometer_2
+	CheckBox swap_check,pos={116,28},size={43,14},proc=OO_AutoProc,title="swap"
+	CheckBox swap_check,variable= root:OO:GlobalVariables:Swapped
+	SetVariable setvar0,pos={265,83},size={70,16},title="Spec:"
 	SetVariable setvar0,limits={1,inf,1},value= root:OO:GlobalVariables:NextSpecIndex
-	CheckBox MultInt_check,pos={588,8},size={83,15},proc=OO_AutoProc,title="Multiple IntT"
+	CheckBox MultInt_check,pos={588,8},size={76,14},proc=OO_AutoProc,title="Multiple IntT"
 	CheckBox MultInt_check,value= 0
-	SetVariable TECsetT,pos={543,131},size={85,18},proc=OO_SetVarProc,title="TEC T="
+	SetVariable TECsetT,pos={543,131},size={85,16},proc=OO_SetVarProc,title="TEC T="
 	SetVariable TECsetT,value= root:OO:GlobalVariables:TECtemp
 	Button TECgetT,pos={633,131},size={40,16},proc=OO_ButtonProc,title="curr T"
+	CheckBox absorbance_check,pos={181,133},size={146,14},title="Create absorbance spectra"
+	CheckBox absorbance_check,variable= root:OO:GlobalVariables:Absorbance_checked
+	CheckBox absorbance_toggle,pos={333,133},size={110,14},proc=OO_AutoProc,title="Toggle absorbance"
+	CheckBox absorbance_toggle,variable= root:OO:GlobalVariables:Absorbance_toggled
+	Button Save_data_folders_txt,pos={359,106},size={32,20},proc=OO_ButtonProc,title="to .txt"
+	Button Save_data_folders_txt,fColor=(65535,65535,65535)
 	SetDrawLayer UserFront
 	DrawRect 0.346076458752515,-0.479289940828402,-0.116700201207243,-0.686390532544379
 	DrawRect -0.114688128772636,-0.680473372781065,0.340040241448692,-0.467455621301775
-	DrawRect 0.334004024144869,-0.49112426035503,0.406438631790744,-0.313609467455621
+	DrawRect 0.303547171352991,-0.49112426035503,0.375981778998866,-0.313609467455621
 	DrawRect -0.112676056338028,-0.674556213017751,0.354124748490946,-0.431952662721893
-	DrawRect 0.354124748490946,-0.431952662721893,0.352112676056338,-0.473372781065089
+	DrawRect 0.323667895699068,-0.431952662721893,0.32165582326446,-0.473372781065089
 	DrawText -0.0930656934306569,-0.409774436090226,"Here"
-	
-	CheckBox absorbance_check,pos={217,133},size={146,14},title="Create absorbance spectra"
-	CheckBox absorbance_check,variable= root:OO:GlobalVariables:Absorbance_checked
-
-	CheckBox absorbance_toggle,pos={369,133},size={110,14},proc=OO_AutoProc,title="Toggle absorbance"
-	CheckBox absorbance_toggle,variable= root:OO:GlobalVariables:Absorbance_toggled
-
-
 EndMacro
   
 Function OO_ButtonProc(ctrlName) : ButtonControl
@@ -875,6 +892,17 @@ Function OO_ButtonProc(ctrlName) : ButtonControl
 				RefMulti_2=0
 			endif
 			break
+		case "Set_Ref_Button":
+			Nvar refIndex=root:OO:GlobalVariables:RefIndex
+			if (RefIndex > 0)			//is reference spectrum available
+				String newRefPath = "root:OO:Data:Scan"+num2str(refIndex)+":Spectra"
+				wave Spectra = $newRefPath
+				wave Ref = root:OO:Data:Current:Ref
+				Nvar Ref1Exists = root:OO:GlobalVariables:Ref1Exists
+				Duplicate/O Spectra Ref
+				Ref1Exists = 1		//sets ref exists variable to 1 	
+			endif
+			break
 		case "Save_Spectra_Button":  	
 			OO_SaveSpectra()
 			break
@@ -882,6 +910,9 @@ Function OO_ButtonProc(ctrlName) : ButtonControl
 			SetDataFolder root:OO:Data:	
 			SaveData/I/T/R 									
 			break
+		case "Save_data_folders_txt":
+			ExportTxt()		
+			break			
 		case "AutoIntTimesButton":
 			Nvar NumSpectrometers= root:OO:GlobalVariables:NumSpectrometers //keeps track if you're dealing with one or two spectrometers.
 //JJB			OO_AutoIntTime()
@@ -921,6 +952,7 @@ Function OO_PopMenuProc(ctrlName,popNum,popStr) : PopupMenuControl
 				modifycontrol store_Background2_Button disable = 1
 				modifycontrol Zero_Ref2_Button disable = 1
 				modifycontrol store_Ref2_Button disable=1
+				TitleBox title1 disable=1
 				RemoveFromGraph/Z/W=OO_LivespectraGraph Spectra_2			//remove spectra 2 if present
 				ModifyGraph/W = OO_LiveSpectraGraph mirror=2
 				SetDataFolder root:OO:Data:Current	
@@ -937,6 +969,7 @@ Function OO_PopMenuProc(ctrlName,popNum,popStr) : PopupMenuControl
 				modifycontrol store_Background2_Button disable = 0
 				modifycontrol Zero_Ref2_Button disable = 0
 				modifycontrol store_Ref2_Button disable=0
+				TitleBox title1 disable=0
 				Swapped = 0							// change back from swapped state
 				SetDataFolder root:OO:Data:Current:
 				Make/O/N=1024 Spectra_2,wl_wave_2
@@ -1553,4 +1586,35 @@ Function Make_Absorbance(input, type)
 	endif
 	
 	SetDataFolder dfSav
+End
+
+Function ExportTxt()
+	Variable numDF=CountObjects("root:OO:Data", 4 ) -1	//number of scans
+	variable ii,jj,items
+	String CurrDF,list,Namepth,Name,ScnDF,fPth,sPth
+	Nvar NumSpectrometers=root:OO:GlobalVariables:NumSpectrometers
+	if 	(NumSpectrometers==1)
+		list = "wl_wave;Spectra"	//list of waves you want to export
+	elseif (NumSpectrometers==2)
+		list = "wl_wave;Spectra;wl_wave_2;Spectra_2"
+	endif
+	items =ItemsInList(list)
+
+	NewPath/O/C Path
+	PathInfo Path
+	fPth=S_path
+
+	for (ii=1;ii<=numDF;ii+=1)
+		ScnDF="root:OO:Data:Scan"+num2str(ii)
+		SVAR Desc=$(ScnDF+":Description")
+		sPth = fPth +num2str(ii)+"-"+Desc
+		NewPath/O/C Path, sPth
+		For (jj=0;jj<items;jj+=1)
+			Name = Stringfromlist(jj,list)
+			Namepth = Name + ".txt"
+			Print Namepth
+			Save/O/J/P=Path $(CurrDF+":"+Name) as Namepth
+		Endfor
+		KillPath Path
+	Endfor
 End
