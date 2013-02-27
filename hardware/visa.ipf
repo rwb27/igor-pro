@@ -92,7 +92,7 @@ function/s read_only(hardware_id)
 	return message
 end
 
-function binary_write(hardware_id, cmd)
+function write_binary(hardware_id, cmd)
 	string hardware_id
 	variable cmd
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
@@ -100,7 +100,7 @@ function binary_write(hardware_id, cmd)
 	return 0
 end
 
-function/s binary_read(hardware_id, cmd)
+function/s read_binary(hardware_id, cmd)
 	string hardware_id
 	variable cmd
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
