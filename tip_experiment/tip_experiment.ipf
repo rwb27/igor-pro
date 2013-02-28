@@ -73,6 +73,7 @@ end
 function initialise_scan(scan_folder)
 	string scan_folder
 	nvar append_mode = $(gv_folder + ":append_mode")
+	nvar num_spectrometers
 	if (!append_mode)									// if not appending
 		// create data storage waves
 		variable/g $(scan_folder + ":step") = 0
@@ -83,11 +84,16 @@ function initialise_scan(scan_folder)
 		make/o/n=0 $(scan_folder + ":psd_x"), $(scan_folder + ":psd_y")
 		make/o/n=0 $(scan_folder + ":psd_x_stdev"), $(scan_folder + ":psd_y_stdev")
 		make/o/n=0 $(scan_folder + ":timestamp")
+		// spectra data
 		duplicate/o root:oo:data:current:wl_wave, $(scan_folder + ":wavelength")
 		wave wl_wave = $(scan_folder + ":wavelength")
 		wl_wave *= 1e-9
 		setscale d, 0, 0, "m", wl_wave
 		make/o/n=(numpnts(wl_wave), 0) $(scan_folder + ":spec2d")
+		if (num_spectrometers == 2)
+			make/o/n=(numpnts(wl_wave), 0) $(scan_folder + ":spec2d_t")
+		endif
+		// scaling
 		setscale d, 0, 0, "A", $(scan_folder + ":current"), $(scan_folder + ":current_range")
 		setscale d, 0, 0, "V", $(scan_folder + ":voltage")
 		setscale d, 0, 0, "G\B0\M", $(scan_folder + ":conductance")
@@ -217,6 +223,7 @@ function tip_scan()			// tip experiment master function
 	gv_path = smu#gv_path()
 	nvar v = $(gv_path + ":voltage"), i_range = $(gv_path + ":current_range")
 		// spectrometer
+	nvar num_spectrometers
 		// pixis
 		// agilent
 	gv_path = dso#gv_path()
@@ -243,6 +250,9 @@ function tip_scan()			// tip experiment master function
 	wave psd_y_stdev = $(scan_folder + ":psd_y_stdev")
 	wave timestamp = $(scan_folder + ":timestamp")
 	wave spec2d = $(scan_folder + ":spec2d")
+	if (num_spectrometers == 2)
+		wave spec2d_t = $(scan_folder + ":spec2d_t")
+	endif
 	
 	// display experiment
 	setup_display(scan_folder)
@@ -328,6 +338,11 @@ function tip_scan()			// tip experiment master function
 		duplicate/o root:oo:data:current:spectra, $(scan_folder + ":spectra:spec_" + num2str(i))
 		wave spec = $(scan_folder + ":spectra:spec_" + num2str(i))
 		spec2d[][i] = spec[p]
+		if (num_spectrometers == 2)
+			duplicate/o root:oo:data:current:spectra_2, $(scan_folder + ":spectra:spec_t_" + num2str(i))
+			wave spec = $(scan_folder + ":spectra:spec_t_" + num2str(i))
+			spec2d_t[][i] = spec[p]
+		endif
 		
 		// perform end-loop checks
 		if (dso#check_trigger(0))						// check for dso trigger
