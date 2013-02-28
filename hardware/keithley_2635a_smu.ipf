@@ -24,6 +24,9 @@ static function/s gv_path()
 end
 
 static function initialise()
+	data#check_gvpath(gv_folder)
+	variable/g $(gv_folder + ":voltage"), $(gv_folder + ":current"), $(gv_folder + ":current_range")
+	variable/g $(gv_folder + ":current_limit"), $(gv_folder + ":output")
 	visa#cmd(hardware_id, "smua.reset()") // restore to default settings
 	visa#cmd(hardware_id, "smua.measure.rangei = 10e-9") // set current measure range to 1 nA
 end
