@@ -29,7 +29,7 @@ end
 
 function close_cube()
 	VDTOperationsPort2 None
-	VDTClosePort2 COM18
+	VDTClosePort2 COM1
 	return 0
 end
 

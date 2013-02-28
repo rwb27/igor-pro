@@ -4,7 +4,7 @@
 
 #include "visa"
 static strconstant hardware_id = "keithley_2635a_smu"
-static strconstant resourceName = "GPIB0::26::INSTR"
+static strconstant resourceName = "ASRL22::INSTR"//"GPIB0::26::INSTR"
 static strconstant gv_folder = "root:global_variables:keithley_2635a_smu"
 
 static function open_comms()
@@ -26,8 +26,8 @@ end
 static function initialise()
 	variable/g $(gv_folder + ":voltage"), $(gv_folder + ":current"), $(gv_folder + ":current_range")
 	variable/g $(gv_folder + ":current_limit"), $(gv_folder + ":output")
-	visa#cmd(hardware_id, "smua.reset()") // restore to default settings
-	visa#cmd(hardware_id, "smua.measure.rangei = 10e-9") // set current measure range to 1 nA
+	visa#cmd(hardware_id, "smua.reset()\n") // restore to default settings
+	visa#cmd(hardware_id, "smua.measure.rangei = 10e-9\n") // set current measure range to 1 nA
 end
 
 function empty_buffer()
@@ -41,7 +41,7 @@ end
 function output(o)
 	variable o // on (o == 1) or off (o == 0)
 	if (o == 0 || o == 1)
-		visa#cmd(hardware_id, "smua.source.output="+num2str(o))
+		visa#cmd(hardware_id, "smua.source.output=" + num2str(o) + "\n")
 	else
 		print "incorrect state variable"
 	endif
@@ -49,48 +49,48 @@ function output(o)
 end
 
 function/s get_error()
-	visa#cmd(hardware_id, "errorCode, message = errorqueue.next()")
-	string error = visa#read_str(hardware_id, "print(errorCode)")
-	string message = visa#read_str(hardware_id, "print(message)")
+	visa#cmd(hardware_id, "errorCode, message = errorqueue.next()\n")
+	string error = visa#read_str(hardware_id, "print(errorCode)\n")
+	string message = visa#read_str(hardware_id, "print(message)\n")
 	string error_message = error + ": " + message
 	return error_message
 end
 
 function set_current_range(i_range)
 	variable i_range
-	visa#cmd(hardware_id, "smua.measure.rangei = " + num2str(i_range))
+	visa#cmd(hardware_id, "smua.measure.rangei = " + num2str(i_range) + "\n")
 	variable/g $(gv_folder + ":current_range") = i_range
 end
 
 function get_current_range()
-	variable i_range = visa#read(hardware_id, "print(smua.measure.rangei)")
+	variable i_range = visa#read(hardware_id, "print(smua.measure.rangei)\n")
 	variable/g $(gv_folder + ":current_range") = i_range
 	return i_range
 end
 
 function set_voltage(v)
 	variable v
-	visa#cmd(hardware_id, "smua.source.func=smua.OUTPUT_DCVOLTS") // set to source voltage
-	visa#cmd(hardware_id, "smua.source.levelv = " + num2str(v))
+	visa#cmd(hardware_id, "smua.source.func=smua.OUTPUT_DCVOLTS\n") // set to source voltage
+	visa#cmd(hardware_id, "smua.source.levelv = " + num2str(v) + "\n")
 	variable/g $(gv_folder + ":voltage") = v
 end
 
 function measure_voltage()
-	variable voltage = visa#read(hardware_id, "print(smua.measure.v())")
+	variable voltage = visa#read(hardware_id, "print(smua.measure.v())\\n")
 	variable/g $(gv_folder + ":voltage") = voltage
 	return voltage
 end
 
 function measure_current()
-	variable current = visa#read(hardware_id, "print(smua.measure.i())")
+	variable current = visa#read(hardware_id, "print(smua.measure.i())\n")
 	variable/g $(gv_folder + ":current") = current
 	return current
 end
 
 function/c measure_iv()
-	visa#cmd(hardware_id, "iRead, vRead = smua.measure.iv()")
-	variable v = visa#read(hardware_id, "print(vRead)")
-	variable i = visa#read(hardware_id, "print(iRead)")
+	visa#cmd(hardware_id, "iRead, vRead = smua.measure.iv()\n")
+	variable v = visa#read(hardware_id, "print(vRead)\n")
+	variable i = visa#read(hardware_id, "print(iRead)\n")
 	variable/g $(gv_folder + ":voltage") = v
 	variable/g $(gv_folder + ":current") = i
 	variable/c output = cmplx(v, i)
@@ -98,7 +98,7 @@ function/c measure_iv()
 end
 
 function measure_resistance()
-	variable resistance = visa#read(hardware_id, "print(smua.measure.r())")
+	variable resistance = visa#read(hardware_id, "print(smua.measure.r())\n")
 	variable/g $(gv_folder + ":resistance") = resistance
 	return resistance
 end
