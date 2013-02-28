@@ -6,9 +6,9 @@
 static strconstant hardware_id_x = "newport_actuators_x"
 static strconstant hardware_id_y = "newport_actuators_y"
 static strconstant hardware_id_z = "newport_actuators_z"
-static strconstant resourceName_x = "ASRL9"
+static strconstant resourceName_x = "ASRL10"
 static strconstant resourceName_y = "ASRL8"
-static strconstant resourceName_z = "ASRL10"
+static strconstant resourceName_z = "ASRL9"
 static strconstant gv_folder_x = "root:global_variables:newport_actuators_x"
 static strconstant gv_folder_y = "root:global_variables:newport_actuators_y"
 static strconstant gv_folder_z = "root:global_variables:newport_actuators_z"
@@ -44,9 +44,6 @@ static function/s gv_path(ch)
 end
 
 static function initialise()
-	data#check_gvpath(gv_folder_x)
-	data#check_gvpath(gv_folder_y)
-	data#check_gvpath(gv_folder_z)
 	variable/g $(gv_folder_x + ":pos_x"), $(gv_folder_y + ":pos_y"), $(gv_folder_z + ":pos_z")
 	variable/g $(gv_folder_x + ":step_x") = 500.0, $(gv_folder_y + ":step_y") = 500.0, $(gv_folder_z + ":step_z") = 500.0
 	get_pos("x"); get_pos("y"); get_pos("z")
@@ -80,20 +77,20 @@ static function get_pos(ch)
 	if (stringmatch(ch, "x"))
 		// hlx pos x
 		pos_str = visa#read_str(hardware_id_x, actuator_id_x + "tp?\r\n")
-		pos = str2num(pos_str[3, (strlen(pos_str) - 1)])
+		pos = str2num(pos_str[5, (strlen(pos_str) - 1)])
 		pos *= 1000
 		variable/g $(gv_folder_x + ":pos_x") = pos
-	elseif (stringmatch(ch, "x"))
+	elseif (stringmatch(ch, "y"))
 		// nanopz pos y
 		pos_str = visa#read_str(hardware_id_y, actuator_id_y + "tp?\r\n")
 		pos = str2num(pos_str[5, (strlen(pos_str) - 1)])
-		pos /= 80
+		pos /= 100
 		variable/g $(gv_folder_y + ":pos_y") = pos
-	elseif (stringmatch(ch, "x"))
+	elseif (stringmatch(ch, "z"))
 		// nanopz pos z
 		pos_str = visa#read_str(hardware_id_z, actuator_id_z + "tp?\r\n")
 		pos = str2num(pos_str[5, (strlen(pos_str) - 1)])
-		pos *= 60
+		pos /= 100
 		variable/g $(gv_folder_z + ":pos_z") = pos
 	endif
 	return pos
@@ -102,25 +99,32 @@ end
 static function move(ch, pos)
 	string ch
 	variable pos
+	variable init_pos, new_pos
 	string pos_str
 	if (stringmatch(ch, "x"))
+		//init_pos = get_pos("x")
 		pos /= 1000
 		visa#cmd(hardware_id_x, actuator_id_x + "pr" + num2str(pos) + "\r\n")
-		get_pos("x")
+		sleep/s abs(pos)/1000
+		new_pos = get_pos("x")
 	elseif (stringmatch(ch, "y"))
-		pos *= 80
+		//init_pos = get_pos("y")
+		pos *= 100
 		pos = round(pos)
 		sprintf pos_str, "%8d\r", pos
 		visa#cmd(hardware_id_y, actuator_id_y + "pr" + pos_str + "\r\n")
-		get_pos("y")
+		sleep/s abs(1.5*pos)/1000
+		new_pos = get_pos("y")
 	elseif (stringmatch(ch, "z"))
-		pos *= 60
+		//init_pos = get_pos("z")
+		pos *= 100
 		pos = round(pos)
 		sprintf pos_str, "%8d\r", pos
 		visa#cmd(hardware_id_z, actuator_id_z + "pr" + pos_str + "\r\n")
-		get_pos("z")
+		sleep/s abs(pos)/1000
+		new_pos = get_pos("z")
 	endif
-	sleep/s pos/1000
+	//print new_pos - init_pos
 end
 
 function/s ready_status(ch)
@@ -207,7 +211,7 @@ static function shutdown_button(ba) : buttoncontrol
 	return 0
 end
 
-static function move_left_button(ba) : buttoncontrol
+static function move_up_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
@@ -222,7 +226,7 @@ static function move_left_button(ba) : buttoncontrol
 	return 0
 end
 
-static function move_right_button(ba) : buttoncontrol
+static function move_down_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
@@ -237,7 +241,7 @@ static function move_right_button(ba) : buttoncontrol
 	return 0
 end
 
-static function move_up_button(ba) : buttoncontrol
+static function move_left_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
@@ -252,7 +256,7 @@ static function move_up_button(ba) : buttoncontrol
 	return 0
 end
 
-static function move_down_button(ba) : buttoncontrol
+static function move_right_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
@@ -267,7 +271,7 @@ static function move_down_button(ba) : buttoncontrol
 	return 0
 end
 
-static function move_focusup_button(ba) : buttoncontrol
+static function move_focusdown_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
@@ -282,7 +286,7 @@ static function move_focusup_button(ba) : buttoncontrol
 	return 0
 end
 
-static function move_focusdown_button(ba) : buttoncontrol
+static function move_focusup_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:

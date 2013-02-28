@@ -5,6 +5,7 @@
 #include "data_handling"
 #include "pi_pi733_3cd_stage"
 #include "newport_actuators"
+#include "hp33120a_sig_gen"
 #include "tip_alignment"
 
 function starting_pos()
@@ -68,6 +69,17 @@ function tip_control_and_alignment() : panel
 	variable left, right, top, bottom
 	dowindow/k tip_control
 	
+	actuators#open_comms()
+	pi_stage#open_comms()
+	sig_gen#open_comms()
+	actuators#initialise()
+	pi_stage#initialise()
+	sig_gen#initialise()
+	actuators#close_comms()
+	pi_stage#close_comms()
+	sig_gen#close_comms()
+	alignment#initialise()
+	
 	// panel layout
 	newpanel/w=(500,80,850,600)/n=tip_control as "Tip Control and Alignment"
 	modifypanel cbRGB=(60928,60928,60928), framestyle=1
@@ -93,26 +105,26 @@ function tip_control_and_alignment() : panel
 	button actuators_update, pos={left,top}, size={60,20}, proc=actuators#update_button, title="Update"
 		// position display
 	left += 65; top -= 40
-	valdisplay actuator_x, pos={left, top}, size={110,15}, bodyWidth=60, title="x-position"
+	valdisplay actuator_x, pos={left, top}, size={110,15}, bodyWidth=60, title="height (x)"
 	valdisplay actuator_x, limits={0,0,0}, barmisc={0,1000}
 	valdisplay actuator_x, value= #"root:global_variables:newport_actuators_x:pos_x"
 	top += 20
-	valdisplay actuator_y, pos={left, top}, size={110,15}, bodyWidth=60, title="y-position"
+	valdisplay actuator_y, pos={left, top}, size={110,15}, bodyWidth=60, title="focus (y)"
 	valdisplay actuator_y, limits={0,0,0}, barmisc={0,1000}
 	valdisplay actuator_y, value= #"root:global_variables:newport_actuators_y:pos_y"
 	top += 20
-	valdisplay actuator_z, pos={left, top}, size={110,15}, bodyWidth=60, title="z-position"
+	valdisplay actuator_z, pos={left, top}, size={110,15}, bodyWidth=60, title="lateral (z)"
 	valdisplay actuator_z, limits={0,0,0}, barmisc={0,1000}
 	valdisplay actuator_z, value= #"root:global_variables:newport_actuators_z:pos_z"
 		// step display
 	left += 115; top -= 40
-	setvariable actuators_step_x, pos={left, top}, size={92,15}, bodyWidth=60, title="x-step"
+	setvariable actuators_step_x, pos={left, top}, size={92,15}, bodyWidth=60, title="ht step"
 	setvariable actuators_step_x, value= root:global_variables:newport_actuators_x:step_x
 	top += 20
-	setvariable actuators_step_y, pos={left, top},size={92,15},bodyWidth=60,title="y-step"
+	setvariable actuators_step_y, pos={left, top},size={92,15},bodyWidth=60,title="f step"
 	setvariable actuators_step_y, value= root:global_variables:newport_actuators_y:step_y
 	top += 20
-	setvariable actuators_step_z, pos={left, top},size={92,15},bodyWidth=60,title="z-step"
+	setvariable actuators_step_z, pos={left, top},size={92,15},bodyWidth=60,title="lat step"
 	setvariable actuators_step_z, value= root:global_variables:newport_actuators_z:step_z
 		// movement controls
 	left = 190; top += 20
@@ -145,7 +157,7 @@ function tip_control_and_alignment() : panel
 	button stage_starting_pos, pos={left, top}, size={60,30}, proc=starting_pos_button, title="Starting\rPositions"
 		// position display
 	left += 65; top -= 60
-	valdisplay stage_a, pos={left, top}, size={110,15}, bodyWidth=60, title="a-position"
+	valdisplay stage_a, pos={left, top}, size={110,15}, bodyWidth=60, title="lateral (a)"
 	valdisplay stage_a, limits={0,0,0}, barmisc={0,1000}
 	valdisplay stage_a, value= #"root:global_variables:pi_pi733_3cd_stage:pos_a"
 	top += 20
@@ -167,8 +179,8 @@ function tip_control_and_alignment() : panel
 	setvariable stage_vel_c, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_velocity_c_panel,title="c-velocity"
 	setvariable stage_vel_c, value= root:global_variables:pi_pi733_3cd_stage:vel_c
 	top += 20
-	setvariable stage_dco, pos={left, top}, size={82,16}, bodyWidth=60, proc=pi_stage#set_dco_panel, title="dco"
-	setvariable stage_dco, value= root:global_variables:pi_pi733_3cd_stage:dco
+	setvariable stage_dco_a, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_dco_panel, title="a-dco"
+	setvariable stage_dco_a, value= root:global_variables:pi_pi733_3cd_stage:dco_a
 		// step display
 	left += 115; top -= 120
 	setvariable stage_step_a, pos={left, top}, size={93,16}, bodyWidth=60, title="a-step"

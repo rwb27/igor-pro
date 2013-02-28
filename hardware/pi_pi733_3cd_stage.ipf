@@ -20,11 +20,11 @@ static function close_comms()
 end
 
 static function initialise()
-	data#check_gvpath(gv_folder)
 	variable/g $(gv_folder + ":pos_a"), $(gv_folder + ":pos_b"), $(gv_folder + ":pos_c")
 	variable/g $(gv_folder + ":step_a"), $(gv_folder + ":step_b"), $(gv_folder + ":step_c")
 	get_pos()
 	get_velocity()
+	get_dco()
 end
 
 static function/s gv_path()
@@ -309,6 +309,7 @@ static function update_button(ba) : buttoncontrol
 			open_comms()
 			get_pos()
 			get_velocity()
+			get_dco()
 			close_comms()
 			break
 		case -1:
