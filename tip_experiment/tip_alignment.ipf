@@ -185,16 +185,24 @@ function plot_scan(scan_folder)
 	newpanel/w=(150, 77, 275, 779)/n=tip_alignment
 	
 	display/n=tip_alignment
-	appendimage x
-	appendimage y
-	appendimage r
-	appendimage theta
+	appendimage/l=lx x
+	appendimage/l=ly y
+	appendimage/l=lr r
+	appendimage/l=ltheta theta
 	appendimage y_psd
 	modifyimage ''#0 ctab={*,*,geo32,0}
 	modifyimage ''#1 ctab={*,*,geo32,0}
 	modifyimage ''#2 ctab={*,*,geo32,0}
 	modifyimage ''#3 ctab={*,*,geo32,0}
 	modifyimage ''#4 ctab={*,*,coldwarm,0}
+	modifygraph width=200
+	modifygraph height={Aspect,2}
+	modifygraph tick=2, mirror=1, fSize=11, standoff=0
+	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
+	modifygraph axisEnab(ly)={0.6,0.8}, freePos(ly)=0
+	modifygraph axisEnab(lr)={0.4,0.6}, freePos(lr)=0
+	modifygraph axisEnab(ltheta)={0.2,0.4}, freePos(ltheta)=0
+	modifygraph axisEnab(left)={0,0.2}, freePos(left)=0
 end
 
 function move_to_centre()
