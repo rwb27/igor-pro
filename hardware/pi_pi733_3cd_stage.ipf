@@ -244,7 +244,7 @@ static function move_up_button(ba) : buttoncontrol
 		case 2:
 			nvar rpos = $(gv_folder + ":step_b")
 			open_comms()
-			move_rel("B", rpos)
+			move_rel("B", -rpos)
 			//get_pos()
 			close_comms()
 			break
@@ -260,7 +260,7 @@ static function move_down_button(ba) : buttoncontrol
 		case 2:
 			nvar rpos = $(gv_folder + ":step_b")
 			open_comms()
-			move_rel("B", -rpos)
+			move_rel("B", rpos)
 			//get_pos
 			close_comms()
 			break

@@ -8,10 +8,15 @@
 
 static strconstant gv_folder = "root:global_variables:hyperspectral_imaging"
 
+static function initialise()
+	data#check_folder("root:global_variables")
+	data#check_folder(gv_folder)
+	variable/g $(gv_folder + ":wavelength") = 0
+end
+
 function wavelength_to_index(wavelength)
 	variable wavelength
-	string data_folder = data#check_data_folder()
-	wave wl_wave = $(data_folder + ":wavelength")
+	wave wl_wave = root:oo:data:current:wl_wave
 	variable index, i = 0
 	do
 		i += 1
@@ -25,76 +30,76 @@ end
 static function scan(scan_size, scan_step)
 	// perform a spectral scan to obtain a hyperspectral image. //
 	variable scan_size, scan_step
-	string data_folder = data#check_data_folder()
 	data#check_folder("root:global_variables")
 	data#check_folder(gv_folder)
-	
-	// get current pz positions
-	pi_stage#open_comms()
-	//pi_stage#startup()
-	string gv_folder_pi = pi_stage#gv_path()
-	pi_stage#get_pos()
-	nvar init_a = $(gv_folder_pi + ":pos_a")
-	nvar init_b = $(gv_folder_pi + ":pos_b")
-	nvar init_c = $(gv_folder_pi + ":pos_c")
-	variable move_delay = 0.2
+	string data_folder = data#check_data_folder()
+	string scan_folder = data#new_data_folder(data_folder + ":hyperspec_image_")
 	
 	// make hyperspectral image array
-	duplicate/o root:oo:data:current:wl_wave, $(data_folder + ":wavelength")
-	wave wavelength = $(data_folder + ":wavelength")
+	duplicate/o root:oo:data:current:wl_wave, $(scan_folder + ":wavelength")
+	wave wavelength = $(scan_folder + ":wavelength")
 	variable image_size = scan_size/scan_step + 1
-	make/o/n=(image_size, image_size, numpnts(wavelength)) $(data_folder + ":hyperspec_image")
-	wave hs_data = $(data_folder + ":hyperspec_image")
+	make/o/n=(image_size, image_size, numpnts(wavelength)) $(scan_folder + ":hyperspec_image")
+	wave hs_data = $(scan_folder + ":hyperspec_image")
 	hs_data = 0
 	
 	// prepare scan preview
-	variable wavelength_1 = wavelength_to_index(500)
+	variable wavelength_1 = wavelength_to_index(520)
 	variable wavelength_2 = wavelength_to_index(633)
 	variable/g $(gv_folder + ":wavelength_1") = wavelength_1
 	variable/g $(gv_folder + ":wavelength_2") = wavelength_2
 	
 	dowindow/k hyperspectral_image
 	display/n=hyperspectral_image
-	appendimage hs_data; modifyimage hs_scan plane=wavelength_1
-	appendimage/l=l2 hs_data; modifyimage hs_scan plane=wavelength_2
+	appendimage hs_data; modifyimage ''#0 plane=wavelength_1
+	appendimage/l=l2 hs_data; modifyimage ''#1 plane=wavelength_2
 	modifygraph tick=2,mirror=1,fSize=14,standoff=0,axisEnab(left)={0.51,1}
 	modifygraph axisEnab(l2)={0,0.49},freePos(l2)=0
 	modifygraph width=226.772
 	modifygraph height={Aspect,2}
-	modifyimage '' ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
+	modifyimage ''#0 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
 	modifyimage ''#1 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
+	
+	// get current pz positions
+	pi_stage#open_comms()
+	variable init_a = pi_stage#get_pos_ch("a")
+	variable init_b = pi_stage#get_pos_ch("b")
+	variable init_c = pi_stage#get_pos_ch("c")
+	variable move_delay = 0.1//0.05
 	
 	// move to initial position
 	variable pos_a = init_a - scan_size/2
 	variable pos_b = init_b - scan_size/2
-	pi_stage#move("A", pos_a); sleep/s move_delay
-	pi_stage#move("B", pos_b); sleep/s move_delay
 	setscale/p x pos_a, scan_step, hs_data
 	setscale/p y pos_b, scan_step, hs_data
 	
 	// begin scan
 	variable q1, q2
-	do		
+	do
+		pos_a = init_a - scan_size/2							// reset A position
+		pi_stage#move("A", pos_a); sleep/s move_delay			// move to right
+		q1 = 0												// reset A counter
+		
+		pi_stage#move("B", pos_b); sleep/s move_delay
 		do
 			if(getkeystate(0) & 32)								// check for user abort (escape key)
 				pi_stage#move("A", init_a); sleep/s move_delay
 				pi_stage#move("B", init_b); sleep/s move_delay
 				abort "user abort"
 			endif
-			//OO_read()
-			wave w=root:OO:Data:Current:Spectra				// declare spectrum wave
+			// move to location and take spectra
+			pi_stage#move("A", pos_a); sleep/s move_delay
+			OO_read()
+			// save spectra
+			wave w=root:oo:data:current:spectra				// declare spectrum wave
 			hs_data[q1][q2][] = w[r]					
-			doupdate					
-			pos_a += scan_step								// increment grid (a) position
-			pi_stage#move("A", pos_a); sleep/s move_delay		
-			q1 += 1
+			doupdate
+								
+			pos_a += scan_step								// increment grid (a) position	
+			q1 += 1											// increment counter
 		while(q1 <= (scan_size/scan_step))
 		
-		pos_a = init_a - scan_size/2							// reset A position
-		q1 = 0												// reset A counter
-		
 		pos_b += scan_step									// increment grid (b) position
-		pi_stage#move("B", pos_b); sleep/s move_delay
 		q2 += 1												// reset B counter
 	while(q2 <= (scan_size/scan_step))
 	
@@ -152,25 +157,22 @@ end
 
 // -- PANEL -- //
 
-Function display_scan_button(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
+function display_scan_button(ba) : ButtonControl
+	struct wmbuttonaction &ba
 	switch( ba.eventCode )
 		case 2: // mouse up
-			nvar wavelength = root:gVariables:hyperspec_imaging:wavelength
+			nvar wavelength = $(gv_folder + ":wavelength")
 			wave hs_data
 			display_scan(hs_data, wavelength)
 			break
 		case -1: // control being killed
 			break
 	endswitch
-
 	return 0
-End
+end
 
 function set_wavelength(sva) : SetVariableControl
-	struct WMSetVariableAction &sva
-
+	struct wmsetvariableaction &sva
 	switch( sva.eventCode )
 		case 1: // mouse up
 		case 2: // Enter key
@@ -191,14 +193,13 @@ function set_wavelength(sva) : SetVariableControl
 	return 0
 End
 
-Function WavelengthSlider(sa) : SliderControl
-	STRUCT WMSliderAction &sa
-
-	switch( sa.eventCode )
+Function wavelength_slider(sa) : slidercontrol
+	struct wmslideraction &sa
+	switch( sa.eventcode )
 		case -1: // control being killed
 			break
 		default:
-			if( sa.eventCode & 1 ) // value set
+			if( sa.eventcode & 1 ) // value set
 				variable curval = sa.curval
 				dowindow hyperspectral_image
 				if (V_flag == 1)
@@ -213,20 +214,17 @@ Function WavelengthSlider(sa) : SliderControl
 	return 0
 End
 
-function HyperSpecImaging() : Panel
+function hyperspec_imaging() : Panel
 	PauseUpdate; Silent 1		// building window...
 	NewPanel /W=(790,75,994,152) as "HyperspecImage"
 	ModifyPanel frameStyle=1
 	ShowTools/A
 	Button display,pos={128,3},size={70,20},proc=DisplayHyperSpec,title="Display Data"
 	Button display,fSize=11
-	if (!datafolderexists("root:gVariables:hyperspec_imaging"))
-		newdatafolder root:gVariables:hyperspec_imaging
-	endif
-	variable/g root:gVariables:hyperspec_imaging:wavelength = 0
-	SetVariable setwlen,pos={4,5},size={122,16},bodyWidth=60,proc=SetWavelength,title="Wavelength"
+	initialise()
+	SetVariable setwlen,pos={4,5},size={122,16},bodyWidth=60,proc=set_wavelength,title="Wavelength"
 	SetVariable setwlen,fSize=11
-	SetVariable setwlen,limits={400,1000,1},value= root:gVariables:hyperspec_imaging:wavelength
-	Slider slider0,pos={5,24},size={193,52},proc=WavelengthSlider
-	Slider slider0,limits={400,1000,1},variable= root:gVariables:hyperspec_imaging:wavelength,vert= 0
+	SetVariable setwlen,limits={400,1000,1},value= $(gv_folder + ":wavelength")
+	Slider slider0,pos={5,24},size={193,52},proc=wavelength_slider
+	Slider slider0,limits={400,1000,1},variable= $(gv_folder + ":wavelength"),vert= 0
 end

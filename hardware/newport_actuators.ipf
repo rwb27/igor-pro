@@ -102,29 +102,29 @@ static function move(ch, pos)
 	variable init_pos, new_pos
 	string pos_str
 	if (stringmatch(ch, "x"))
-		//init_pos = get_pos("x")
+		init_pos = get_pos("x")
 		pos /= 1000
 		visa#cmd(hardware_id_x, actuator_id_x + "pr" + num2str(pos) + "\r\n")
-		sleep/s abs(pos)/1000
+		sleep/s abs(pos)/1000*1000
 		new_pos = get_pos("x")
 	elseif (stringmatch(ch, "y"))
-		//init_pos = get_pos("y")
+		init_pos = get_pos("y")
 		pos *= 100
 		pos = round(pos)
 		sprintf pos_str, "%8d\r", pos
 		visa#cmd(hardware_id_y, actuator_id_y + "pr" + pos_str + "\r\n")
-		sleep/s abs(1.5*pos)/1000
+		sleep/s abs(pos)/1000/100
 		new_pos = get_pos("y")
 	elseif (stringmatch(ch, "z"))
-		//init_pos = get_pos("z")
+		init_pos = get_pos("z")
 		pos *= 100
 		pos = round(pos)
 		sprintf pos_str, "%8d\r", pos
 		visa#cmd(hardware_id_z, actuator_id_z + "pr" + pos_str + "\r\n")
-		sleep/s abs(pos)/1000
+		sleep/s abs(pos)/1000/100
 		new_pos = get_pos("z")
 	endif
-	//print new_pos - init_pos
+	//print "moved ", (new_pos - init_pos), ", slept ", abs(pos)/1000
 end
 
 function/s ready_status(ch)
