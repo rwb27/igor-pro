@@ -84,6 +84,7 @@ function tip_control_and_alignment() : panel
 	newpanel/w=(500,80,850,600)/n=tip_control as "Tip Control and Alignment"
 	modifypanel cbRGB=(60928,60928,60928), framestyle=1
 	setdrawlayer UserBack
+	showtools/a
 	
 	// title
 	left = 5; top = 5

@@ -66,7 +66,7 @@ function align_tips(scan_size, scan_step)
 	setscale/p y, pos_c, scan_step, x, y, r, theta, y_psd
 	
 	// plot scan
-	plot_scan(scan_folder)
+	display_scan(scan_folder)
 	
 	// initialise oscilloscope communications
 	lockin#open_comms()
@@ -173,7 +173,7 @@ function fit_alignment_data(scan_folder, data)
 	variable/g $(gv_folder + ":y0") = w_coef[3]
 end
 
-function plot_scan(scan_folder)
+static function display_scan(scan_folder)
 	string scan_folder
 	wave x = $(scan_folder + ":alignment_scan_x")
 	wave y = $(scan_folder + ":alignment_scan_y")
@@ -182,7 +182,7 @@ function plot_scan(scan_folder)
 	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
 	
 	dowindow/k tip_alignment
-	newpanel/w=(150, 77, 275, 779)/n=tip_alignment
+	//newpanel/w=(150, 77, 275, 779)/n=tip_alignment
 	
 	display/n=tip_alignment
 	appendimage/l=lx x
@@ -196,7 +196,7 @@ function plot_scan(scan_folder)
 	modifyimage ''#3 ctab={*,*,geo32,0}
 	modifyimage ''#4 ctab={*,*,coldwarm,0}
 	modifygraph width=200
-	modifygraph height={Aspect,2}
+	modifygraph height={aspect, 5}
 	modifygraph tick=2, mirror=1, fSize=11, standoff=0
 	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
 	modifygraph axisEnab(ly)={0.6,0.8}, freePos(ly)=0
