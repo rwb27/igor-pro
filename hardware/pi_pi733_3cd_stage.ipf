@@ -159,11 +159,30 @@ static function set_velocity(v)
 	get_velocity()
 end
 
-function set_dco(dco)
+function set_dco_a(dco)
 	variable dco
 	visa#cmd(hardware_id, "dco a" + num2str(dco) + "\n")
+	variable/g $(gv_folder + ":dco_a") = visa#read(hardware_id, "dco? a\n")
+end
+
+function set_dco_b(dco)
+	variable dco
 	visa#cmd(hardware_id, "dco b" + num2str(dco) + "\n")
+	variable/g $(gv_folder + ":dco_b") = visa#read(hardware_id, "dco? b\n")
+end
+
+function set_dco_c(dco)
+	variable dco
 	visa#cmd(hardware_id, "dco c" + num2str(dco) + "\n")
+	variable/g $(gv_folder + ":dco_c") = visa#read(hardware_id, "dco? c\n")
+end
+
+static function set_dco(dco)
+	variable dco
+	set_dco_a(dco)
+	set_dco_b(dco)
+	set_dco_c(dco)
+	get_dco()
 end
 
 function zero_stage_pos()

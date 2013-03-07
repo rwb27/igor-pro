@@ -2,7 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-strconstant gv_folder = "root:global_variables:pi_pi733_3cd_stage"
+strconstant gv_folder = "root:global_variables:princeton_instr_pixis_256e_ccd"
 
 strconstant kinetics = "c:\\users\\hera\\desktop\\tip_exp\\pixis_256e\\kinetics.exe"
 strconstant init_kinetics = "c:\\users\\hera\\desktop\\tip_exp\\pixis_256e\\init_kinetics.exe"
@@ -17,6 +17,10 @@ function check_folder_pixis(data_folder)
 	if (!datafolderexists(data_folder))
 		newdatafolder $data_folder
 	endif
+end
+
+function/s gv_path()
+	return gv_folder
 end
 
 function initialise()
