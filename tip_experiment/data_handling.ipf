@@ -2,8 +2,19 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-//strconstant initial_data_path = "c:users:hera:desktop:tip_exp:data"
-strconstant initial_data_path = "c:users:alan:documents:0 - experiment:data"
+// These folders must exist
+strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
+strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - experiment:data:raw data"
+
+// This must be run first
+function define_paths(pc)
+	string pc
+	if (stringmatch(pc, "lab"))
+		newpath/c/o/q data, initial_data_path_lab
+	elseif (stringmatch(pc, "laptop"))
+		newpath/c/o/q data, initial_data_path_laptop
+	endif
+end
 
 function/s check_folder(data_folder)
 	string data_folder
@@ -49,17 +60,94 @@ function/s data_path(fname)
 	string day, month, year
 	string expr = "([[:digit:]]+) ([[:alpha:]]+) ([[:digit:]]+)"
 	splitstring/e=(expr) date(), day, month, year
+	pathinfo data
+	if (v_flag == 0)
+		abort "define paths"
+	endif
+	string initial_data_path = s_path
+	newpath/c/o/q data, initial_data_path
 	string data_path = initial_data_path + ":" + month + "_" + year
+	newpath/c/o/q data, data_path
 	data_path += ":day_" + day
-	newpath/c data, data_path
+	newpath/c/o/q data, data_path
 	data_path += ":" + fname
-	newpath/c data, data_path
+	newpath/c/o/q data, data_path
 	return data_path
 end
 
-function save_data(w)
+function save_data(w, wname, data_path)
 	wave w
-	save w
+	string wname, data_path
+	pathinfo data
+	if (v_flag == 0)
+		abort "define paths"
+	endif
+	string initial_data_path = s_path
+	data_path = initial_data_path + ":" + data_path
+	wname += ".ibw"
+	newpath/o/c data data_path
+	save/p=data/c/o w as wname
+end
+
+function unpack_experiment(data_folder)
+	// give data folder
+	string data_folder
+	string data_folder2
+	string data_path
+	string data_path2
+	string expr = "root:data:(.+)"
+	variable i
+	
+	// create folder if not currently existing
+	pathinfo data
+	if (v_flag == 0)
+		abort "define paths"
+	endif
+	string initial_data_path = s_path
+	data_path = initial_data_path
+	newpath/c/o/q data, data_path
+	splitstring/e=(expr) data_folder, data_path2
+	data_path = initial_data_path + ":" + data_path2
+	newpath/c/o data, data_path
+	
+	// create waves
+	variable num_waves = countobjects(data_folder, 1)
+	string wname
+	for(i = 0; i < num_waves; i += 1)
+		if (num_waves == 0)
+			break
+		endif
+		// save waves
+		wave w = $(data_folder + ":" + getindexedobjname(data_folder, 1, i))
+		wname = getindexedobjname(data_folder, 1, i) + ".ibw"
+		save/p=data/c/o w as wname
+	endfor
+	
+	variable num_folders = countobjects(data_folder, 4)
+	for(i = 0; i < num_folders; i += 1)
+		if (num_folders == 0)
+			break
+		endif
+		// create folders
+		data_folder2 = data_folder + ":" + getindexedobjname(data_folder, 4, i)
+		splitstring/e=(expr) data_folder2, data_path2
+		data_path = initial_data_path + ":" + data_path2
+		newpath/c/o/q data, data_path
+		
+		unpack_experiment(data_folder2)
+	endfor
+	
+	// create experiment folder on hd
+	//string day, month, year, experiment
+	//string expr = "root:data:([[:alpha:]]+)_([[:digit:]]+):day_([[:digit:]]+):(.+)"
+	//splitstring/e=(expr) data_folder, month, year, day, experiment
+	//newpath/c/o/q data, initial_data_path
+	//string data_path = initial_data_path + ":" + month + "_" + year
+	//newpath/c/o/q data, data_path
+	//data_path += ":day_" + day
+	//newpath/c/o/q data, data_path
+	//data_path += ":" + experiment
+	//newpath/c/o/q data, data_path
 end
 
 function load_tip_experiment(tip_exp)
@@ -79,6 +167,11 @@ function load_tip_experiment(tip_exp)
 	// increment at some point
 	data_folder += "0"
 	check_folder(data_folder)
+	pathinfo data
+	if (v_flag == 0)
+		abort "define paths"
+	endif
+	string initial_data_path = s_path
 	newpath/o/q data, initial_data_path
 	loadwave/t/o/q/p=data tip_exp + ":spectra2D.txt"
 	loadwave/t/o/q/p=data tip_exp + ":tipConductance.txt"

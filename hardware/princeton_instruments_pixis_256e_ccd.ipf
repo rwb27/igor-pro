@@ -168,49 +168,13 @@ function normaliseimagePIXIS()
 	endif
 end
 
-// CALIBRATION FUNCTIONS //
-
-function createcalibrationPIXIS()
-	if (!waveexists(root:'Princeton Instruments PIXIS':Calibration:SpecCal))
-		abort "Load Spectrum Calibration"
-	endif
-	if (waveexists(root:'Princeton Instruments PIXIS':Calibration:exp_peaks) && waveexists(root:'Princeton Instruments PIXIS':Calibration:cal_peaks))
-		Wave exp_peaks=root:'Princeton Instruments PIXIS':Calibration:exp_peaks
-		Wave cal_peaks=root:'Princeton Instruments PIXIS':Calibration:cal_peaks
-		Make/O/N=(numpnts(cal_peaks)) root:'Princeton Instruments PIXIS':Calibration:wl_peaks
-		Wave wl_peaks=root:'Princeton Instruments PIXIS':Calibration:wl_peaks
-		Wave wl_wave=root:'Princeton Instruments PIXIS':Calibration:wl_wave
-		variable i
-		for(i=0;i<numpnts(cal_peaks);i+=1)
-			wl_peaks[i]=wl_wave[cal_peaks[i]]
-		endfor
-		CurveFit/Q poly 3, wl_peaks /X=exp_peaks /D
-	else
-		string error=""
-		if (!waveexists(root:'Princeton Instruments PIXIS':Calibration:cal_peaks))
-			make/o/n=0 root:'Princeton Instruments PIXIS':Calibration:cal_peaks
-			error+="Enter Calibration Peaks\n"
-		endif
-		if (!waveexists(root:'Princeton Instruments PIXIS':Calibration:exp_peaks))
-			make/o/n=0 root:'Princeton Instruments PIXIS':Calibration:exp_peaks
-			error+="Enter Experiment Peaks\n"
-		endif
-		abort error
-	endif
-end
-
-function loadcalibrationPIXIS()
-	wave image = root:PIXIS_256E:current:image	
-	make/o/n=(dimsize(image,1)+1) root:PIXIS_256E:current:wavelength
-	wave wavelength = root:PIXIS_256E:current:wavelength
-	wave W_coef = root:PIXIS_256E:calibration:W_coef
-	variable i = 0
-	do
-		wavelength[i]  =(W_coef[1]*i) + W_coef[0]
-		i += 1
-	while (i < numpnts(wavelength))
+function load_calibration()
+	// requires the calibration to be stored in the correct location - see data path definition in "data_handling"
+	loadwave/q/h/o/p=data "calibrations:pixis_wavelength.ibw"
+	wave wavelength
 	wavelength *= 1e-9
 	setscale d 0,0,"m", wavelength
+	movewave wavelength, $(current_folder + ":wavelength")
 end
 
 // Panel //
