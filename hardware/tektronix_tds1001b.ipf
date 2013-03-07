@@ -3,10 +3,18 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
 #include "visa"
+
 static strconstant hardware_id = "tektronix_tds1001b_dso"
-static strconstant resourceName = ""
+static strconstant resourceName = "USB0::0x0699::0x0362::C059826::0::INSTR"
 static strconstant gv_folder = "root:global_variables:tektronix_tds1001b_dso"
 static strconstant data_folder = "root:tektronix_tds1001b_dso"
+
+static function check_folder(data_folder)
+	string data_folder
+	if (!datafolderexists(data_folder))
+		newdatafolder $data_folder
+	endif
+end
 
 static function open_comms()
 	variable status
@@ -25,6 +33,7 @@ static function/s gv_path()
 end
 
 static function initialise()
+	check_folder(data_folder)
 	nvar/z n = $(gv_folder + ":num_points")
 	if (!nvar_exists(n))
 		variable/g $(gv_folder + ":num_points") = 500
@@ -45,6 +54,10 @@ static function initialise()
 	//get_channel("1")
 	//get_channel("2")
 	//get_trigger()
+end
+
+static function clear()
+	visa#cmd(hardware_id, "*cls")
 end
 
 static function reset()
@@ -70,6 +83,7 @@ static function import_data(ch, wname)
 	string ch, wname
 	visa#cmd(hardware_id, "*opc?\n")
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")
+	clear()
 	visa#cmd(hardware_id, "curve?\n")
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	nvar/z n = $(gv_folder + ":num_points")
@@ -79,6 +93,7 @@ static function import_data(ch, wname)
 	make/o/n=(n) $(data_folder + ":" + wname)
 	wave w = $(data_folder + ":" + wname)
 	VISAreadbinarywave/type=(0x10) instr, w
+	clear()
 	
 	variable y0 = visa#read(hardware_id, "wfmp:yze?\n")
 	variable ym = visa#read(hardware_id, "wfmp:ymul?\n")
@@ -99,6 +114,7 @@ static function import_data_fast(ch, wname)
 	string ch, wname
 	visa#cmd(hardware_id, "*opc?\n")
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")
+	clear()
 	visa#cmd(hardware_id, "curve?\n")
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	nvar/z n = $(gv_folder + ":num_points")
@@ -108,6 +124,7 @@ static function import_data_fast(ch, wname)
 	make/o/n=(n) $(data_folder + ":" + wname)
 	wave w = $(data_folder + ":" + wname)
 	VISAreadbinarywave/type=(0x10) instr, w
+	clear()
 	
 	nvar y0 = $(gv_folder + ":y_zero_" + ch)
 	nvar ym = $(gv_folder + ":y_multi_" + ch)
@@ -137,6 +154,7 @@ static function import_data_free(ch)									// import data fast with free waves
 	string ch
 	visa#cmd(hardware_id, "*opc?\n")
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")
+	clear()
 	visa#cmd(hardware_id, "curve?\n")
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	nvar/z n = $(gv_folder + ":num_points")
@@ -145,6 +163,7 @@ static function import_data_free(ch)									// import data fast with free waves
 	endif
 	make/free/n=(n) tek_tds1001b_wave
 	VISAreadbinarywave/type=(0x10) instr, tek_tds1001b_wave
+	clear()
 	nvar y0 = $(gv_folder + ":y_zero_" + ch)
 	nvar ym = $(gv_folder + ":y_multi_" + ch)
 	nvar yo = $(gv_folder + ":y_off_" + ch)

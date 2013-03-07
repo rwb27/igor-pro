@@ -8,6 +8,7 @@
 #include "agilent_dsox2000_series_dso"
 #include "tektronix_tds1001b"
 #include "princeton_instruments_pixis_256e_ccd"
+#include "oo spectrometer v4.2"
 
 #include "tip_experiment_init"
 #include "tip_experiment_display"
@@ -115,7 +116,7 @@ function tip_scan()			// tip experiment master function
 		smu_data = smu#measure_iv()
 		force_x = tek#wave_stats("1")
 		force_y = tek#wave_stats("2")
-		//oo_read()
+		oo_read()
 		
 		// STORAGE PHASE
 		steps[i] = i

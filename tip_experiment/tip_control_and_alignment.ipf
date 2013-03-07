@@ -162,11 +162,11 @@ function tip_control_and_alignment() : panel
 	valdisplay stage_a, limits={0,0,0}, barmisc={0,1000}
 	valdisplay stage_a, value= #"root:global_variables:pi_pi733_3cd_stage:pos_a"
 	top += 20
-	valdisplay stage_b, pos={left, top}, size={110,15}, bodyWidth=60, title="b-position"
+	valdisplay stage_b, pos={left, top}, size={110,15}, bodyWidth=60, title="height (b)"
 	valdisplay stage_b, limits={0,0,0}, barmisc={0,1000}
 	valdisplay stage_b, value= #"root:global_variables:pi_pi733_3cd_stage:pos_b"
 	top += 20
-	valdisplay stage_c,pos={left, top},size={110,15},bodyWidth=60,title="c-position"
+	valdisplay stage_c,pos={left, top},size={110,15},bodyWidth=60,title="focus (c)"
 	valdisplay stage_c,limits={0,0,0},barmisc={0,1000}
 	valdisplay stage_c,value= #"root:global_variables:pi_pi733_3cd_stage:pos_c"
 		// velocity display

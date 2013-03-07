@@ -8,6 +8,13 @@ static strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
 static strconstant gv_folder = "root:global_variables:agilent_dsox2012a_dso"
 static strconstant data_folder = "root:agilent_dsox2012a_dso"
 
+static function check_folder(data_folder)
+	string data_folder
+	if (!datafolderexists(data_folder))
+		newdatafolder $data_folder
+	endif
+end
+
 static function open_comms()
 	variable status
 	status = visa#open_comms(hardware_id, resourceName)
@@ -25,6 +32,7 @@ static function/s gv_path()
 end
 
 static function initialise()
+	check_folder(data_folder)
 	visa#cmd(hardware_id, "*rst")
 	sleep/s 1
 	get_timebase()

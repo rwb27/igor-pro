@@ -90,7 +90,7 @@ function align_tips(scan_size, scan_step)
 			r[ib][ic] = real(data)
 			theta[ib][ic] = imag(data)
 			wave w
-			w = tek#import_data_free("1")
+			w = tek#import_data_free("2")
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
 			doupdate
@@ -223,6 +223,11 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	scan_folder = data#check_folder(scan_folder + ":resonance_scans")
 	scan_folder = data#new_data_folder(scan_folder + ":scan_")
 	
+	// open communications
+	pi_stage#open_comms()
+	sig_gen#open_comms()
+	lockin#open_comms()
+	
 	// get position information
 	string pi_path = pi_stage#gv_path()
 	pi_stage#get_pos()					// 'b' is up/down, 'c' is focus
@@ -243,22 +248,25 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	
 	// make alignment data waves
 	make/o/n=0 $(scan_folder + ":resonance_scan_r"), $(scan_folder + ":resonance_scan_theta")
+	make/o/n=0 $(scan_folder + ":resonance_scan_y_psd")
 	make/o/n=0 $(scan_folder + ":frequency")
 	wave res_scan_r = $(scan_folder + ":resonance_scan_r"), res_scan_theta = $(scan_folder + ":resonance_scan_theta")
+	wave res_scan_y_psd = $(scan_folder + ":resonance_scan_y_psd")
 	wave frequency = $(scan_folder + ":frequency")
 	dowindow/k tip_resonance
 	display/n=tip_resonance
-	appendtograph res_scan_r vs frequency
-	appendtograph/l=lt res_scan_theta vs frequency
+	appendtograph res_scan_y_psd vs frequency
+	//appendtograph res_scan_r vs frequency
+	appendtograph/l=lt/b=bt res_scan_theta vs frequency
 	
 	label left "3w current (pA)"; label lt "phase (deg)"; label bottom "frequency (Hz)"
 	modifygraph mirror=0,tick=2,standoff=0
 	modifygraph mode=0,rgb(''#1)=(0,15872,65280)
 	modifygraph cmplxMode(''#1)=1, cmplxMode(''#0)=2
-	modifygraph axisEnab(left)={0,0.5},axisEnab(L2)={0.05,1},freePos(L2)=0
-	modifygraph axisEnab(L2)={0.5,1}
-	modifygraph axisEnab(left)={0,0.45},axisEnab(L2)={0.55,1}
-	modifygraph freePos(B2)={0.55,kwFraction}, lblPos(L2)=80
+	modifygraph axisEnab(left)={0,0.5},axisEnab(lt)={0.05,1},freePos(lt)=0
+	modifygraph axisEnab(lt)={0.5,1}
+	modifygraph axisEnab(left)={0,0.45},axisEnab(lt)={0.55,1}
+	modifygraph freePos(bt)={0.55,kwFraction}, lblPos(lt)=80
 	modifygraph width=283.465,height=283.465
 	modifygraph muloffset(''#1)={0,10000}
 	textbox/c/n=text0/e/a=mt getdatafolder(1)
@@ -266,22 +274,27 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	variable freq = freq_start
 	variable/c data
 	variable i = 0
-	sig_gen#open_comms()
-	lockin#open_comms()
-	sig_gen#set_frequency(freq); sleep/s 1
 	lockin#aphs(); sleep/s 1
 	do
 		sig_gen#set_frequency(freq); sleep/s 0.5
 		data = lockin#measure_rtheta()
-		redimension/n=(numpnts(i) + 1) res_scan_r, res_scan_theta, frequency
+		redimension/n=(i+1) res_scan_r, res_scan_theta, frequency
 		res_scan_r[i] = real(data); res_scan_theta[i] = imag(data)
+		
+		wave w
+		w = tek#import_data_free("2")
+		res_scan_y_psd[i] = wavemax(w) - wavemin(w)
+		
 		frequency[i] = freq
 		doupdate
 		i += 1
 		freq += freq_inc
 	while (freq <= freq_stop)
-	sig_gen#close_comms()
-	lockin#close_comms()
+	
+	// close communications
+	pi_stage#open_comms()
+	sig_gen#open_comms()
+	lockin#open_comms()
 end
 
 // Panel Controls

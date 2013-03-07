@@ -12,7 +12,7 @@ strconstant current_folder = "root:pixis_256e:current"
 strconstant calibration_folder = "root:pixis_256e:calibration"
 strconstant data_folder = "root:pixis_256e:data"
 
-function check_folder_pixis(data_folder)
+static function check_folder(data_folder)
 	string data_folder
 	if (!datafolderexists(data_folder))
 		newdatafolder $data_folder
@@ -25,12 +25,12 @@ end
 
 function initialise()
 	string gvs = "root:global_variables"
-	check_folder_pixis(gvs)
-	check_folder_pixis(gv_folder)
-	check_folder_pixis("root:pixis_256e")
-	check_folder_pixis(current_folder)
-	check_folder_pixis(calibration_folder)
-	check_folder_pixis(data_folder)
+	check_folder(gvs)
+	check_folder(gv_folder)
+	check_folder("root:pixis_256e")
+	check_folder(current_folder)
+	check_folder(calibration_folder)
+	check_folder(data_folder)
 	
 	getfilefolderinfo/p=home/q/z "pixis_256e"
 	string/g $(gv_folder + ":pixis_path") = S_Path
