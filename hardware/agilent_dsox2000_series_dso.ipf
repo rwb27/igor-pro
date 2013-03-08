@@ -2,7 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa"
+#include "visa_comms"
 static strconstant hardware_id = "agilent_dsox2012a_dso"
 static strconstant resourceName = "USB0::0x0957::0x1799::MY51330673::0::INSTR"
 static strconstant gv_folder = "root:global_variables:agilent_dsox2012a_dso"

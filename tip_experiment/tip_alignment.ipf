@@ -11,6 +11,10 @@
 
 static strconstant gv_folder = "root:global_variables:tip_alignment"
 
+static function/s gv_path()
+	return gv_folder
+end
+
 static function initialise()
 	data#check_gvpath(gv_folder)
 	variable/g $(gv_folder + ":scan_size")
@@ -23,13 +27,22 @@ end
 function align_tips(scan_size, scan_step)
 	variable scan_size, scan_step
 	
+	// open comms
+	//pi_stage#close_comms()
+	//lockin#close_comms()
+	//tek#close_comms()
+	pi_stage#open_comms()
+	lockin#open_comms()
+	tek#open_comms(); tek#initialise()
+	
 	// initialise piezo information
 	string pi_path = pi_stage#gv_path()
-	pi_stage#get_pos()					// 'b' is up/down, 'c' is focus
-	nvar init_a = $(pi_path + ":pos_a")
-	nvar init_b = $(pi_path + ":pos_b")
-	nvar init_c = $(pi_path + ":pos_c")
-	variable pos_b, pos_c
+	variable init_a = pi_stage#get_pos_ch("a")
+	variable init_b = pi_stage#get_pos_ch("b")
+	variable init_c = pi_stage#get_pos_ch("c")
+	nvar pos_a = $(pi_path + ":pos_a")
+	nvar pos_b = $(pi_path + ":pos_b")
+	nvar pos_c = $(pi_path + ":pos_c")
 	
 	// store the current scan
 	string scan_folder = data#check_data_folder()
@@ -68,15 +81,12 @@ function align_tips(scan_size, scan_step)
 	// plot scan
 	display_scan(scan_folder)
 	
-	// initialise oscilloscope communications
-	lockin#open_comms()
-	tek#open_comms()
-	
 	pos_b = init_b - scan_size/2
 	pos_c = init_c - scan_size/2
 	pi_stage#move("B", pos_b)
 	pi_stage#move("C", pos_c)
 	
+	tek#get_waveform_params("2")
 	lockin#aphs(); sleep/s 1
 	
 	variable ib, ic
@@ -89,8 +99,8 @@ function align_tips(scan_size, scan_step)
 			data = lockin#measure_rtheta()
 			r[ib][ic] = real(data)
 			theta[ib][ic] = imag(data)
-			wave w
-			w = tek#import_data_free("2")
+			make/free w
+			tek#import_data_free("2", w)
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
 			doupdate
@@ -117,6 +127,9 @@ function align_tips(scan_size, scan_step)
 	fit_alignment_data(scan_folder, r)
 	fit_alignment_data(scan_folder, theta)
 	fit_alignment_data(scan_folder, y_psd)
+	
+	// close comms
+	pi_stage#close_comms()
 	tek#close_comms()
 	lockin#close_comms()
 end
@@ -124,20 +137,25 @@ end
 function fit_alignment_data(scan_folder, data)
 	string scan_folder
 	wave data
+	
+	dowindow/f tip_alignment
+	setdatafolder $scan_folder
+	
 	variable z0, a0, x0, sigx, y0, sigy, corr
 	imagestats data
 	variable ix = dimsize(data, 0)-1, iy = dimsize(data, 1)-1
 	z0 = 1/4 * (data[0][0] + data[ix][0] + data[0][iy] + data[ix][iy])
 	a0 = data[ix/2][iy/2] - z0
-	x0 = dimoffset(data, 0) + dimsize(data, 0)/2 * dimdelta(data, 0)
-	y0 = dimoffset(data, 1) + dimsize(data, 1)/2 * dimdelta(data, 1)
+	x0 = dimoffset(data, 0) + ix/2 * dimdelta(data, 0)
+	y0 = dimoffset(data, 1) + iy/2 * dimdelta(data, 1)
 	sigx = 0.25
 	sigy = 0.25
 	corr = 0
 	
 	// Constraints on fit
 	// Note: {K0,K1,K2,K3,K4,K5,K6} = {z0,a0,x0,y0,sigx,sigy,corr}
-	make/o/t/n=0 t_constraints
+	make/o/t/n=0 $(scan_folder + ":t_constraints")
+	wave/t t_constraints = $(scan_folder + ":t_constraints")
 	variable q = 0		// Constraint counter
 	
 	// Constraint -- x0 and y0 must lie within the scan area
@@ -165,10 +183,12 @@ function fit_alignment_data(scan_folder, data)
 	wave w_coef = $(scan_folder + ":w_coef")
 	w_coef[0] = {z0, a0, x0, y0, sigx, sigy, corr}
 	funcfitmd/nthr=0/q gaussian_2d w_coef  data /d/c=t_constraints
-	
+	wave w_sigma
+	setdatafolder root:
 	//modifycontour $(scan_folder + ":fit_" + data) labels=0, ctabLines={*,*,Geo32,0}
 	
-	wave w_sigma
+	variable/g $(scan_folder + ":x0") = w_coef[2]
+	variable/g $(scan_folder + ":y0") = w_coef[3]
 	variable/g $(gv_folder + ":x0") = w_coef[2]
 	variable/g $(gv_folder + ":y0") = w_coef[3]
 end
@@ -190,19 +210,19 @@ static function display_scan(scan_folder)
 	appendimage/l=lr r
 	appendimage/l=ltheta theta
 	appendimage y_psd
-	modifyimage ''#0 ctab={*,*,geo32,0}
-	modifyimage ''#1 ctab={*,*,geo32,0}
-	modifyimage ''#2 ctab={*,*,geo32,0}
-	modifyimage ''#3 ctab={*,*,geo32,0}
+	modifyimage ''#0 ctab={*,*,coldwarm,0}
+	modifyimage ''#1 ctab={*,*,coldwarm,0}
+	modifyimage ''#2 ctab={*,*,coldwarm,0}
+	modifyimage ''#3 ctab={*,*,coldwarm,0}
 	modifyimage ''#4 ctab={*,*,coldwarm,0}
-	modifygraph width=200
+	modifygraph width=100
 	modifygraph height={aspect, 5}
 	modifygraph tick=2, mirror=1, fSize=11, standoff=0
-	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
-	modifygraph axisEnab(ly)={0.6,0.8}, freePos(ly)=0
-	modifygraph axisEnab(lr)={0.4,0.6}, freePos(lr)=0
-	modifygraph axisEnab(ltheta)={0.2,0.4}, freePos(ltheta)=0
-	modifygraph axisEnab(left)={0,0.2}, freePos(left)=0
+	modifygraph axisEnab(lx)={0.81,1.0}, freePos(lx)=0
+	modifygraph axisEnab(ly)={0.61,0.79}, freePos(ly)=0
+	modifygraph axisEnab(lr)={0.41,0.59}, freePos(lr)=0
+	modifygraph axisEnab(ltheta)={0.21,0.39}, freePos(ltheta)=0
+	modifygraph axisEnab(left)={0,0.19}, freePos(left)=0
 end
 
 function move_to_centre()
@@ -218,6 +238,11 @@ end
 function resonance_scan(freq_start, freq_stop, freq_inc)
 	variable freq_start, freq_stop, freq_inc
 	
+	// error checks
+	if (freq_start == 0 || freq_stop == 0 || freq_inc == 0)
+		abort "enter frequency ranges"
+	endif
+	
 	// store the current scan
 	string scan_folder = data#check_data_folder()
 	scan_folder = data#check_folder(scan_folder + ":resonance_scans")
@@ -227,6 +252,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	pi_stage#open_comms()
 	sig_gen#open_comms()
 	lockin#open_comms()
+	tek#open_comms(); tek#initialise()
 	
 	// get position information
 	string pi_path = pi_stage#gv_path()
@@ -256,33 +282,32 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	dowindow/k tip_resonance
 	display/n=tip_resonance
 	appendtograph res_scan_y_psd vs frequency
-	//appendtograph res_scan_r vs frequency
-	appendtograph/l=lt/b=bt res_scan_theta vs frequency
+	appendtograph/l=lr res_scan_r vs frequency
+	appendtograph/l=lt res_scan_theta vs frequency
 	
-	label left "3w current (pA)"; label lt "phase (deg)"; label bottom "frequency (Hz)"
+	label left "force"; label lr "3w current (pA)"; label lt "phase (deg)"; label bottom "frequency (Hz)"
 	modifygraph mirror=0,tick=2,standoff=0
 	modifygraph mode=0,rgb(''#1)=(0,15872,65280)
 	modifygraph cmplxMode(''#1)=1, cmplxMode(''#0)=2
-	modifygraph axisEnab(left)={0,0.5},axisEnab(lt)={0.05,1},freePos(lt)=0
-	modifygraph axisEnab(lt)={0.5,1}
-	modifygraph axisEnab(left)={0,0.45},axisEnab(lt)={0.55,1}
-	modifygraph freePos(bt)={0.55,kwFraction}, lblPos(lt)=80
-	modifygraph width=283.465,height=283.465
+	modifygraph axisEnab(left)={0.68, 1.0}, axisEnab(lr)={0.34,0.66}, axisEnab(lt)={0, 0.32}
+	modifygraph freePos(lt)=0, freepos(lr)=0, lblpos(lt)=0, lblpos(lr)=0
+	modifygraph width=250, height={aspect, 1.5}
 	modifygraph muloffset(''#1)={0,10000}
-	textbox/c/n=text0/e/a=mt getdatafolder(1)
+	showinfo
 	
 	variable freq = freq_start
 	variable/c data
 	variable i = 0
+	tek#get_waveform_params("2")
 	lockin#aphs(); sleep/s 1
 	do
 		sig_gen#set_frequency(freq); sleep/s 0.5
 		data = lockin#measure_rtheta()
-		redimension/n=(i+1) res_scan_r, res_scan_theta, frequency
+		redimension/n=(i+1) res_scan_r, res_scan_theta, res_scan_y_psd, frequency
 		res_scan_r[i] = real(data); res_scan_theta[i] = imag(data)
 		
-		wave w
-		w = tek#import_data_free("2")
+		make/free w
+		tek#import_data_free("2", w)
 		res_scan_y_psd[i] = wavemax(w) - wavemin(w)
 		
 		frequency[i] = freq
@@ -295,6 +320,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	pi_stage#open_comms()
 	sig_gen#open_comms()
 	lockin#open_comms()
+	tek#close_comms()
 end
 
 // Panel Controls

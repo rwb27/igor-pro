@@ -2,8 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa"
-#include "data_handling"
+#include "visa_comms"
 static strconstant hardware_id = "agilent_33220a_signal_generator"
 static strconstant resourceName = "USB0::0x0957::0x0407::MY44037993::0::INSTR"
 static strconstant gv_folder = "root:global_variables:agilent_33220a_signal_generator"
@@ -25,7 +24,6 @@ static function/s gv_path()
 end
 
 static function initialise()
-	data#check_gvpath(gv_folder)
 	variable/g $(gv_folder + ":frequency")
 	variable/g $(gv_folder + ":amplitude")
 	variable/g $(gv_folder + ":offset")

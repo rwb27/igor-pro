@@ -2,7 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa"
+#include "visa_comms"
 static strconstant hardware_id = "horiba_triax_320"
 static strconstant resourceName = "GPIB0::1::INSTR"
 static strconstant gv_folder = "root:global_variables:horiba_triax_320"

@@ -17,14 +17,17 @@ function open_comms(hardware_id, resourceName)
 	check_folder(data_folder)
 	nvar/z session = $("root:global_variables:" + hardware_id + ":session")
 	nvar/z instr = $("root:global_variables:" + hardware_id + ":instr")
-	if (!(nvar_exists(session) || nvar_exists(instr)))
-		variable/g $(data_folder + ":instr") = instr
-		variable/g $(data_folder + ":session") = session
+	if (!nvar_exists(instr))
+		variable/g $("root:global_variables:" + hardware_id + ":instr") = -1
 	endif
+	if (!nvar_exists(session))
+		variable/g $("root:global_variables:" + hardware_id + ":session") = -1
+	endif
+	nvar session = $("root:global_variables:" + hardware_id + ":session")
+	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	
-	if (!(session == -1 || instr == -1))
-		print "comms already open"
-		return 0
+	if (session != -1 || instr != -1)
+		print hardware_id, ": comms already open:", session, instr
 	endif
 	
 	variable status, instr_id = session, session_id = session
@@ -39,11 +42,6 @@ function open_comms(hardware_id, resourceName)
 		viStatusDesc(instr_id, status, error_message)
 		abort "Open error: " + error_message
 	endif
-	//status = viClear(session)
-	//if (status < 0)
-	//	viStatusDesc(instr, status, error_message)
-	//	abort "Clear error: " + error_message
-	//endif
     	session = session_id; instr = instr_id
     
 	return status
@@ -51,22 +49,23 @@ end
 
 function close_comms(hardware_id)
 	string hardware_id
-	nvar session = $("root:global_variables:" + hardware_id + ":session")
-	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
+	nvar/z session = $("root:global_variables:" + hardware_id + ":session")
+	nvar/z instr = $("root:global_variables:" + hardware_id + ":instr")
+	if (!nvar_exists(instr))
+		variable/g $("root:global_variables:" + hardware_id + ":instr") = -1
+	endif
+	if (!nvar_exists(session))
+		variable/g $("root:global_variables:" + hardware_id + ":session") = -1
+	endif
 	
 	// check if comms are already closed
 	if (session == -1 || instr == -1)
-		print "comms already closed"
+		print hardware_id, ": comms already closed"
 		return 0
 	endif
 	
 	variable session_id = session, instr_id = instr, status
 	string error_message
-	//status = viClear(session)
-	//if (status < 0)
-	//    viStatusDesc(instr, status, error_message)
-	//    abort "Clear error: " + error_message
-	//endif
 	status = viClose(session_id)
 	if (status < 0)
 		viStatusDesc(instr_id, status, error_message)
@@ -98,7 +97,7 @@ function/s read_str(hardware_id, cmd)
 	string message
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	VISAwrite instr, cmd
-	VISAread/t="\n" instr, message //  possibly use /t="\n"
+	VISAread/n=500 instr, message //  possibly use /t="\n", /n=500 for tek
 	return message
 end
 

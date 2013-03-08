@@ -2,7 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa"
+#include "visa_comms"
 static strconstant hardware_id = "keithley_2635a_smu"
 static strconstant resourceName = "ASRL22::INSTR"//"GPIB0::26::INSTR"
 static strconstant gv_folder = "root:global_variables:keithley_2635a_smu"

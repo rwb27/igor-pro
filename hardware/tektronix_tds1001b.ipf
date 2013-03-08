@@ -2,19 +2,12 @@
 #pragma version = 6.30
 #pragma rtGlobals=3
 
-#include "visa"
+#include "visa_comms"
 
 static strconstant hardware_id = "tektronix_tds1001b_dso"
 static strconstant resourceName = "USB0::0x0699::0x0362::C059826::0::INSTR"
 static strconstant gv_folder = "root:global_variables:tektronix_tds1001b_dso"
 static strconstant data_folder = "root:tektronix_tds1001b_dso"
-
-static function check_folder(data_folder)
-	dfref data_folder
-	if (datafolderrefstatus(data_folder) == 0)
-		newdatafolder data_folder
-	endif
-end
 
 static function open_comms()
 	variable status
@@ -33,7 +26,9 @@ static function/s gv_path()
 end
 
 static function initialise()
-	check_folder($data_folder)
+	if (datafolderrefstatus($data_folder) == 0)
+		newdatafolder $data_folder
+	endif
 	nvar/z n = $(gv_folder + ":num_points")
 	if (!nvar_exists(n))
 		variable/g $(gv_folder + ":num_points") = 500
@@ -86,16 +81,15 @@ end
 static function import_data_complete(ch, wname)
 	string ch, wname
 	get_waveform_params(ch)			// get waveform scaling parameters
-	wave w
-	w = import_data(ch, wname)
+	import_data(ch, wname)
+	wave w = $wname
 	return w
 end
 
 static function import_data(ch, wname)
 	string ch, wname
-	visa#cmd(hardware_id, "*opc?\n")							// request
+	visa#read_str(hardware_id, "*opc?\n")							// request
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")				// set source channel
-	//clear()
 	visa#cmd(hardware_id, "curve?\n")							// request curve
 	
 	// load number of points
@@ -106,31 +100,35 @@ static function import_data(ch, wname)
 	endif
 	
 	// create wave to store data
-	make/free/n=(n+3) data
+	make/free/n=(n+3) raw_data
+	make/free/n=(n) data
 	
 	// get wave
-	VISAreadbinarywave/type=(0x10) instr, data
-	//clear()
+	VISAreadbinarywave/type=(0x10) instr, raw_data
+	data = raw_data[p+3]
 	// load scaling variables
-	nvar y0 = $(gv_folder + ":y_zero_" + ch)
-	nvar ym = $(gv_folder + ":y_multi_" + ch)
-	nvar yo = $(gv_folder + ":y_off_" + ch)
-	nvar x0 = $(gv_folder + ":x_zero")
-	nvar xinc = $(gv_folder + ":x_inc")
+	nvar/z y0 = $(gv_folder + ":y_zero_" + ch)
+	nvar/z ym = $(gv_folder + ":y_multi_" + ch)
+	nvar/z yo = $(gv_folder + ":y_off_" + ch)
+	nvar/z x0 = $(gv_folder + ":x_zero")
+	nvar/z xinc = $(gv_folder + ":x_inc")
+	if (!(nvar_exists(y0) && nvar_exists(ym) && nvar_exists(yo) && nvar_exists(x0) && nvar_exists(xinc)))
+		get_waveform_params(ch)
+	endif
 	// scale waves
 	data = ((data - yo)*ym)+y0
 	setscale/p x, x0, xinc, data
 	// save wave
-	duplicate/o/r=[3,2502] data, $wname
+	duplicate/o data, $wname
 	wave w = $wname
 	return w
 end
 
-static function import_data_free(ch)
+static function import_data_free(ch, w)
 	string ch
-	visa#cmd(hardware_id, "*opc?\n")							// request
+	wave w
+	visa#read_str(hardware_id, "*opc?\n")							// request
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")				// set source channel
-	//clear()
 	visa#cmd(hardware_id, "curve?\n")							// request curve
 	
 	// load number of points
@@ -141,22 +139,28 @@ static function import_data_free(ch)
 	endif
 	
 	// create wave to store data
-	make/free/n=(n+3) data
+	make/free/n=(n+3) raw_data
+	make/free/n=(n) data
+	redimension/n=(n) w
 	
 	// get wave
-	VISAreadbinarywave/type=(0x10) instr, data
-	//clear()
+	VISAreadbinarywave/type=(0x10) instr, raw_data
+	data = raw_data[p+3]
 	// load scaling variables
 	nvar y0 = $(gv_folder + ":y_zero_" + ch)
 	nvar ym = $(gv_folder + ":y_multi_" + ch)
 	nvar yo = $(gv_folder + ":y_off_" + ch)
 	nvar x0 = $(gv_folder + ":x_zero")
 	nvar xinc = $(gv_folder + ":x_inc")
+	if (!(nvar_exists(y0) && nvar_exists(ym) && nvar_exists(yo) && nvar_exists(x0) && nvar_exists(xinc)))
+		get_waveform_params(ch)
+	endif
 	// scale waves
 	data = ((data - yo)*ym)+y0
 	setscale/p x, x0, xinc, data
 	// save wave
-	duplicate/free/r=[3,2502] data, w
+	w = data
+	setscale/p x, x0, xinc, w
 	return w
 end
 
@@ -176,15 +180,15 @@ end
 
 static function wave_mean(ch)
 	string ch
-	wave w
-	w = import_data_free(ch)
+	make/free w
+	import_data_free(ch, w)
 	return mean(w)
 end
 
 static function/c wave_stats(ch)
 	string ch
 	wave w
-	w = import_data_free(ch)
+	import_data_free(ch, w)
 	wavestats/q w
 	variable/c stats = cmplx(V_avg, V_sdev)
 	return stats

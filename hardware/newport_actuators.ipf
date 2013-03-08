@@ -2,7 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa"
+#include "visa_comms"
 static strconstant hardware_id_x = "newport_actuators_x"
 static strconstant hardware_id_y = "newport_actuators_y"
 static strconstant hardware_id_z = "newport_actuators_z"

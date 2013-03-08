@@ -2,7 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
-#include "visa"
+#include "visa_comms"
 #include "data_handling"
 static strconstant hardware_id = "hp33120a_signal_generator"
 static strconstant resourceName = "GPIB0::3::INSTR"

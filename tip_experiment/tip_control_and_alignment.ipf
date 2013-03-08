@@ -63,8 +63,6 @@ end
 
 // Panel //
 
-#pragma rtGlobals=1		// Use modern global access method.
-
 function tip_control_and_alignment() : panel
 	variable left, right, top, bottom
 	dowindow/k tip_control
@@ -229,8 +227,15 @@ function tip_control_and_alignment() : panel
 	button fit_r, pos={left, top}, size={30,20}, proc=fit_alignment_data_r_button, title="Fit R"
 	left -= 60; top += 20
 	button fit_theta, pos={left, top}, size={50,20}, proc=fit_alignment_data_theta_button, title="Fit Theta"; left += 50
-	button fit_y_psd, pos={left, top}, size={50,20}, proc=fit_alignment_data_Y_psd_button, title="Fit yPSD"
-	left -= 50; top -= 60
+	button fit_y_psd, pos={left, top}, size={50,20}, proc=fit_alignment_data_Y_psd_button, title="Fit yPSD"; left += 60
+	string align_path = alignment#gv_path()
+	valdisplay cent_b, pos={left, top}, size={100,20}, title="cent. ht. (b)"
+	string b = align_path + ":x0"
+	valdisplay cent_b, value= #b; left += 110
+	valdisplay cent_c, pos={left, top}, size={100,20}, title="cent. f. (c)"
+	string c = align_path + ":y0"
+	valdisplay cent_c, value= #c
+	left -= 220; top -= 60
 		// resonance scan controls
 	left += 110; top -= 40
 	setvariable set_freq_start, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Start"
