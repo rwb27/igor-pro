@@ -11,21 +11,32 @@ end
 
 function open_comms(hardware_id, resourceName)
 	string hardware_id, resourceName
-	variable session, instr, status
 	string data_folder = "root:global_variables"
 	check_folder(data_folder)
 	data_folder += ":" + hardware_id
 	check_folder(data_folder)
+	nvar/z session = $("root:global_variables:" + hardware_id + ":session")
+	nvar/z instr = $("root:global_variables:" + hardware_id + ":instr")
+	if (!(nvar_exists(session) || nvar_exists(instr)))
+		variable/g $(data_folder + ":instr") = instr
+		variable/g $(data_folder + ":session") = session
+	endif
 	
+	if (!(session == -1 || instr == -1))
+		print "comms already open"
+		return 0
+	endif
+	
+	variable status, instr_id = session, session_id = session
 	string error_message
-	status = viOpenDefaultRM(session)
+	status = viOpenDefaultRM(session_id)
 	if (status < 0)
-		viStatusDesc(instr, status, error_message)
+		viStatusDesc(instr_id, status, error_message)
 		abort "OpenDefaultRM error: " + error_message
 	endif
-	status = viOpen(session, resourceName, 0, 0, instr)
+	status = viOpen(session_id, resourceName, 0, 0, instr_id)
 	if (status < 0)
-		viStatusDesc(instr, status, error_message)
+		viStatusDesc(instr_id, status, error_message)
 		abort "Open error: " + error_message
 	endif
 	//status = viClear(session)
@@ -33,9 +44,8 @@ function open_comms(hardware_id, resourceName)
 	//	viStatusDesc(instr, status, error_message)
 	//	abort "Clear error: " + error_message
 	//endif
+    	session = session_id; instr = instr_id
     
-	variable/g $(data_folder + ":instr") = instr
-	variable/g $(data_folder + ":session") = session
 	return status
 end
 
@@ -43,18 +53,26 @@ function close_comms(hardware_id)
 	string hardware_id
 	nvar session = $("root:global_variables:" + hardware_id + ":session")
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
-	variable status
+	
+	// check if comms are already closed
+	if (session == -1 || instr == -1)
+		print "comms already closed"
+		return 0
+	endif
+	
+	variable session_id = session, instr_id = instr, status
 	string error_message
 	//status = viClear(session)
 	//if (status < 0)
 	//    viStatusDesc(instr, status, error_message)
 	//    abort "Clear error: " + error_message
 	//endif
-	status = viClose(session)
+	status = viClose(session_id)
 	if (status < 0)
-		viStatusDesc(instr, status, error_message)
+		viStatusDesc(instr_id, status, error_message)
 		abort "Close error: " + error_message
 	endif
+	
 	session = -1; instr = -1
 	return status
 end
