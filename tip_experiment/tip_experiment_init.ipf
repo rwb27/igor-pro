@@ -99,7 +99,8 @@ end
 static function init_scan_waves(scan_folder)
 	dfref scan_folder
 	nvar/sdfr=$gv_folder append_mode
-	nvar num_spectrometers
+	dfref spec_path = root:oo:globalvariables
+	nvar/sdfr=spec_path num_spectrometers
 	if (!append_mode)									// if not appending
 		// create data storage waves
 		make/o/n=0 scan_folder:steps

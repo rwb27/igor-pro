@@ -42,7 +42,8 @@ function tip_scan()			// tip experiment master function
 	dfref smu_path = $smu#gv_path()
 	nvar/sdfr=smu_path v = :voltage, i_range = :current_range
 		// spectrometer
-	nvar num_spectrometers
+	dfref spec_path = root:oo:globalvariables
+	nvar/sdfr=spec_path num_spectrometers
 		// pixis
 	dfref pixis_path = $pixis#gv_path()
 	nvar/sdfr=pixis_path exp_time

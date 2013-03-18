@@ -19,7 +19,8 @@ end
 
 static function display_scan(scan_folder)
 	dfref scan_folder
-	nvar num_spectrometers
+	dfref spec_path = root:oo:globalvariables
+	nvar/sdfr=spec_path num_spectrometers
 	
 	// load necessary waves
 	wave/sdfr=scan_folder steps

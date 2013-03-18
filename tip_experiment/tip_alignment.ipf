@@ -182,7 +182,8 @@ function fit_alignment_data(scan_folder, data)
 	make/d/n=7/o $(scan_folder + ":w_coef")
 	wave w_coef = $(scan_folder + ":w_coef")
 	w_coef[0] = {z0, a0, x0, y0, sigx, sigy, corr}
-	funcfitmd/nthr=0/q gaussian_2d w_coef  data /d/c=t_constraints
+	//funcfitmd/nthr=0/q gaussian_2d w_coef  data /d/c=t_constraints
+	curvefit/x=1/nthr=0 gauss2d, kwcwave= w_coef, data /d//c=t_constraints
 	wave w_sigma
 	setdatafolder root:
 	//modifycontour $(scan_folder + ":fit_" + data) labels=0, ctabLines={*,*,Geo32,0}
