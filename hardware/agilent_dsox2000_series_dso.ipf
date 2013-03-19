@@ -41,7 +41,7 @@ static function initialise()
 	get_trigger()
 end
 
-function reset()
+static function reset()
 	visa#cmd(hardware_id, "*rst")
 end
 

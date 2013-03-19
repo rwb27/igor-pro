@@ -46,6 +46,8 @@ end
 static function initialise()
 	variable/g $(gv_folder_x + ":pos_x"), $(gv_folder_y + ":pos_y"), $(gv_folder_z + ":pos_z")
 	variable/g $(gv_folder_x + ":step_x") = 500.0, $(gv_folder_y + ":step_y") = 500.0, $(gv_folder_z + ":step_z") = 500.0
+	motors_on()
+	setup("x"); setup("y"); setup("z")
 	get_pos("x"); get_pos("y"); get_pos("z")
 end
 
@@ -55,7 +57,7 @@ static function setup(ch)
 	if (stringmatch(ch, "x"))
 		do
 			status = ready_status("x")
-		while (!stringmatch(status, "33"))
+		while (!stringmatch(status, "32") && !stringmatch(status, "33") && !stringmatch(status, "34") && !stringmatch(status, "35"))
 		get_pos("x")
 	elseif (stringmatch(ch, "y"))
 		do
@@ -164,7 +166,6 @@ static function motors_on()
 	visa#cmd(hardware_id_y, actuator_id_y + "mo\r\n")
 	visa#cmd(hardware_id_z, actuator_id_z + "mo\r\n")
 	sleep/s 1
-	initialise()
 end
 
 static function motors_off()
@@ -172,7 +173,6 @@ static function motors_off()
 	visa#cmd(hardware_id_y, actuator_id_y + "mf\r\n")
 	visa#cmd(hardware_id_z, actuator_id_z + "mf\r\n")
 	sleep/s 1
-	initialise()
 end
 
 static function stop()
@@ -307,6 +307,20 @@ static function update_button(ba) : buttoncontrol
 		case 2:
 			open_comms()
 			get_pos("x"); get_pos("y"); get_pos("z")
+			close_comms()
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+static function init_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			open_comms()
+			initialise()
 			close_comms()
 			break
 		case -1:

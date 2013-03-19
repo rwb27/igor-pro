@@ -102,8 +102,10 @@ function tip_control_and_alignment() : panel
 	button shutdown_actuators, fColor=(65280,0,0)
 	top += 20
 	button actuators_update, pos={left,top}, size={60,20}, proc=actuators#update_button, title="Update"
+	top += 20
+	button init_actuators, pos={left,top}, size={60,20}, proc=actuators#init_button, title="Initialise"
 		// position display
-	left += 65; top -= 40
+	left += 65; top -= 60
 	valdisplay actuator_x, pos={left, top}, size={110,15}, bodyWidth=60, title="height (x)"
 	valdisplay actuator_x, limits={0,0,0}, barmisc={0,1000}
 	valdisplay actuator_x, value= #"root:global_variables:newport_actuators_x:pos_x"

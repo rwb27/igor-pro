@@ -1,5 +1,6 @@
 #pragma IndependentModule = pixis
-#pragma version = 6.20
+//#pragma modulename = pixis
+#pragma version = 6.31
 #pragma rtGlobals=1		// Use modern global access method.
 
 strconstant gv_folder = "root:global_variables:princeton_instr_pixis_256e_ccd"
@@ -33,9 +34,9 @@ function initialise()
 	check_folder(data_folder)
 	
 	getfilefolderinfo/p=home/q/z "pixis_256e"
-	string/g $(gv_folder + ":pixis_path") = S_Path
-	if (waveexists(root:pixis_256e:calibration:W_coef))
-		//load_calibration_pixis()
+	string/g $(gv_folder + ":pixis_path") = s_path
+	if (!waveexists($(current_folder + ":wavelength")))
+		load_calibration()
 	endif
 end
 
@@ -51,7 +52,7 @@ function ready(exp_time)
 end
 
 function read()
-	svar pixis_path = root:PIXIS_256E:pixis_path
+	svar pixis_path = $(gv_folder + ":pixis_path")
 	GBLoadWave/Q/O/N=temp/T={80,80}/W=1/B pixis_path + "image.raw"
 	//GBLoadWave/Q/O/N=temp/T={80,80}/W=1/B "C:Users:Hera:Desktop:Tip_Exp:pixis_256e:image.raw"
 	redimension/n=(1024,256) temp0
@@ -61,7 +62,7 @@ function read()
 	scale_kinetics()
 	correct_pixis()
 	if (waveexists($(current_folder + ":bkgd_image")) && waveexists($(current_folder + ":ref_image")))
-		//normaliseimagePIXIS()
+		normalise_image()
 	endif
 end
 
@@ -73,7 +74,7 @@ function display_image()
 	label left "wavelength (\\U)"; label bottom "time (\\U)"	
 end
 
-function image(exp_time)
+function capture_image(exp_time)
 	variable exp_time
 	variable/g $(gv_folder + ":exp_time") = exp_time
 	executescripttext/B init_kinetics + " -t " + num2str(exp_time)
@@ -96,15 +97,16 @@ end
 
 function correct_pixis()
 	wave image = $(current_folder + ":image")
-	deletepoints/M=0 250, 6, image
-	image[0,4][] = 530
+	deletepoints/M=0 250, 6, image			// remove end exposure
+	image[0,2][] = 530						// remove initial exposure
 end
 
 // BACKGROUND / REFERENCE ACQUISITION //
 
 function read_bkgd(exp_time)
 	variable exp_time
-	image(exp_time)
+	//capture_image(exp_time)
+	ready(exp_time);sleep/s 5; read()
 	duplicate/o $(current_folder + ":image"), $(current_folder + ":bkgd_image")
 	// Automatic creation of background spectrum
 	wave bkgd_image = $(current_folder + ":bkgd_image")
@@ -116,7 +118,8 @@ end
 
 function read_ref(exp_time)
 	variable exp_time
-	image(exp_time)
+	//capture_image(exp_time)
+	ready(exp_time);sleep/s 5; read()
 	duplicate/o $(current_folder + ":image"), $(current_folder + ":ref_image")
 	// Automatic creation of reference spectrum
 	wave ref_image = $(current_folder + ":ref_image")
@@ -150,7 +153,7 @@ end
 
 // REFERENCE NORMALISATION //
 
-function normaliseimagePIXIS()
+function normalise_image()
 	wave image = $(current_folder + ":image")
 	wave bkgd = $(current_folder + ":bkgd_image")
 	wave ref = $(current_folder + ":ref_image")
@@ -174,65 +177,59 @@ end
 
 function load_calibration()
 	// requires the calibration to be stored in the correct location - see data path definition in "data_handling"
-	loadwave/q/h/o/p=data "calibrations:pixis_wavelength.ibw"
+	loadwave/q/h/o/p=data ":calibrations:pixis_wavelength.ibw"
 	wave wavelength
-	wavelength *= 1e-9
+	//wavelength *= 1e-9
 	setscale d 0,0,"m", wavelength
 	movewave wavelength, $(current_folder + ":wavelength")
 end
 
 // Panel //
 
-Function image_button(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
+function image_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch( ba.eventcode )
 		case 2: // mouse up
 			nvar exp_time = $(gv_folder + ":exp_time")
-			pixis#image(exp_time)
+			capture_image(exp_time)
 			break
 		case -1: // control being killed
 			break
 	endswitch
-
 	return 0
-End
+end
 
-Function live_button(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
+function live_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch( ba.eventcode )
 		case 2: // mouse up
 			//live code
 			break
 		case -1: // control being killed
 			break
 	endswitch
-
 	return 0
-End
+end
 
-Function arm_button(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
+function arm_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch( ba.eventcode )
 		case 2: // mouse up
 			nvar exp_time = $(gv_folder + ":exp_time")
-			pixis#ready(exp_time)
+			ready(exp_time)
 			break
 		case -1: // control being killed
 			break
 	endswitch
-
 	return 0
-End
+end
 
 Function read_button(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
 
 	switch( ba.eventCode )
 		case 2: // mouse up
-			pixis#read()
+			read()
 			break
 		case -1: // control being killed
 			break
@@ -247,7 +244,7 @@ Function get_bkgd_button(ba) : ButtonControl
 	switch( ba.eventCode )
 		case 2: // mouse up
 			nvar exp_time = $(gv_folder + ":exp_time")
-			pixis#read_bkgd(exp_time)
+			read_bkgd(exp_time)
 			break
 		case -1: // control being killed
 			break
@@ -262,7 +259,7 @@ Function get_ref_button(ba) : ButtonControl
 	switch( ba.eventCode )
 		case 2: // mouse up
 			nvar exp_time = $(gv_folder + ":exp_time")
-			pixis#read_ref(exp_time)
+			read_ref(exp_time)
 			break
 		case -1: // control being killed
 			break
@@ -300,10 +297,12 @@ Function clear_ref_button(ba) : ButtonControl
 End
 
 function pixis_256e() : Panel
+	initialise()
 	// prepare panel with initial image
-	pixis#image(100e-6)
+	capture_image(100e-6)
 	// create panel
-	NewPanel /W=(436,112,933,456) as "PIXIS 256E"
+	dowindow/k pixis_256e
+	newpanel/n=pixis_256e/w=(436,112,933,456) as "pixis 256e"
 	ModifyPanel frameStyle=1
 	ShowTools/A
 	Button image,pos={4,3},size={50,20},proc=image_button,title="Image",fSize=11

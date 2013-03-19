@@ -10,6 +10,7 @@ menu "Tip Experiment"
 	"Setup Tip Experiment", setup_tip_experiment()
 	"Tip Control and Alignment", tip_control_and_alignment()
 	"Fianium", fianium()
+	"PIXIS", pixis#pixis_256e()
 end
 
 function setup_tip_experiment()

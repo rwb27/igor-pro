@@ -34,6 +34,15 @@ function align_tips(scan_size, scan_step)
 	pi_stage#open_comms()
 	lockin#open_comms()
 	tek#open_comms(); tek#initialise()
+	sig_gen#open_comms()
+	
+	// load signal information
+	string sig_gen_path = sig_gen#gv_path()
+	nvar frequency = $(sig_gen_path + ":frequency")
+	nvar voltage = $(sig_gen_path + ":amplitude")
+	nvar offset = $(sig_gen_path + ":offset")
+	variable amplified_voltage = 20 * voltage
+	variable amplified_offset = 20 * offset
 	
 	// initialise piezo information
 	string pi_path = pi_stage#gv_path()
@@ -43,6 +52,7 @@ function align_tips(scan_size, scan_step)
 	nvar pos_a = $(pi_path + ":pos_a")
 	nvar pos_b = $(pi_path + ":pos_b")
 	nvar pos_c = $(pi_path + ":pos_c")
+	variable gain = 1e8
 	
 	// store the current scan
 	string scan_folder = data#check_data_folder()
@@ -53,9 +63,9 @@ function align_tips(scan_size, scan_step)
 	// store scan parameters
 	variable/g $(scan_folder + ":scan_size") = scan_size
 	variable/g $(scan_folder + ":scan_step") = scan_step
-	variable/g $(scan_folder + ":frequency")
-	variable/g $(scan_folder + ":voltage")
-	variable/g $(scan_folder + ":offset")
+	variable/g $(scan_folder + ":frequency") = frequency
+	variable/g $(scan_folder + ":voltage") = amplified_voltage
+	variable/g $(scan_folder + ":offset") = amplified_offset
 	variable/g $(scan_folder + ":init_pos_a") = init_a
 	variable/g $(scan_folder + ":init_pos_b") = init_b
 	variable/g $(scan_folder + ":init_pos_c") = init_c
@@ -75,8 +85,8 @@ function align_tips(scan_size, scan_step)
 	wave theta = $(scan_folder + ":alignment_scan_theta")
 	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
 	wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
-	setscale/p x, pos_b, scan_step, x, y, r, theta, y_psd
-	setscale/p y, pos_c, scan_step, x, y, r, theta, y_psd
+	setscale/p x, pos_b - scan_size/2, scan_step, x, y, r, theta, y_psd
+	setscale/p y, pos_c - scan_size/2, scan_step, x, y, r, theta, y_psd
 	
 	// plot scan
 	display_scan(scan_folder)
@@ -97,7 +107,7 @@ function align_tips(scan_size, scan_step)
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data) 
 			data = lockin#measure_rtheta()
-			r[ib][ic] = real(data)
+			r[ib][ic] = real(data)/gain
 			theta[ib][ic] = imag(data)
 			make/free w
 			tek#import_data_free("2", w)
@@ -107,7 +117,7 @@ function align_tips(scan_size, scan_step)
 			
 			pos_b += scan_step
 			pi_stage#move("B", pos_b)
-			sleep/s 0.5
+			sleep/s 0.7
 			ib += 1
 		while (ib < imax)
 		
@@ -115,7 +125,7 @@ function align_tips(scan_size, scan_step)
 		pos_c += scan_step
 		pi_stage#move("B", pos_b)
 		pi_stage#move("C", pos_c)
-		sleep/s 0.5
+		sleep/s 0.7
 		ib = 0
 		ic += 1
 	while (ic < imax)
@@ -132,6 +142,7 @@ function align_tips(scan_size, scan_step)
 	pi_stage#close_comms()
 	tek#close_comms()
 	lockin#close_comms()
+	sig_gen#close_comms()
 end
 
 function fit_alignment_data(scan_folder, data)
@@ -147,13 +158,13 @@ function fit_alignment_data(scan_folder, data)
 	z0 = 1/4 * (data[0][0] + data[ix][0] + data[0][iy] + data[ix][iy])
 	a0 = data[ix/2][iy/2] - z0
 	x0 = dimoffset(data, 0) + ix/2 * dimdelta(data, 0)
+	sigx = 0.5
 	y0 = dimoffset(data, 1) + iy/2 * dimdelta(data, 1)
-	sigx = 0.25
-	sigy = 0.25
+	sigy = 0.5
 	corr = 0
 	
 	// Constraints on fit
-	// Note: {K0,K1,K2,K3,K4,K5,K6} = {z0,a0,x0,y0,sigx,sigy,corr}
+	// Note: {K0,K1,K2,K3,K4,K5,K6} = {z0,a0,x0,sigx,y0,sigy,corr}
 	make/o/t/n=0 $(scan_folder + ":t_constraints")
 	wave/t t_constraints = $(scan_folder + ":t_constraints")
 	variable q = 0		// Constraint counter
@@ -163,13 +174,13 @@ function fit_alignment_data(scan_folder, data)
 	t_constraints[q] = "K2 > " + num2str(dimOffset(data,0)) ; q = q+1
 	t_constraints[q] = "K2 < " + num2str(dimOffset(data,0)+dimsize(data,0)*dimDelta(data,0)); q = q+1
 	redimension/n=(q+2) t_constraints
-	t_constraints[q] = "K3 > " + num2str(dimOffset(data,1)); q = q+1
-	t_constraints[q] = "K3 < " + num2str(dimOffset(data,1)+dimsize(data,1)*dimDelta(data,1)); q = q+1
+	t_constraints[q] = "K4 > " + num2str(dimOffset(data,1)); q = q+1
+	t_constraints[q] = "K4 < " + num2str(dimOffset(data,1)+dimsize(data,1)*dimDelta(data,1)); q = q+1
 	
 	// Constraint -- sigx and sigy must be between 50nm and 1um
 	redimension/n=(q+2) t_constraints
-	t_constraints[q] = "K4 > 0.05"; q = q+1
-	t_constraints[q] = "K4 < 1"; q = q+1
+	t_constraints[q] = "K3 > 0.05"; q = q+1
+	t_constraints[q] = "K3 < 1"; q = q+1
 	redimension/n=(q+2) t_constraints
 	t_constraints[q] = "K5 > 0.05"; q = q+1
 	t_constraints[q] = "K5 < 1"; q = q+1
@@ -181,17 +192,17 @@ function fit_alignment_data(scan_folder, data)
 	
 	make/d/n=7/o $(scan_folder + ":w_coef")
 	wave w_coef = $(scan_folder + ":w_coef")
-	w_coef[0] = {z0, a0, x0, y0, sigx, sigy, corr}
-	//funcfitmd/nthr=0/q gaussian_2d w_coef  data /d/c=t_constraints
-	curvefit/x=1/nthr=0 gauss2d, kwcwave= w_coef, data /d//c=t_constraints
+	w_coef[0] = {z0, a0, x0, sigx, y0, sigy, corr}
+	//funcfitmd/nthr=0/q gauss2d w_coef  data /d/c=t_constraints
+	curvefit/x=1/nthr=0/q gauss2d, kwcwave=w_coef, data /d/c=t_constraints
 	wave w_sigma
 	setdatafolder root:
 	//modifycontour $(scan_folder + ":fit_" + data) labels=0, ctabLines={*,*,Geo32,0}
 	
 	variable/g $(scan_folder + ":x0") = w_coef[2]
-	variable/g $(scan_folder + ":y0") = w_coef[3]
+	variable/g $(scan_folder + ":y0") = w_coef[4]
 	variable/g $(gv_folder + ":x0") = w_coef[2]
-	variable/g $(gv_folder + ":y0") = w_coef[3]
+	variable/g $(gv_folder + ":y0") = w_coef[4]
 end
 
 static function display_scan(scan_folder)
@@ -211,11 +222,11 @@ static function display_scan(scan_folder)
 	appendimage/l=lr r
 	appendimage/l=ltheta theta
 	appendimage y_psd
-	modifyimage ''#0 ctab={*,*,coldwarm,0}
-	modifyimage ''#1 ctab={*,*,coldwarm,0}
-	modifyimage ''#2 ctab={*,*,coldwarm,0}
-	modifyimage ''#3 ctab={*,*,coldwarm,0}
-	modifyimage ''#4 ctab={*,*,coldwarm,0}
+	modifyimage ''#0 ctab={*,*,geo32,0}
+	modifyimage ''#1 ctab={*,*,geo32,0}
+	modifyimage ''#2 ctab={*,*,geo32,0}
+	modifyimage ''#3 ctab={*,*,geo32,0}
+	modifyimage ''#4 ctab={*,*,geo32,0}
 	modifygraph width=100
 	modifygraph height={aspect, 5}
 	modifygraph tick=2, mirror=1, fSize=11, standoff=0
@@ -343,7 +354,9 @@ function move_to_centre_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
+			pi_stage#open_comms()
 			move_to_centre()
+			pi_stage#close_comms()
 			break
 		case -1:
 			break
