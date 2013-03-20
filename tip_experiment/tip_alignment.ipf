@@ -22,6 +22,9 @@ static function initialise()
 	variable/g $(gv_folder + ":freq_start")
 	variable/g $(gv_folder + ":freq_stop")
 	variable/g $(gv_folder + ":freq_inc")
+	variable/g $(gv_folder + ":frequency")
+	variable/g $(gv_folder + ":amplified_voltage")
+	variable/g $(gv_folder + ":amplified_offset")
 end
 
 function align_tips(scan_size, scan_step)
@@ -39,10 +42,8 @@ function align_tips(scan_size, scan_step)
 	// load signal information
 	string sig_gen_path = sig_gen#gv_path()
 	nvar frequency = $(sig_gen_path + ":frequency")
-	nvar voltage = $(sig_gen_path + ":amplitude")
-	nvar offset = $(sig_gen_path + ":offset")
-	variable amplified_voltage = 20 * voltage
-	variable amplified_offset = 20 * offset
+	nvar amplified_voltage = $(gv_folder + ":amplified_voltage")
+	nvar amplified_offset = $(gv_folder + ":amplified_offset")
 	
 	// initialise piezo information
 	string pi_path = pi_stage#gv_path()
@@ -117,7 +118,7 @@ function align_tips(scan_size, scan_step)
 			
 			pos_b += scan_step
 			pi_stage#move("B", pos_b)
-			sleep/s 0.7
+			sleep/s 0.25
 			ib += 1
 		while (ib < imax)
 		
@@ -125,7 +126,7 @@ function align_tips(scan_size, scan_step)
 		pos_c += scan_step
 		pi_stage#move("B", pos_b)
 		pi_stage#move("C", pos_c)
-		sleep/s 0.7
+		sleep/s 0.25
 		ib = 0
 		ic += 1
 	while (ic < imax)

@@ -15,7 +15,7 @@ static function log_scan_parameters(scan_folder, i)
  	scan_folder_str = getdatafolder(1)
 	setdatafolder initial_folder
 
-	string param_folder = data#check_folder(scan_folder_str + ":scan_parameters_" + num2str(i))
+	string param_folder = data#check_folder(scan_folder_str + "scan_parameters_" + num2str(i))
 	string gv_path
 	duplicatedatafolder $gv_folder, $(param_folder + ":experiment")
 	gv_path = "root:global_variables:amplifiers"

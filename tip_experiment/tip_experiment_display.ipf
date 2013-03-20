@@ -10,17 +10,17 @@ function make_axis_wave(w, wname)
 	dfref w_df = getwavesdatafolderdfr(w)
 	make/o/n=(numpnts(w)) w_df:$wname
 	wave/sdfr=w_df w_ax = $wname
-	w_ax = 0.5*(w[p+1] + w[p])
+	w_ax = w[p]//0.5*(w[p+1] + w[p])
 	insertpoints 0,1, w_ax							// Amend first point
 	w_ax[0] = 2*w[0] - w_ax[1]
-	w_ax[numpnts(w_ax) - 1] = 2*w[numpnts(w) - 1] - w_ax[numpnts(w_ax)  -2]	// Amend final point
+	//w_ax[numpnts(w_ax) - 1] = 2*w[numpnts(w) - 1] - w_ax[numpnts(w_ax)  -2]	// Amend final point
 	return 0
 end
 
 static function display_scan(scan_folder)
 	dfref scan_folder
 	dfref spec_path = root:oo:globalvariables
-	nvar/sdfr=spec_path num_spectrometers
+	nvar/sdfr=spec_path numspectrometers
 	
 	// load necessary waves
 	wave/sdfr=scan_folder steps
@@ -32,7 +32,7 @@ static function display_scan(scan_folder)
 	wave/sdfr=scan_folder psd_x_stdev
 	wave/sdfr=scan_folder psd_y_stdev
 	wave/sdfr=scan_folder spec2d
-	if (num_spectrometers == 2)
+	if (numspectrometers == 2)
 		wave/sdfr=scan_folder spec2d_t
 	endif
 	
@@ -40,8 +40,8 @@ static function display_scan(scan_folder)
 	wave/sdfr=scan_folder wavelength
 	make_axis_wave(wavelength, "wavelength_ax")
 	wave/sdfr=scan_folder wavelength_ax
-	make_axis_wave(steps, "steps_ax")
-	wave/sdfr=scan_folder steps_ax
+	//make_axis_wave(steps, "steps_ax")
+	//wave/sdfr=scan_folder steps_ax
 	
 	dowindow/k tip_exp_data
 	display/n=tip_exp_data
@@ -58,5 +58,5 @@ static function display_scan(scan_folder)
 	modifygraph axisenab(force_l)={0.71, 1}, axisenab(force_r)={0.71, 1}
 	
 	// change figure size
-	modifygraph width = 300, height = {aspect, 2}
+	//modifygraph width = 300, height = {aspect, 2}
 end

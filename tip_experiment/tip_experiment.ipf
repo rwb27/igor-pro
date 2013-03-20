@@ -23,10 +23,10 @@ function tip_scan()			// tip experiment master function
 	dfref scan_folder = tip_exp_init#init_scan()
 	
 	// open communications and initialise instruments
-	smu#open_comms(); smu#initialise()
-	dso#open_comms(); dso#initialise()
-	tek#open_comms(); tek#initialise()
-	pi_stage#open_comms(); pi_stage#initialise()
+	smu#open_comms(); smu#initialise(); smu#close_comms()
+	dso#open_comms(); dso#initialise(); dso#close_comms()
+	tek#open_comms(); tek#initialise(); tek#close_comms()
+	pi_stage#open_comms(); pi_stage#initialise(); pi_stage#close_comms()
 	
 	// load all necessary variables / scan parameters / paths
 	dfref exp_path = $gv_folder
@@ -43,7 +43,7 @@ function tip_scan()			// tip experiment master function
 	nvar/sdfr=smu_path v = :voltage, i_range = :current_range
 		// spectrometer
 	dfref spec_path = root:oo:globalvariables
-	nvar/sdfr=spec_path num_spectrometers
+	nvar/sdfr=spec_path numspectrometers
 		// pixis
 	dfref pixis_path = $pixis#gv_path()
 	nvar/sdfr=pixis_path exp_time
@@ -51,10 +51,10 @@ function tip_scan()			// tip experiment master function
 		// tektronix
 		// pi_stage
 	
+	// prepare initial instrument configurations
+	tip_exp_setup#setup(1)
 	// log scan settings
 	tip_exp_log#log_scan_parameters(scan_folder, i)
-	// prepare initial instrument configurations
-	tip_exp_setup#setup(0)
 	// display experiment
 	tip_exp_display#display_scan(scan_folder)
 	
@@ -71,11 +71,18 @@ function tip_scan()			// tip experiment master function
 	wave/sdfr=scan_folder psd_y_stdev
 	wave/sdfr=scan_folder timestamp
 	wave/sdfr=scan_folder spec2d
-	if (num_spectrometers == 2)
+	if (numspectrometers == 2)
 		wave/sdfr=scan_folder spec2d_t
 	endif
 
 	// EXPERIMENT
+	
+	// open communications and initialise instruments
+	smu#open_comms()
+	dso#open_comms()
+	tek#open_comms(); tek#initialise()
+	pi_stage#open_comms(); pi_stage#initialise()
+	
 	// do experiment
 	variable condition = 0
 	variable set_point_reached = 0
@@ -98,7 +105,7 @@ function tip_scan()			// tip experiment master function
 		// prepare measurement waves
 		redimension/n=(i+1) steps, displacement, voltage, current, current_range
 		redimension/n=(i+1) psd_x, psd_y, psd_x_stdev, psd_y_stdev, timestamp
-		redimension/n=(dimsize(spec2d, 0), i+1) spec2d
+		redimension/n=(dimsize(spec2d, 0), i+1) spec2d, spec2d_t
 		
 		// MOVEMENT PHASE
 		// move to position
@@ -136,7 +143,7 @@ function tip_scan()			// tip experiment master function
 		duplicate/o root:oo:data:current:spectra, scan_folder:$("spectra:spec_" + num2str(i))
 		wave/sdfr=scan_folder spec = $("spectra:spec_" + num2str(i))
 		spec2d[][i] = spec[p]
-		if (num_spectrometers == 2)
+		if (numspectrometers == 2)
 			duplicate/o root:oo:data:current:spectra_2, scan_folder:$("spectra:spec_t_" + num2str(i))
 			wave/sdfr=scan_folder spec = $("spectra:spec_t_" + num2str(i))
 			spec2d_t[][i] = spec[p]

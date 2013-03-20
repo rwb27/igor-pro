@@ -254,7 +254,8 @@ function tip_control_and_alignment() : panel
 		// hp signal generator controls
 	left += 110; top -= 3*20
 	setvariable x20_amplitude, pos={left, top}, size={105,15}, bodyWidth=50, proc=set_x20_amplitude_panel, title="Amplitude"
-	setvariable x20_amplitude, value= root:global_variables:hp33120a_signal_generator:amplitude
+	//setvariable x20_amplitude, value= root:global_variables:hp33120a_signal_generator:amplitude
+	setvariable x20_amplitude, value= root:global_variables:tip_alignment:amplified_voltage
 	top += 20
 	setvariable frequency, pos={left, top}, size={105,15}, bodyWidth=50, proc=sig_gen#set_frequency_panel, title="Frequency"
 	setvariable frequency, value= root:global_variables:hp33120a_signal_generator:frequency

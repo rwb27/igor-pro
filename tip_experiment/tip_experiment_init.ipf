@@ -100,7 +100,7 @@ static function init_scan_waves(scan_folder)
 	dfref scan_folder
 	nvar/sdfr=$gv_folder append_mode
 	dfref spec_path = root:oo:globalvariables
-	nvar/sdfr=spec_path num_spectrometers
+	nvar/sdfr=spec_path numspectrometers
 	if (!append_mode)									// if not appending
 		// create data storage waves
 		make/o/n=0 scan_folder:steps
@@ -118,9 +118,9 @@ static function init_scan_waves(scan_folder)
 		wave wl_wave = scan_folder:wavelength
 		wl_wave *= 1e-9
 		setscale d, 0, 0, "m", wl_wave
-		make/o/n=(numpnts(wl_wave), 0) scan_folder:spec2d
-		if (num_spectrometers == 2)
-			make/o/n=(numpnts(wl_wave), 0) scan_folder:spec2d_t
+		make/o/n=(numpnts(wl_wave), 1) scan_folder:spec2d
+		if (numspectrometers == 2)
+			make/o/n=(numpnts(wl_wave), 1) scan_folder:spec2d_t
 		endif
 		
 		// scaling

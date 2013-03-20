@@ -4,7 +4,7 @@
 
 #include "visa_comms"
 static strconstant hardware_id = "keithley_2635a_smu"
-static strconstant resourceName = "ASRL22::INSTR"//"GPIB0::26::INSTR"
+static strconstant resourceName = "GPIB0::26::INSTR"
 static strconstant gv_folder = "root:global_variables:keithley_2635a_smu"
 
 static function open_comms()
@@ -107,7 +107,7 @@ function check_current_range()
 	variable i_range = get_current_range()
 	variable/c data = measure_iv()
 	do
-		if (imag(data) > 1e12)
+		if (imag(data) < 1e12)
 			break
 		endif
 		i_range *= 10

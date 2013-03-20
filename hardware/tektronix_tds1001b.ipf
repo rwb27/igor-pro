@@ -1,5 +1,5 @@
 #pragma ModuleName = tek
-#pragma version = 6.30
+#pragma version = 6.20
 #pragma rtGlobals=3
 
 #include "visa_comms"
@@ -33,7 +33,7 @@ static function initialise()
 	if (!nvar_exists(n))
 		variable/g $(gv_folder + ":num_points") = 500
 	endif
-	visa#cmd(hardware_id, "*cls")
+	//visa#cmd(hardware_id, "*cls\n")
 	visa#cmd(hardware_id, "dat:sou ch1\n")
 	visa#cmd(hardware_id, "dat:star 1\n")
 	visa#cmd(hardware_id, "dat:stop " + num2str(n) + "\n")
@@ -53,11 +53,11 @@ static function initialise()
 end
 
 static function clear()
-	visa#cmd(hardware_id, "*cls")
+	visa#cmd(hardware_id, "*cls\n")
 end
 
 static function reset()
-	visa#cmd(hardware_id, "*rst")
+	visa#cmd(hardware_id, "*rst\n")
 end
 
 static function get_waveform_params(ch)
@@ -82,13 +82,14 @@ static function import_data_complete(ch, wname)
 	string ch, wname
 	get_waveform_params(ch)			// get waveform scaling parameters
 	import_data(ch, wname)
-	wave w = $wname
+	wave w = $(data_folder + ":" + wname)
 	return w
 end
 
 static function import_data(ch, wname)
 	string ch, wname
-	visa#read_str(hardware_id, "*opc?\n")							// request
+	
+	print visa#read_str(hardware_id, "*opc?\n")							// request
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")				// set source channel
 	visa#cmd(hardware_id, "curve?\n")							// request curve
 	
@@ -119,15 +120,16 @@ static function import_data(ch, wname)
 	data = ((data - yo)*ym)+y0
 	setscale/p x, x0, xinc, data
 	// save wave
-	duplicate/o data, $wname
-	wave w = $wname
+	duplicate/o data, $(data_folder + ":" + wname)
+	wave w = $(data_folder + ":" + wname)
 	return w
 end
 
 static function import_data_free(ch, w)
 	string ch
 	wave w
-	visa#read_str(hardware_id, "*opc?\n")							// request
+	
+	print visa#read_str(hardware_id, "*opc?\n")							// request
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")				// set source channel
 	visa#cmd(hardware_id, "curve?\n")							// request curve
 	
@@ -187,9 +189,17 @@ end
 
 static function/c wave_stats(ch)
 	string ch
-	wave w
+	make/free w
 	import_data_free(ch, w)
 	wavestats/q w
 	variable/c stats = cmplx(V_avg, V_sdev)
 	return stats
+end
+
+function clear_buffer()
+	string x
+	do
+		x = visa#read_only(hardware_id)
+		print x
+	while (!stringmatch(x, ""))
 end
