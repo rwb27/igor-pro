@@ -101,7 +101,7 @@ static function import_data(ch, wname)
 	endif
 	
 	// create wave to store data
-	make/free/n=(n+3) raw_data
+	make/free/n=(n+4) raw_data
 	make/free/n=(n) data
 	
 	// get wave

@@ -41,8 +41,8 @@ static function display_scan(scan_folder)
 	// make image axes
 	make_axis_wave(wavelength, "wavelength_ax")
 	wave/sdfr=scan_folder wavelength_ax
-	make_axis_wave(steps, "steps_ax")
-	wave/sdfr=scan_folder steps_ax
+	//make_axis_wave(steps, "steps_ax")
+	//wave/sdfr=scan_folder steps_ax
 	if (numspectrometers == 2)
 		make_axis_wave(wavelength_t, "wavelength_ax_t")
 		wave/sdfr=scan_folder wavelength_ax_t
@@ -62,7 +62,7 @@ static function display_scan(scan_folder)
 	
 	// append spectra
 	display/w=(extra_width-spacer, 0, extra_width+image_width-spacer, image_length)/host=#; renamewindow #, g0
-	appendimage spec2d vs {steps_ax, wavelength_ax}
+	appendimage spec2d vs {*, wavelength_ax}
 	label left "wavelength (\\u)"; label bottom "step"
 	modifyimage spec2d ctab= {*,*,geo32,0}, ctabAutoscale=1
 	setaxis left 450,1000
@@ -75,7 +75,7 @@ static function display_scan(scan_folder)
 	if (numspectrometers == 2)
 		modifygraph width = extra_width + 2*image_width - 2*spacer
 		display/w=(extra_width+image_width-2*spacer, 0, extra_width+2*image_width-2*spacer, image_length)/host=#; renamewindow #, g1
-		appendimage spec2d_t vs {steps_ax, wavelength_ax_t}
+		appendimage spec2d_t vs {*, wavelength_ax_t}
 		label left "wavelength (\\u)"; label bottom "step"
 		modifyimage spec2d_t ctab= {*,*,geo32,0}, ctabAutoscale=1
 		setaxis left 450,1000
