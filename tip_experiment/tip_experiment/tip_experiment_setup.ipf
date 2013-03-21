@@ -14,6 +14,16 @@ static strconstant gv_folder = "root:global_variables:tip_experiments"
 // take currently set global variable values for each piece of equipment and set the parameters
 static function setup(rst)
 	variable rst
+	setup_exp(rst)
+	setup_pi(rst)
+	setup_smu(rst)
+	setup_tek(rst)
+	setup_dso(rst)
+	setup_pixis(rst)
+end
+
+function setup_exp(rst)
+	variable rst
 	dfref exp_path = $gv_folder
 	nvar/sdfr=exp_path scan_direction, vis_g0, trig_g0
 	dfref amp_path = root:global_variables:amplifiers
@@ -28,11 +38,6 @@ static function setup(rst)
 			trig_g0 = 15
 		endif
 	endif
-	setup_pi(rst)
-	setup_smu(rst)
-	setup_tek(rst)
-	setup_dso(rst)
-	setup_pixis(rst)
 end
 
 function setup_pi(rst)
@@ -56,16 +61,18 @@ function setup_smu(rst)
 	dfref exp_path = $gv_folder
 	nvar/sdfr=exp_path scan_direction
 	dfref smu_path = $smu#gv_path()
-	nvar/sdfr=smu_path v = :voltage, i_range = :current_range
+	nvar/sdfr=smu_path v = :voltage, i_range = :current_range, i_limit = :current_limit
 	// reset to defaults
 	if (rst == 1)
 		v = 100e-3
+		i_limit = 100e-3
 		if (scan_direction == -1)
 			i_range = 1e-8
 		endif
 	endif
 	smu#open_comms()
 	smu#set_voltage(v)
+	smu#set_current_limit(i_limit)
 	smu#set_current_range(i_range)
 	smu#output(1)
 	smu#close_comms()

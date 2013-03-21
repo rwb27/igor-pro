@@ -14,45 +14,27 @@
 #include "tip_experiment_display"
 #include "tip_experiment_logging"
 #include "tip_experiment_setup"
+#include "tip_experiment_time_res_meas"
 
 static constant g0 = 7.7480917e-5
 static strconstant gv_folder = "root:global_variables:tip_experiments"
 
 function tip_scan()			// tip experiment master function
-	// initialise data storage
-	dfref scan_folder = tip_exp_init#init_scan()
-	
-	// open communications and initialise instruments
-	smu#open_comms(); smu#initialise(); smu#close_comms()
-	dso#open_comms(); dso#initialise(); dso#close_comms()
-	tek#open_comms(); tek#initialise(); tek#close_comms()
-	pi_stage#open_comms(); pi_stage#initialise(); pi_stage#close_comms()
-	
 	// load all necessary variables / scan parameters / paths
+	// experiment
 	dfref exp_path = $gv_folder
-		// experiment
 	nvar/sdfr=exp_path append_mode
 	nvar/sdfr=exp_path i = :current_step
 	nvar/sdfr=exp_path scan_step, scan_size, scan_direction, current_set_point
 	variable scan_step_d = scan_direction * scan_step
-		// amplifier
-	dfref amp_path = root:global_variables:amplifiers
-	nvar/sdfr=amp_path gain = gain_dso
-		// smu
-	dfref smu_path = $smu#gv_path()
-	nvar/sdfr=smu_path v = :voltage, i_range = :current_range
-		// spectrometer
+	// spectrometer
 	dfref spec_path = root:oo:globalvariables
 	nvar/sdfr=spec_path numspectrometers
-		// pixis
-	dfref pixis_path = $pixis#gv_path()
-	nvar/sdfr=pixis_path exp_time
-		// agilent
-		// tektronix
-		// pi_stage
 	
-	// prepare initial instrument configurations
-	tip_exp_setup#setup(1)
+	// initialise scan
+	dfref scan_folder = tip_exp_init#init_scan()					// initialises experiment structure, data and equipment
+	// setup equipment with current parameter values
+	tip_exp_setup#setup(0)
 	// log scan settings
 	tip_exp_log#log_scan_parameters(scan_folder, i)
 	// display experiment
@@ -80,8 +62,8 @@ function tip_scan()			// tip experiment master function
 	// open communications and initialise instruments
 	smu#open_comms()
 	dso#open_comms()
-	tek#open_comms(); tek#initialise()
-	pi_stage#open_comms(); pi_stage#initialise()
+	tek#open_comms()
+	pi_stage#open_comms()
 	
 	// do experiment
 	variable condition = 0
@@ -89,8 +71,6 @@ function tip_scan()			// tip experiment master function
 	// initialise data
 	variable/c smu_data, force_x, force_y
 	variable current_pos
-	// initialise time resolved data
-	string qc_name, qcg_name, qcf_name, qcs_name
 	
 	// experiment loop
 	do
@@ -154,35 +134,7 @@ function tip_scan()			// tip experiment master function
 		if (dso#check_trigger(0))						// check for dso trigger
 			// get time-resolved measurements
 			print "triggered at " + num2str(i)
-			
-			// set wave names
-			string scan_folder_str
- 			dfref initial_folder = getdatafolderdfr()
- 			setdatafolder scan_folder
- 			scan_folder_str = getdatafolder(1)
-			setdatafolder initial_folder
-			
-			qc_name = scan_folder_str + "time_resolved_data:qc_trace_"+num2str(i)
-			qcg_name = scan_folder_str + "time_resolved_data:qcg_trace_"+num2str(i)
-			qcf_name = scan_folder_str + "time_resolved_data:qc_force_"+num2str(i)
-			qcs_name = scan_folder_str + "time_resolved_data:qc_spec_"+num2str(i)
-			
-			// time-resolved current measurement
-			dso#import_data("1", qc_name)
-			// calculate time-resolved conductance
-			duplicate $qc_name, $qcg_name
-			wave g_trace = $qcg_name
-			nvar gain = $(gv_folder + ":gain")
-			g_trace /= (gain * voltage[i] * g0)
-			// get time-resolved force measurement
-			dso#import_data("2", qcf_name)
-			
-			// get time-resolved spectra
-			pixis#read()
-			duplicate root:pixis_256e:current:image, $qcs_name
-			// re-arm time-resolved measurements
-			pixis#ready(exp_time)
-			dso#arm_trigger()
+			tip_exp_time_res#measure_time_resolved(scan_folder, i)
 			break
 		endif
 		if (imag(smu_data) >= current_set_point)		// prevents movement once current limit reached
