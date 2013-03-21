@@ -69,12 +69,12 @@ static function init_equipment()
 end
 
 static function/df init_scan_folder()
-	nvar/sdfr=$gv_folder append_mode
+	nvar/sdfr=$gv_folder append_mode, current_step
 	svar/sdfr=$gv_folder prev_scan_folder = root:data:current_scan_folder
 	string scan_folder, data_folder
 	if (append_mode)													// if appending use previous scan
 		if (stringmatch(prev_scan_folder, ""))							// if appending to nothing go to default response
-			append_mode = 0
+			append_mode = 0; current_step = 0
 			scan_folder = data#new_data_folder(data_folder + ":tip_exp_")
 			data#check_folder(scan_folder + ":spectra")
 			data#check_folder(scan_folder + ":time_resolved_data")
@@ -82,8 +82,10 @@ static function/df init_scan_folder()
 			prev_scan_folder = scan_folder
 		endif
 		scan_folder = prev_scan_folder
+		print "appending to", scan_folder, "at point", current_step
 	else																// default non-appending response
 		// creation of tip experiment folder structure
+		current_step = 0
 		data_folder = data#check_data_folder()
 		scan_folder = data#new_data_folder(data_folder + ":tip_exp_")
 		data#check_folder(scan_folder + ":spectra")
@@ -122,7 +124,7 @@ static function init_scan_waves(scan_folder)
 			wave wl_wave_t = scan_folder:wavelength_t
 			wl_wave_t *= 1e-9
 			setscale d, 0, 0, "m", wl_wave_t
-			make/o/n=(numpnts(wl_wave), 1) scan_folder:spec2d_t
+			make/o/n=(numpnts(wl_wave_t), 1) scan_folder:spec2d_t
 		endif
 		
 		// scaling
@@ -158,16 +160,20 @@ static function restore_default_values()
 	variable/g $(gv_path + ":bandwidth_force_y") = 0
 	variable/g $(gv_path + ":bandwidth_force_dso") = 500e3
 	// smu parameters
+	gv_path = smu#gv_path()
 	variable/g $(gv_path + ":voltage") = 100e-3			// 100 mV standard for qc experiments
 	variable/g $(gv_path + ":current_range") = 10e-9		// 10 nA setting is minimum possible for fast acqusition
 	variable/g $(gv_path + ":current_limit") = 250e-6		// 250 uA maximum for preventing tip damage
 	variable/g $(gv_path + ":output") = 1
 	// dso parameters
-	variable/g $(gv_path + ":t_range") = 10e-3
+	gv_path = dso#gv_path()
+	variable/g $(gv_path + ":timebase_settings:time_range") = 10e-3
 	// pi_stage parameters
+	gv_path = pi_stage#gv_path()
 	variable/g $(gv_path + ":vel_a") = 10
 	variable/g $(gv_path + ":dco_a") = 0
 	// pixis parameters
+	gv_path = pixis#gv_path()
 	variable/g $(gv_path + ":exp_time") = 70
 	// spectrometer parameters
 end

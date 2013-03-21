@@ -80,6 +80,10 @@ end
 
 function setup_tek(rst)
 	variable rst
+	tek#open_comms()
+	tek#get_waveform_params("1")
+	tek#get_waveform_params("2")
+	tek#close_comms()
 end
 
 function setup_dso(rst)
@@ -91,7 +95,7 @@ function setup_dso(rst)
 	dfref smu_path = $smu#gv_path()
 	nvar/sdfr=smu_path v = :voltage
 	dfref dso_path = $dso#gv_path()
-	nvar/sdfr=dso_path t_range = :timebase_settings:t_range, delay = :timebase_settings:delay
+	nvar/sdfr=dso_path t_range = :timebase_settings:time_range, delay = :timebase_settings:time_delay
 	// reset to defaults
 	if (rst == 1)
 		t_range = 10e-3
@@ -105,7 +109,7 @@ function setup_dso(rst)
 	// calculate voltages
 	variable trig_level = trig_g0 * g0 * v * gain
 	
-	variable ch1_range = 10/9 * vis_g0
+	variable ch1_range = 10/9 * vis_g0 * g0 * v * gain
 	variable ch1_offset = -4 * ch1_range/10
 	
 	variable ch2_range = 10
@@ -127,7 +131,7 @@ end
 function setup_pixis(rst)
 	variable rst
 	dfref dso_path = $dso#gv_path()
-	nvar/sdfr=dso_path t_range = :timebase_settings:t_range
+	nvar/sdfr=dso_path t_range = :timebase_settings:time_range
 	dfref pixis_path = $pixis#gv_path()
 	nvar/sdfr=pixis_path exp_time
 	variable us_range = t_range * 1e6

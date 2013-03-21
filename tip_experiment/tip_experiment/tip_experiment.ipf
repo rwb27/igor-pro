@@ -19,7 +19,15 @@
 static constant g0 = 7.7480917e-5
 static strconstant gv_folder = "root:global_variables:tip_experiments"
 
-function tip_scan()			// tip experiment master function
+function tip_scan()			// tip experiment master function	
+	// initialise scan
+	dfref scan_folder = tip_exp_init#init_scan()					// initialises experiment structure, data and equipment
+	string scan_folder_str
+ 	dfref initial_folder = getdatafolderdfr()
+ 	setdatafolder scan_folder
+ 	scan_folder_str = getdatafolder(1)
+	setdatafolder initial_folder
+	
 	// load all necessary variables / scan parameters / paths
 	// experiment
 	dfref exp_path = $gv_folder
@@ -30,9 +38,6 @@ function tip_scan()			// tip experiment master function
 	// spectrometer
 	dfref spec_path = root:oo:globalvariables
 	nvar/sdfr=spec_path numspectrometers
-	
-	// initialise scan
-	dfref scan_folder = tip_exp_init#init_scan()					// initialises experiment structure, data and equipment
 	// setup equipment with current parameter values
 	tip_exp_setup#setup(0)
 	// log scan settings
@@ -66,11 +71,11 @@ function tip_scan()			// tip experiment master function
 	pi_stage#open_comms()
 	
 	// do experiment
-	variable condition = 0
+	variable condition = 1
 	variable set_point_reached = 0
 	// initialise data
 	variable/c smu_data, force_x, force_y
-	variable current_pos
+	variable i_range, current_pos
 	
 	// experiment loop
 	do
@@ -82,11 +87,6 @@ function tip_scan()			// tip experiment master function
 			break
 		endif
 		
-		// prepare measurement waves
-		redimension/n=(i+1) steps, displacement, voltage, current, current_range
-		redimension/n=(i+1) psd_x, psd_y, psd_x_stdev, psd_y_stdev, timestamp
-		redimension/n=(dimsize(spec2d, 0), i+1) spec2d, spec2d_t
-		
 		// MOVEMENT PHASE
 		// move to position
 		if (!set_point_reached)
@@ -97,7 +97,7 @@ function tip_scan()			// tip experiment master function
 		
 		// MEASUREMENT PHASE
 		// perform measurement checks
-		current_range[i] = smu#check_current_range()
+		i_range = smu#check_current_range()
 		
 		// take measurements
 		current_pos = pi_stage#get_pos_ch("a")
@@ -107,25 +107,31 @@ function tip_scan()			// tip experiment master function
 		oo_read()
 		
 		// STORAGE PHASE
-		steps[i] = i
 		// store pz measurements
+		redimension/n=(i+1) steps, displacement, timestamp
+		steps[i] = i
 		displacement[i] = current_pos
 		timestamp[i] = ticks/60
 		// store smu measurements
+		redimension/n=(i+1) voltage, current, current_range
 		voltage[i] = real(smu_data)
 		current[i] = imag(smu_data)
+		current_range[i] = i_range
 		// store force measurements
+		redimension/n=(i+1) psd_x, psd_y, psd_x_stdev, psd_y_stdev
 		psd_x[i] = real(force_x)
 		psd_x_stdev[i] = imag(force_x)
 		psd_y[i] = real(force_y)
 		psd_y_stdev[i] = imag(force_y)
 		// store spectra
-		duplicate/o root:oo:data:current:spectra, scan_folder:$("spectra:spec_" + num2str(i))
-		wave/sdfr=scan_folder spec = $("spectra:spec_" + num2str(i))
+		duplicate/o root:oo:data:current:spectra, $(scan_folder_str + "spectra:spec_" + num2str(i))
+		wave/sdfr=scan_folder spec = $(":spectra:spec_" + num2str(i))
+		redimension/n=(dimsize(spec2d, 0), i+1) spec2d
 		spec2d[][i] = spec[p]
 		if (numspectrometers == 2)
-			duplicate/o root:oo:data:current:spectra_2, scan_folder:$("spectra:spec_t_" + num2str(i))
-			wave/sdfr=scan_folder spec = $("spectra:spec_t_" + num2str(i))
+			duplicate/o root:oo:data:current:spectra_2, $(scan_folder_str + "spectra:spec_t_" + num2str(i))
+			wave/sdfr=scan_folder spec = $(":spectra:spec_t_" + num2str(i))
+			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
 			spec2d_t[][i] = spec[p]
 		endif
 		

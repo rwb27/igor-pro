@@ -50,6 +50,9 @@ static function initialise()
 	//get_channel("1")
 	//get_channel("2")
 	//get_trigger()
+	
+	get_waveform_params("1")
+	get_waveform_params("2")
 end
 
 static function clear()
@@ -89,7 +92,7 @@ end
 static function import_data(ch, wname)
 	string ch, wname
 	
-	print visa#read_str(hardware_id, "*opc?\n")							// request
+	visa#read_str(hardware_id, "*opc?\n")							// request
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")				// set source channel
 	visa#cmd(hardware_id, "curve?\n")							// request curve
 	
@@ -115,6 +118,11 @@ static function import_data(ch, wname)
 	nvar/z xinc = $(gv_folder + ":x_inc")
 	if (!(nvar_exists(y0) && nvar_exists(ym) && nvar_exists(yo) && nvar_exists(x0) && nvar_exists(xinc)))
 		get_waveform_params(ch)
+		nvar y0 = $(gv_folder + ":y_zero_" + ch)
+		nvar ym = $(gv_folder + ":y_multi_" + ch)
+		nvar yo = $(gv_folder + ":y_off_" + ch)
+		nvar x0 = $(gv_folder + ":x_zero")
+		nvar xinc = $(gv_folder + ":x_inc")
 	endif
 	// scale waves
 	data = ((data - yo)*ym)+y0
@@ -129,7 +137,7 @@ static function import_data_free(ch, w)
 	string ch
 	wave w
 	
-	print visa#read_str(hardware_id, "*opc?\n")							// request
+	visa#read_str(hardware_id, "*opc?\n")							// request
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")				// set source channel
 	visa#cmd(hardware_id, "curve?\n")							// request curve
 	
@@ -141,7 +149,7 @@ static function import_data_free(ch, w)
 	endif
 	
 	// create wave to store data
-	make/free/n=(n+3) raw_data
+	make/free/n=(n+4) raw_data
 	make/free/n=(n) data
 	redimension/n=(n) w
 	
@@ -156,6 +164,11 @@ static function import_data_free(ch, w)
 	nvar xinc = $(gv_folder + ":x_inc")
 	if (!(nvar_exists(y0) && nvar_exists(ym) && nvar_exists(yo) && nvar_exists(x0) && nvar_exists(xinc)))
 		get_waveform_params(ch)
+		nvar y0 = $(gv_folder + ":y_zero_" + ch)
+		nvar ym = $(gv_folder + ":y_multi_" + ch)
+		nvar yo = $(gv_folder + ":y_off_" + ch)
+		nvar x0 = $(gv_folder + ":x_zero")
+		nvar xinc = $(gv_folder + ":x_inc")
 	endif
 	// scale waves
 	data = ((data - yo)*ym)+y0

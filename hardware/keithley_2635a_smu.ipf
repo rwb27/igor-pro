@@ -68,6 +68,18 @@ function get_current_range()
 	return i_range
 end
 
+function set_current_limit(i_limit)
+	variable i_limit
+	visa#cmd(hardware_id, "smua.source.limiti = " + num2str(i_limit) + "\n")
+	variable/g $(gv_folder + ":current_limit") = i_limit
+end
+
+function get_current_limit()
+	variable i_limit = visa#read(hardware_id, "print(smua.source.limiti)\n")
+	variable/g $(gv_folder + ":current_limit") = i_limit
+	return i_limit
+end
+
 function set_voltage(v)
 	variable v
 	visa#cmd(hardware_id, "smua.source.func=smua.OUTPUT_DCVOLTS\n") // set to source voltage
