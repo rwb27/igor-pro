@@ -1,4 +1,11 @@
 # Tip Experiment #
+
+>#### Current Information ###
+>**Status**: tested - some unknown VISA errors periodically appear in setup.
+
+#### Information ####
+The spectral images are stored with fixed row numbers for wavelength and variable column numbers for steps. When displaying the images the wavelength axis becomes the row-axis and the step becomes the column-axis. In Igor images this corresponds to the row being the x-axis and the column being the y-axis i.e. the spectral progression is viewed vertically.
+
 ## Tip Experiment Modules ##
 
 ### Tip Experiment Init ###
@@ -49,6 +56,12 @@ Standalone module required by the main tip experiment code to display the data i
 
 - **make_axis_wave(w, wname)**: creates axis waves given an initial axis data wave for use with Igor Pro images.
 - **display_scan(scan_folder)**: displays the contents of the current scan folder in the required format.
+
+#### Information ####
+Part of the code
+
+    appendimage spec2d vs {wavelength, *}
+assumes that the image has spectra as rows with each column being a new step. This would display the spectra transposed with respect to the other measurements. The other traces are therefore plotted using the /vert command.
 
 ----------
 

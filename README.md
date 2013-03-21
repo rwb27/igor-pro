@@ -35,6 +35,8 @@ Hardware
 ### Agilent DSOX2000 Series DSO
 >#### Current Information
 >**Status**: working
+>
+>**Changes**: fix set channel label
 
 #### Notes
 - Requires VISA
@@ -107,14 +109,14 @@ Hardware
 
 ----------
 
-### Newport LTA-HA and NanoPZ actuators
->#### Current Information
+### Newport LTA-HA and NanoPZ actuators ###
+>#### Current Information ####
 >**Status**: working with some potential bugs
 
-#### Notes
+#### Notes ####
 - Requires VISA
 
-#### Functions list
+#### Functions list ####
 - [ ]
 
 ----------
@@ -143,11 +145,13 @@ Hardware
 
 ----------
 
-### Tektronix TDS1001B DSO
->#### Current Information
->**Status**: not working - problems with VISAreadbinarywave
+### Tektronix TDS1001B DSO ###
+>#### Current Information ####
+>**Status**: working - problems with VISAreadbinarywave resolved
 >
->[] tested
+>Issue seemed to be with the number of points in the binary storage wave. 4 extra points required.
+>
+>- [ ] tested
 #### Notes
 - Requires VISA
 #### Functions list
