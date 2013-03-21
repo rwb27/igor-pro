@@ -90,19 +90,22 @@ function save_data(w, wname, data_path)
 end
 
 function unpack_experiment(data_folder)
-	// give data folder
+	// give igor data folder
 	string data_folder
+	
 	string data_folder2
-	string data_path
-	string data_path2
+	string data_path				// hd path
+	string data_path2				//
 	string expr = "root:data:(.+)"
 	variable i
 	
 	// create folder if not currently existing
 	pathinfo data
-	if (v_flag == 0)
+	if (v_flag == 0)			// abort if data path does not exist
 		abort "define paths"
 	endif
+	
+	
 	string initial_data_path = s_path
 	data_path = initial_data_path
 	newpath/c/o/q data, data_path
@@ -152,33 +155,38 @@ end
 
 function load_tip_experiment(tip_exp)
 	string tip_exp							// location of tip experiment data structure
+	
 	// parse string into components to reconstruct in the Igor data browser
-	// example: ":raw data:Dec 2012:day 21:tip experiment"
-	string expr = ":raw data:([[:alpha:]]+) ([[:digit:]]+):day ([[:digit:]]+):([[:alpha:]]+)"
+	// example: ":raw data:Nov 2012:day 21:tip experiment"
+	string expr = ":([[:alpha:]]+)_([[:digit:]]+):day_([[:digit:]]+):(.+)"
 	string month, year, day, experiment
 	splitstring/e=(expr) tip_exp, month, year, day, experiment
-	string data_folder = "root:data"
-	check_folder(data_folder)
-	data_folder += ":" + month + "_" + year
-	check_folder(data_folder)
-	data_folder += ":day_" + day
-	check_folder(data_folder)
-	data_folder += ":tip_experiment_"
-	// increment at some point
-	data_folder += "0"
-	check_folder(data_folder)
+	string data_folder = "root:data"; check_folder(data_folder)
+	data_folder += ":" + month + "_" + year; check_folder(data_folder)
+	data_folder += ":day_" + day; check_folder(data_folder)
+	data_folder += ":" + experiment; killdatafolder data_folder; check_folder(data_folder)
+	
 	pathinfo data
 	if (v_flag == 0)
 		abort "define paths"
 	endif
+	
 	string initial_data_path = s_path
 	newpath/o/q data, initial_data_path
-	loadwave/t/o/q/p=data tip_exp + ":spectra2D.txt"
-	loadwave/t/o/q/p=data tip_exp + ":tipConductance.txt"
-	loadwave/t/o/q/p=data tip_exp + ":PZdisplacement.txt"
-	loadwave/t/o/q/p=data tip_exp + ":wavelengthImageAxis.txt"
+	loadwave/h/o/q/p=data tip_exp + ":spectra2D.ibw"
+	loadwave/h/o/q/p=data tip_exp + ":tipConductance.ibw"
+	loadwave/h/o/q/p=data tip_exp + ":tipVoltage.ibw"
+	loadwave/h/o/q/p=data tip_exp + ":tipCurrent.ibw"
+	loadwave/h/o/q/p=data tip_exp + ":PZdisplacement.ibw"
+	loadwave/h/o/q/p=data tip_exp + ":wavelengthImageAxis.ibw"
+	loadwave/h/o/q/p=data tip_exp + ":xPSD.ibw"
+	loadwave/h/o/q/p=data tip_exp + ":yPSD.ibw"
 	movewave :spectra2D, $(data_folder +":")
 	movewave :tipConductance, $(data_folder +":")
+	movewave :tipVoltage, $(data_folder +":")
+	movewave :tipCurrent, $(data_folder +":")
 	movewave :PZdisplacement, $(data_folder +":")
 	movewave :wavelengthImageAxis, $(data_folder +":")
+	movewave :xPSD, $(data_folder +":")
+	movewave :yPSD, $(data_folder +":")
 end
