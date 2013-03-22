@@ -288,6 +288,11 @@ function import_data(ch, wname)
 	// import data
 	variable points = visa#read(hardware_id, ":acquire:points?")
 	variable/g $(param_dir + ":points") = points
+	
+	if (stringmatch(wname, ""))
+		wname = "ch" + ch + "_trace"
+	endif
+	
 	wname = data_folder + ":" + wname
 	make/o/n=(points+10) $wname
 	wave w = $wname
@@ -331,4 +336,316 @@ end
 
 static function arm_trigger()
 	visa#cmd(hardware_id, ":single")
+end
+
+// Panel Controls
+
+static function capture_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			capture_all()
+			break
+	endswitch
+	return 0
+end
+
+static function import_data_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			import_data("1", "")
+			import_data("1", "")
+			break
+	endswitch
+	return 0
+end
+
+static function run_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			set_general("run", 0)
+			break
+	endswitch
+	return 0
+end
+
+static function single_acq_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			set_general("single", 0)
+			break
+	endswitch
+	return 0
+end
+
+static function stop_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			set_general("stop", 0)
+			break
+	endswitch
+	return 0
+end
+
+static function set_timebase_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			svar/sdfr=$gv_folder mode = :timebase_settings:time_mode
+			nvar/sdfr=$gv_folder range = :timebase_settings:time_range
+			nvar/sdfr=$gv_folder scale = :timebase_settings:time_scale
+			nvar/sdfr=$gv_folder delay = :timebase_settings:time_delay
+			svar/sdfr=$gv_folder ref = :timebase_settings:time_reference
+			set_timebase(mode, range, scale, delay, ref)
+			break
+	endswitch
+	return 0
+end
+
+static function get_timebase_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			get_timebase()
+			break
+	endswitch
+	return 0
+end
+
+static function set_channel1_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar/sdfr=$gv_folder range = :ch1_settings:ch1_range
+			nvar/sdfr=$gv_folder scale = :ch1_settings:ch1_scale
+			nvar/sdfr=$gv_folder offset = :ch1_settings:ch1_offset
+			svar/sdfr=$gv_folder coupling = :ch1_settings:ch1_coupling
+			svar/sdfr=$gv_folder unit = :ch1_settings:ch1_unit
+			svar/sdfr=$gv_folder ch_label = :ch1_settings:ch1_label
+			nvar/sdfr=$gv_folder probe = :ch1_settings:ch1_probe
+			set_channel("1", range, scale, offset, coupling, unit, ch_label, probe)
+			break
+	endswitch
+	return 0
+end
+
+static function get_channel1_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			get_channel("1")
+			break
+	endswitch
+	return 0
+end
+
+static function set_channel2_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch (ba.eventcode)
+		case 2:
+			nvar/sdfr=$gv_folder range = :ch2_settings:ch2_range
+			nvar/sdfr=$gv_folder scale = :ch2_settings:ch2_scale
+			nvar/sdfr=$gv_folder offset = :ch2_settings:ch2_offset
+			svar/sdfr=$gv_folder coupling = :ch2_settings:ch2_coupling
+			svar/sdfr=$gv_folder unit = :ch2_settings:ch2_unit
+			svar/sdfr=$gv_folder ch_label = :ch2_settings:ch2_label
+			nvar/sdfr=$gv_folder probe = :ch2_settings:ch2_probe
+			set_channel("2", range, scale, offset, coupling, unit, ch_label, probe)
+			break
+	endswitch
+	return 0
+end
+
+static function get_channel2_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			get_channel("2")
+			break
+	endswitch
+	return 0
+end
+
+static function set_trigger_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			svar/sdfr=$gv_folder sweep = :trigger_settings:sweep
+			svar/sdfr=$gv_folder mode = :trigger_settings:mode
+			svar/sdfr=$gv_folder source = :trigger_settings:source
+			nvar/sdfr=$gv_folder level = :trigger_settings:level
+			svar/sdfr=$gv_folder slope = :trigger_settings:slope
+			svar/sdfr=$gv_folder rejectnoise = :trigger_settings:nreject
+			svar/sdfr=$gv_folder filter = :trigger_settings:hfreject
+			set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
+			break
+	endswitch
+	return 0
+end
+
+static function get_trigger_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			get_trigger()
+			break
+	endswitch
+	return 0
+end
+
+// Panel
+
+static function/c insert_dso_panel(left, top) : panel
+	variable left, top
+	
+	dfref gv_path = $gv_folder
+	
+	variable l_size = 390, t_size = 320
+	groupbox dso_group, pos={left, top}, size={l_size, t_size}, frame=0, title="Agilent DSOX-2000 Series DSO"
+	groupbox dso_group, labelBack=(56576,56576,56576), fsize=12, fStyle=1
+	left += 5; top += 17
+	
+	// buttons
+	titlebox dso_controls title="DSO Controls", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	titlebox dso_mode title="Mode:", pos={left, top}, frame=0, fSize=11; left+= 50
+	button dso_run,pos={left, top}, size={40,20}, fColor=(32768,65280,0), proc=run_button, title="Run";	top += 20
+	button dso_single,pos={left, top}, size={40,20}, fColor=(65280,65280,0), proc=single_acq_button, title="Single"; top += 20
+	button dso_stop,pos={left, top}, size={40,20}, fColor=(65280,0,0), proc=stop_button, title="Stop";
+	left -= 50; top += 20
+	titlebox dso_timebase title="TimeBase:", pos={left, top}, frame=0, fSize=11; left+= 55
+	button dso_set_timebase,pos={left, top}, size={30,20}, proc=set_timebase_button, title="Set";	left += 30
+	button dso_get_timebase,pos={left, top}, size={30,20}, proc=get_timebase_button, title="Get"
+	left -= 55 + 30; top += 20
+	titlebox dso_ch1 title="Channel 1:", pos={left, top}, frame=0, fSize=11; left+= 55
+	button dso_set_ch1,pos={left, top}, size={30,20}, proc=set_ch1_button, title="Set";	left += 30
+	button dso_get_ch1,pos={left, top}, size={30,20}, proc=get_ch1_button, title="Get"
+	left -= 55 + 30; top += 20
+	titlebox dso_ch2 title="Channel 2:", pos={left, top}, frame=0, fSize=11; left+= 55
+	button dso_set_ch2,pos={left, top}, size={30,20}, proc=set_ch2_button, title="Set";	left += 30
+	button dso_get_ch2,pos={left, top}, size={30,20}, proc=get_ch2_button, title="Get"
+	left -= 55 + 30; top += 20
+	titlebox dso_trigger title="Trigger:", pos={left, top}, frame=0, fSize=11; left+= 55
+	button dso_set_trigger,pos={left, top}, size={30,20}, proc=set_trigger_button, title="Set";	left += 30
+	button dso_get_trigger,pos={left, top}, size={30,20}, proc=get_trigger_button, title="Get"
+	left -= 55 + 30; top += 20
+
+	button dso_capture,pos={left, top}, size={50,20}, proc=capture_button, title="Capture";	left += 50
+	button dso_import,pos={left, top}, size={50,20}, proc=import_data_button, title="Import"
+	left -= 50; top -= 17 + 20 + 20 + 20 + 20 + 20 + 20 + 20
+	
+	// set and display variables
+	left += 120
+	titlebox dso_params title="Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+		// timebase
+	titlebox timebase title="TimeBase", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	setvariable timebase_set_mode, pos={left, top}, size={125,15}, bodywidth=70, title="mode"
+	//setvariable timebase_set_mode, value=gv_path:timebase_settings:time_mode
+	top += 17
+	setvariable timebase_set_range, pos={left, top}, size={125,15}, bodywidth=70, title="range"
+	//setvariable timebase_set_range, value=gv_path:timebase_settings:time_range
+	top += 17
+	setvariable timebase_set_scale, pos={left, top}, size={125,15}, bodywidth=70, title="scale"
+	//setvariable timebase_set_scale, value=gv_path:timebase_settings:time_scale
+	top += 17
+	setvariable timebase_set_delay, pos={left, top}, size={125,15}, bodywidth=70, title="delay"
+	//setvariable timebase_set_delay, value=gv_path:timebase_settings:time_delay
+	top += 17
+	setvariable timebase_set_reference, pos={left, top}, size={125,15}, bodywidth=70, title="reference"
+	//setvariable timebase_set_reference, value=gv_path:timebase_settings:time_reference
+	top -= 17*5
+		// trigger
+	left += 135
+	titlebox trigger title="Trigger", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	setvariable trigger_set_sweep, pos={left, top}, size={125,15}, bodywidth=70, title="sweep"
+	//setvariable trigger_set_sweep, value=gv_path:trigger_settings:sweep
+	top += 17
+	setvariable trigger_set_mode, pos={left, top}, size={125,15}, bodywidth=70, title="mode"
+	//setvariable trigger_set_mode, value=gv_path:trigger_settings:mode
+	top += 17
+	setvariable trigger_set_source, pos={left, top}, size={125,15}, bodywidth=70, title="source"
+	//setvariable trigger_set_source, value=gv_path:trigger_settings:source
+	top += 17
+	setvariable trigger_set_level, pos={left, top}, size={125,15}, bodywidth=70, title="level"
+	//setvariable trigger_set_level, value=gv_path:trigger_settings:level
+	top += 17
+	setvariable trigger_set_slope, pos={left, top}, size={125,15}, bodywidth=70, title="slope"
+	//setvariable trigger_set_slope, value=gv_path:trigger_settings:slope
+	top += 17
+	setvariable trigger_set_nreject, pos={left, top}, size={125,15}, bodywidth=70, title="nreject"
+	//setvariable trigger_set_nreject, value=gv_path:trigger_settings:nreject
+	top += 17
+	setvariable trigger_set_hfreject, pos={left, top}, size={125,15}, bodywidth=70, title="hfreject"
+	//setvariable trigger_set_hfreject, value=gv_path:trigger_settings:hfreject
+	top -= 17*7
+		// channel 1
+	left -= 135; top += 17*8
+	titlebox ch1 title="Channel 1", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	setvariable ch1_set_range, pos={left, top}, size={125,15}, bodywidth=70, title="range"
+	//setvariable ch1_set_range, value=gv_path:ch1_settings:ch1_range
+	top += 17
+	setvariable ch1_set_scale, pos={left, top}, size={125,15}, bodywidth=70, title="scale"
+	//setvariable ch1_set_scale, value=gv_path:ch1_settings:ch1_scale
+	top += 17
+	setvariable ch1_set_offset, pos={left, top}, size={125,15}, bodywidth=70, title="offset"
+	//setvariable ch1_set_offset, value=gv_path:ch1_settings:ch1_offset
+	top += 17
+	setvariable ch1_set_coupling, pos={left, top}, size={125,15}, bodywidth=70, title="coupling"
+	//setvariable ch1_set_coupling, value=gv_path:ch1_settings:ch1_coupling
+	top += 17
+	setvariable ch1_set_unit, pos={left, top}, size={125,15}, bodywidth=70, title="unit"
+	//setvariable ch1_set_unit, value=gv_path:ch1_settings:ch1_unit
+	top += 17
+	setvariable ch1_set_label, pos={left, top}, size={125,15}, bodywidth=70, title="label"
+	//setvariable ch1_set_label, value=gv_path:ch1_settings:ch1_label
+	top += 17
+	setvariable ch1_set_probe, pos={left, top}, size={125,15}, bodywidth=70, title="probe"
+	//setvariable ch1_set_probe, value=gv_path:ch1_settings:ch1_probe
+	top += 17
+	top -= 17*8
+	
+		// channel 2
+	left += 135
+	titlebox ch2 title="Channel 2", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	setvariable ch2_set_range, pos={left, top}, size={125,15}, bodywidth=70, title="range"
+	//setvariable ch2_set_range, value=gv_path:ch2_settings:ch2_range
+	top += 17
+	setvariable ch2_set_scale, pos={left, top}, size={125,15}, bodywidth=70, title="scale"
+	//setvariable ch2_set_scale, value=gv_path:ch2_settings:ch2_scale
+	top += 17
+	setvariable ch2_set_offset, pos={left, top}, size={125,15}, bodywidth=70, title="offset"
+	//setvariable ch2_set_offset, value=gv_path:ch2_settings:ch2_offset
+	top += 17
+	setvariable ch2_set_coupling, pos={left, top}, size={125,15}, bodywidth=70, title="coupling"
+	//setvariable ch2_set_coupling, value=gv_path:ch2_settings:ch2_coupling
+	top += 17
+	setvariable ch2_set_unit, pos={left, top}, size={125,15}, bodywidth=70, title="unit"
+	//setvariable ch2_set_unit, value=gv_path:ch2_settings:ch2_unit
+	top += 17
+	setvariable ch2_set_label, pos={left, top}, size={125,15}, bodywidth=70, title="label"
+	//setvariable ch2_set_label, value=gv_path:ch2_settings:ch2_label
+	top += 17
+	setvariable ch2_set_probe, pos={left, top}, size={125,15}, bodywidth=70, title="probe"
+	//setvariable ch2_set_probe, value=gv_path:ch2_settings:ch2_probe
+	top += 17
+	top -= 17*8*2
+	
+	// display only values
+	//left += 135
+	//titlebox dso_display title="Display Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
+	//top += 17
+	//valdisplay dso_current_step, pos={left, top}, size={115,15}, bodyWidth=50, title="current step"
+	//valdisplay dso_current_step, limits={0,0,0}, barmisc={0,1000}
+	//valdisplay dso_current_step, value= #"gv_path:current_step"
+	
+	return cmplx(l_size, t_size)
 end

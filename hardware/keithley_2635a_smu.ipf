@@ -157,7 +157,7 @@ function measure_voltage_button(ba) : ButtonControl	// measure voltage
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/g $(gv_folder + ":voltage") = measure_voltage()
+			measure_voltage()
 			break
 	endswitch
 	return 0
@@ -167,7 +167,7 @@ function measure_current_button(ba) : ButtonControl	// measure current
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/g $(gv_folder + ":current") = measure_current()
+			measure_current()
 			break
 	endswitch
 	return 0
@@ -177,7 +177,7 @@ function measure_resistance_button(ba) : ButtonControl	// measure resistance
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/g $(gv_folder + ":resistance") = measure_resistance()
+			measure_resistance()
 			break
 	endswitch
 	return 0
@@ -187,16 +187,111 @@ function measure_iv_button(ba) : ButtonControl	// measure IV
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
-			variable/c measurement = measure_iv()
-			variable/g $(gv_folder + ":voltage") = real(measurement)
-			variable/g $(gv_folder + ":current") = imag(measurement)
+			measure_iv()
 			break
 	endswitch
 	return 0
 end
 
-function set_voltage_smu_button()
+static function set_voltage_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_voltage(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
 end
 
-function set_current_range_smu_button()
+static function set_current_range_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_current_range(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_current_limit_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_current_limit(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+// Panel
+
+static function/c insert_smu_panel(left, top) : panel
+	variable left, top
+	
+	dfref gv_path = $gv_folder
+	
+	variable l_size = 350, t_size = 120
+	groupbox smu_group, pos={left, top}, size={l_size, t_size}, frame=0, title="Keithley 2635A SMU"
+	groupbox smu_group, labelBack=(56576,56576,56576), fsize=12, fStyle=1
+	left += 5; top += 17
+	// buttons
+	titlebox smu_output title="Output", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	button smu_on ,pos={left, top}, size={30,20}, proc=output_on_button, title="On"
+	button smu_on, fColor=(32768,65280,0)
+	left += 30
+	button smu_off ,pos={left, top}, size={30,20}, proc=output_on_button, title="Off"
+	button smu_off, fColor=(65280,0,0)
+	left -= 30; top += 20
+	titlebox smu_measure title="Measurements", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	button smu_measure_voltage ,pos={left, top}, size={80,20}, proc=measure_voltage_button, title="Meas. Voltage"
+	top += 20
+	button smu_measure_current ,pos={left, top}, size={80,20}, proc=measure_current_button, title="Meas. Current"
+	top -= 17 + 20 + 17 + 20
+	// set and display variables
+	left += 90
+	titlebox smu_set title="Set Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	setvariable smu_set_voltage, pos={left, top}, size={135,15}, bodywidth=70, title="voltage"
+	setvariable smu_set_voltage, value=gv_path:voltage, proc=set_voltage_panel
+	top += 17
+	setvariable smu_set_current_range, pos={left, top}, size={135,15}, bodywidth=70, title="current range"
+	setvariable smu_set_current_range, value=gv_path:current_range, proc=set_current_range_panel
+	top += 17
+	setvariable smu_set_current_limit, pos={left, top}, size={135,15}, bodywidth=70, title="current limit"
+	setvariable smu_set_current_limit, value=gv_path:current_limit, proc=set_current_limit_panel
+	top -= 17 + 17 + 17
+	// display only values
+	left += 135
+	titlebox smu_display title="Display Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	valdisplay smu_current, pos={left, top}, size={100,15}, bodyWidth=60, title="current"
+	valdisplay smu_current, limits={0,0,0}, barmisc={0,1000}
+	valdisplay smu_current, value= #"gv_path:current"
+	return cmplx(l_size, t_size)
 end

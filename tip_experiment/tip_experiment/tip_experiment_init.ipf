@@ -28,6 +28,7 @@ static function init_experiment()
 	variable/g $(gv_folder + ":current_set_point")
 	variable/g $(gv_folder + ":trig_g0")
 	variable/g $(gv_folder + ":vis_g0")
+	variable/g $(gv_folder + ":dual_pol_meas") 
 	// amplifier parameters
 	gv_path = "root:global_variables:amplifiers"
 	data#check_gvpath(gv_path)
@@ -100,6 +101,7 @@ static function init_scan_waves(scan_folder)
 	nvar/sdfr=$gv_folder append_mode
 	dfref spec_path = root:oo:globalvariables
 	nvar/sdfr=spec_path numspectrometers
+	nvar/sdfr=$gv_folder dual_pol_meas
 	if (!append_mode)									// if not appending
 		// create data storage waves
 		make/o/n=0 scan_folder:steps
@@ -121,6 +123,12 @@ static function init_scan_waves(scan_folder)
 		// extra spectra data
 		if (numspectrometers == 2)
 			duplicate/o root:oo:data:current:wl_wave_2, scan_folder:wavelength_t
+			wave wl_wave_t = scan_folder:wavelength_t
+			wl_wave_t *= 1e-9
+			setscale d, 0, 0, "m", wl_wave_t
+			make/o/n=(numpnts(wl_wave_t), 1) scan_folder:spec2d_t
+		elseif  (numspectrometers == 1 && dual_pol_meas == 1)
+			duplicate/o root:oo:data:current:wl_wave, scan_folder:wavelength_t
 			wave wl_wave_t = scan_folder:wavelength_t
 			wl_wave_t *= 1e-9
 			setscale d, 0, 0, "m", wl_wave_t
@@ -149,6 +157,7 @@ static function restore_default_values()
 	variable/g $(gv_folder + ":current_set_point") = 1		// 1 A stopping point
 	variable/g $(gv_folder + ":trig_g0") = 0.5				// 0.5G0 trigger point
 	variable/g $(gv_folder + ":vis_g0") = 20				// 20G0 viewing range
+	variable/g $(gv_folder + ":dual_pol_meas") = 1
 	// amplifier parameters
 	gv_path = "root:global_variables:amplifiers"
 	variable/g $(gv_path + ":gain_dso") = 1000

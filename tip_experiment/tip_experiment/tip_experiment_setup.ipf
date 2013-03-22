@@ -25,7 +25,9 @@ end
 function setup_exp(rst)
 	variable rst
 	dfref exp_path = $gv_folder
-	nvar/sdfr=exp_path scan_direction, vis_g0, trig_g0
+	nvar/sdfr=exp_path scan_direction, vis_g0, trig_g0, dual_pol_meas
+	dfref spec_path = root:oo:globalvariables
+	nvar/sdfr=spec_path numspectrometers
 	dfref amp_path = root:global_variables:amplifiers
 	nvar/sdfr=amp_path gain = gain_dso
 	// reset to defaults
@@ -37,6 +39,11 @@ function setup_exp(rst)
 		elseif (scan_direction == 1)
 			trig_g0 = 15
 		endif
+	endif
+	if (numspectrometers == 1 && dual_pol_meas == 1)
+		// setup shutters
+		// test both shutters with flip
+		// open p-polarisation shutter
 	endif
 end
 

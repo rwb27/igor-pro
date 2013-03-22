@@ -36,7 +36,7 @@ Hardware
 >#### Current Information
 >**Status**: working
 >
->**Changes**: fix set channel label
+>**Changes**: fix set channel label, add set_acquire to panel
 
 #### Notes
 - Requires VISA

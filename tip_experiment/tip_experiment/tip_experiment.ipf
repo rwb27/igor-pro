@@ -15,6 +15,7 @@
 #include "tip_experiment_logging"
 #include "tip_experiment_setup"
 #include "tip_experiment_time_res_meas"
+#include "tip_experiment_panel"
 
 static constant g0 = 7.7480917e-5
 static strconstant gv_folder = "root:global_variables:tip_experiments"
@@ -38,6 +39,7 @@ function tip_scan()			// tip experiment master function
 	// spectrometer
 	dfref spec_path = root:oo:globalvariables
 	nvar/sdfr=spec_path numspectrometers
+	nvar/sdfr=$gv_folder dual_pol_meas
 	// setup equipment with current parameter values
 	tip_exp_setup#setup(0)
 	// log scan settings
@@ -58,7 +60,7 @@ function tip_scan()			// tip experiment master function
 	wave/sdfr=scan_folder psd_y_stdev
 	wave/sdfr=scan_folder timestamp
 	wave/sdfr=scan_folder spec2d
-	if (numspectrometers == 2)
+	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
 		wave/sdfr=scan_folder spec2d_t
 	endif
 
@@ -133,6 +135,14 @@ function tip_scan()			// tip experiment master function
 			wave/sdfr=scan_folder spec = $(":spectra:spec_t_" + num2str(i))
 			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
 			spec2d_t[][i] = spec[p]
+		elseif (numspectrometers == 1 && dual_pol_meas == 1)
+			// flip shutters
+			oo_read()
+			duplicate/o root:oo:data:current:spectra, $(scan_folder_str + "spectra:spec_t_" + num2str(i))
+			wave/sdfr=scan_folder spec = $(":spectra:spec_t_" + num2str(i))
+			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
+			spec2d_t[][i] = spec[p]
+			// flip shutters
 		endif
 		
 		// perform end-loop checks

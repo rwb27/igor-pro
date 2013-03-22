@@ -331,3 +331,25 @@ function pixis_256e() : Panel
 	RenameWindow #,G0
 	SetActiveSubwindow ##
 end
+
+function/c insert_pixis_panel(left, top) : panel
+	variable left, top
+	
+	dfref gv_path = $gv_folder
+	
+	variable l_size = 350, t_size = 50
+	groupbox pixis_group, pos={left, top}, size={l_size, t_size}, frame=0, title="PIXIS 256E"
+	groupbox pixis_group, labelBack=(56576,56576,56576), fsize=12, fStyle=1
+	left += 5; top += 17
+	
+	// buttons
+	titlebox pixis_controls title="PIXIS Controls", pos={left, top}, frame=0, fSize=11, fstyle=1
+	// set and display variables
+	left += 90
+	titlebox pixis_set title="Set Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
+	// display only values
+	left += 135
+	titlebox pixis_display title="Display Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
+	
+	return cmplx(l_size, t_size)
+end
