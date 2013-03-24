@@ -111,7 +111,7 @@ Hardware
 
 ### Newport LTA-HA and NanoPZ actuators ###
 >#### Current Information ####
->**Status**: working with some potential bugs
+>**Status**: working with some bugs. Left/right motion keeps crashing. Needs a fix. Manual control working until then.
 
 #### Notes ####
 - Requires VISA
