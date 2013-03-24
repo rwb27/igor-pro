@@ -68,17 +68,19 @@ function setup_smu(rst)
 	dfref exp_path = $gv_folder
 	nvar/sdfr=exp_path scan_direction
 	dfref smu_path = $smu#gv_path()
-	nvar/sdfr=smu_path v = :voltage, i_range = :current_range, i_limit = :current_limit
+	nvar/sdfr=smu_path v = :voltage, v_range = :voltage_range, i_range = :current_range, i_limit = :current_limit
 	// reset to defaults
 	if (rst == 1)
-		v = 100e-3
-		i_limit = 100e-3
+		v = 10e-3
+		v_range = 10e-3
+		i_limit = 250e-6
 		if (scan_direction == -1)
 			i_range = 1e-8
 		endif
 	endif
 	smu#open_comms()
 	smu#set_voltage(v)
+	smu#set_voltage_range(v_range)
 	smu#set_current_limit(i_limit)
 	smu#set_current_range(i_range)
 	smu#output(1)

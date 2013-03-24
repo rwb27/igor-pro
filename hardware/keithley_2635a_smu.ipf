@@ -56,6 +56,18 @@ function/s get_error()
 	return error_message
 end
 
+function set_voltage_range(v_range)
+	variable v_range
+	visa#cmd(hardware_id, "smua.source.rangev = " + num2str(v_range) + "\n")
+	variable/g $(gv_folder + ":voltage_range") = v_range
+end
+
+function get_voltage_range()
+	variable v_range = visa#read(hardware_id, "print(smua.source.rangev)\n")
+	variable/g $(gv_folder + ":voltage_range") = v_range
+	return v_range
+end
+
 function set_current_range(i_range)
 	variable i_range
 	visa#cmd(hardware_id, "smua.measure.rangei = " + num2str(i_range) + "\n")
@@ -215,6 +227,24 @@ static function set_voltage_panel(sva) : setvariablecontrol
 			string sval = sva.sval
 			open_comms()
 			set_voltage(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_voltage_range_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_voltage_range(dval)
 			close_comms()
 			break
 		case -1: // control being killed
