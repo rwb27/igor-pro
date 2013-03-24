@@ -18,7 +18,7 @@
 #include "tip_experiment_panel"
 
 static constant g0 = 7.7480917e-5
-static strconstant gv_folder = "root:global_variables:tip_experiments"
+static strconstant gv_folder = "root:global_variables:tip_experiment"
 
 function tip_scan()			// tip experiment master function	
 	// initialise scan

@@ -88,7 +88,7 @@ function set_voltage(v)
 end
 
 function measure_voltage()
-	variable voltage = visa#read(hardware_id, "print(smua.measure.v())\\n")
+	variable voltage = visa#read(hardware_id, "print(smua.measure.v())\n")
 	variable/g $(gv_folder + ":voltage") = voltage
 	return voltage
 end
@@ -137,7 +137,9 @@ function output_on_button(ba) : ButtonControl	// output on
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
+			open_comms()
 			output(1)
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -147,7 +149,9 @@ function output_off_button(ba) : ButtonControl	// output off
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
+			open_comms()
 			output(0)
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -157,7 +161,9 @@ function measure_voltage_button(ba) : ButtonControl	// measure voltage
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
+			open_comms()
 			measure_voltage()
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -167,7 +173,9 @@ function measure_current_button(ba) : ButtonControl	// measure current
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
+			open_comms()
 			measure_current()
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -177,7 +185,9 @@ function measure_resistance_button(ba) : ButtonControl	// measure resistance
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
+			open_comms()
 			measure_resistance()
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -187,7 +197,9 @@ function measure_iv_button(ba) : ButtonControl	// measure IV
 	struct WMButtonAction &ba
 	switch( ba.eventCode)
 		case 2:
+			open_comms()
 			measure_iv()
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -261,30 +273,30 @@ static function/c insert_smu_panel(left, top) : panel
 	// buttons
 	titlebox smu_output title="Output", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
-	button smu_on ,pos={left, top}, size={30,20}, proc=output_on_button, title="On"
+	button smu_on ,pos={left, top}, size={30,20}, proc=smu#output_on_button, title="On"
 	button smu_on, fColor=(32768,65280,0)
 	left += 30
-	button smu_off ,pos={left, top}, size={30,20}, proc=output_on_button, title="Off"
+	button smu_off ,pos={left, top}, size={30,20}, proc=smu#output_off_button, title="Off"
 	button smu_off, fColor=(65280,0,0)
 	left -= 30; top += 20
 	titlebox smu_measure title="Measurements", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
-	button smu_measure_voltage ,pos={left, top}, size={80,20}, proc=measure_voltage_button, title="Meas. Voltage"
+	button smu_measure_voltage ,pos={left, top}, size={80,20}, proc=smu#measure_voltage_button, title="Meas. Voltage"
 	top += 20
-	button smu_measure_current ,pos={left, top}, size={80,20}, proc=measure_current_button, title="Meas. Current"
+	button smu_measure_current ,pos={left, top}, size={80,20}, proc=smu#measure_current_button, title="Meas. Current"
 	top -= 17 + 20 + 17 + 20
 	// set and display variables
 	left += 90
 	titlebox smu_set title="Set Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 	setvariable smu_set_voltage, pos={left, top}, size={135,15}, bodywidth=70, title="voltage"
-	setvariable smu_set_voltage, value=gv_path:voltage, proc=set_voltage_panel
+	setvariable smu_set_voltage, value=gv_path:voltage, proc=smu#set_voltage_panel
 	top += 17
 	setvariable smu_set_current_range, pos={left, top}, size={135,15}, bodywidth=70, title="current range"
-	setvariable smu_set_current_range, value=gv_path:current_range, proc=set_current_range_panel
+	setvariable smu_set_current_range, value=gv_path:current_range, proc=smu#set_current_range_panel
 	top += 17
 	setvariable smu_set_current_limit, pos={left, top}, size={135,15}, bodywidth=70, title="current limit"
-	setvariable smu_set_current_limit, value=gv_path:current_limit, proc=set_current_limit_panel
+	setvariable smu_set_current_limit, value=gv_path:current_limit, proc=smu#set_current_limit_panel
 	top -= 17 + 17 + 17
 	// display only values
 	left += 135
@@ -292,6 +304,6 @@ static function/c insert_smu_panel(left, top) : panel
 	top += 17
 	valdisplay smu_current, pos={left, top}, size={100,15}, bodyWidth=60, title="current"
 	valdisplay smu_current, limits={0,0,0}, barmisc={0,1000}
-	valdisplay smu_current, value= #"gv_path:current"
+	valdisplay smu_current, value= #"root:global_variables:keithley_2635a_smu:current"
 	return cmplx(l_size, t_size)
 end

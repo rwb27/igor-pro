@@ -97,7 +97,7 @@ function/s read_str(hardware_id, cmd)
 	string message
 	nvar instr = $("root:global_variables:" + hardware_id + ":instr")
 	VISAwrite instr, cmd
-	VISAread/n=500 instr, message //  possibly use /t="\n", /n=500 for tek
+	VISAread/t=",\r\n"/n=500 instr, message //  possibly use /t="\n", /n=500 for tek
 	return message
 end
 

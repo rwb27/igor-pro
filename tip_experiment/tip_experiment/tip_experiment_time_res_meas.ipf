@@ -3,7 +3,7 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 static constant g0 = 7.7480917e-5
-static strconstant gv_folder = "root:global_variables:tip_experiments"
+static strconstant gv_folder = "root:global_variables:tip_experiment"
 
 static function measure_time_resolved(scan_folder, i)
 	dfref scan_folder
@@ -25,7 +25,8 @@ static function measure_time_resolved(scan_folder, i)
 	qcs_name = scan_folder_str + "time_resolved_data:qc_spec_"+num2str(i)
 			
 	// time-resolved current measurement
-	dso#import_data("1", qc_name)
+	dso#import_data("1", "")
+	duplicate/o root:agilent_dsox2012a_dso:ch1_trace, $qc_name
 	// calculate time-resolved conductance
 	duplicate $qc_name, $qcg_name
 	wave g_trace = $qcg_name
@@ -35,16 +36,18 @@ static function measure_time_resolved(scan_folder, i)
 	nvar/sdfr=smu_path v = :voltage
 	g_trace /= (gain * v * g0)
 	// get time-resolved force measurement
-	dso#import_data("2", qcf_name)
+	dso#import_data("2", "")
+	duplicate/o root:agilent_dsox2012a_dso:ch2_trace, $qcf_name
 			
 	// get time-resolved spectra
 	pixis#read()
 	duplicate root:pixis_256e:current:image, $qcs_name
+	
 	// re-arm time-resolved measurements
 	dfref pixis_path = $pixis#gv_path()
 	nvar/sdfr=pixis_path exp_time
-	pixis#ready(exp_time)
-	dso#arm_trigger()
+	//pixis#ready(exp_time)
+	//dso#arm_trigger()
 	
 	return 0
 end

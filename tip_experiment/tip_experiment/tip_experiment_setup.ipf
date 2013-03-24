@@ -9,7 +9,7 @@
 #include "princeton_instruments_pixis_256e_ccd"
 
 static constant g0 = 7.7480917e-5
-static strconstant gv_folder = "root:global_variables:tip_experiments"
+static strconstant gv_folder = "root:global_variables:tip_experiment"
 
 // take currently set global variable values for each piece of equipment and set the parameters
 static function setup(rst)
@@ -117,7 +117,7 @@ function setup_dso(rst)
 	variable trig_level = trig_g0 * g0 * v * gain
 	
 	variable ch1_range = 10/9 * vis_g0 * g0 * v * gain
-	variable ch1_offset = -4 * ch1_range/10
+	variable ch1_offset = 4 * ch1_range/10
 	
 	variable ch2_range = 10
 	variable ch2_offset = 0

@@ -2,13 +2,12 @@
 #pragma version = 6.31
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
-//#include "tip_experiment"
 #include "keithley_2635a_smu"
 #include "agilent_dsox2000_series_dso"
 #include "princeton_instruments_pixis_256e_ccd"
-#include "tip_experiment_init"
+#include "tip_experiment"
 
-static strconstant gv_folder = "root:global_variables:tip_experiments"
+static strconstant gv_folder = "root:global_variables:tip_experiment"
 
 // Panel Controls
 
@@ -16,7 +15,7 @@ static function tip_scan_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
-			//tip_exp#tip_scan()
+			tip_exp#tip_scan()
 			break
 	endswitch
 	return 0
@@ -67,10 +66,10 @@ static function/c insert_exp_panel(left, top) : panel
 	// buttons
 	titlebox exp_controls title="Exp. Controls", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
-	button exp_tip_scan,pos={left, top}, size={60,20}, proc=tip_scan_button, title="Tip Scan"
+	button exp_tip_scan,pos={left, top}, size={60,20}, proc=tip_panel#tip_scan_button, title="Tip Scan"
 	button exp_tip_scan, fColor=(32768,65280,0)
 	top += 20
-	button exp_defaults,pos={left, top}, size={60,30}, proc=restore_defaults_button, title="Restore\rDefaults"
+	button exp_defaults,pos={left, top}, size={60,30}, proc=tip_panel#restore_defaults_button, title="Restore\rDefaults"
 	top -= 17 + 20
 	// set and display variables
 	left += 90
@@ -107,7 +106,7 @@ static function/c insert_exp_panel(left, top) : panel
 	top += 17
 	valdisplay exp_current_step, pos={left, top}, size={115,15}, bodyWidth=50, title="current step"
 	valdisplay exp_current_step, limits={0,0,0}, barmisc={0,1000}
-	valdisplay exp_current_step, value= #"gv_path:current_step"
+	valdisplay exp_current_step, value= #"root:global_variables:tip_experiment:current_step"
 	
 	return cmplx(l_size, t_size)
 end

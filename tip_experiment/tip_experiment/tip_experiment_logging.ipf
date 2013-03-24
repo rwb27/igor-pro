@@ -3,7 +3,7 @@
 
 #include "data_handling"
 
-static strconstant gv_folder = "root:global_variables:tip_experiments"
+static strconstant gv_folder = "root:global_variables:tip_experiment"
 
 static function log_scan_parameters(scan_folder, i)
 	dfref scan_folder

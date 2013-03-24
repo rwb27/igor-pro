@@ -1,7 +1,7 @@
 #pragma modulename = tip_exp_display
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
-static strconstant gv_folder = "root:global_variables:tip_experiments"
+static strconstant gv_folder = "root:global_variables:tip_experiment"
 
 function make_axis_wave(w, wname)
 	// function by MH
@@ -34,7 +34,7 @@ static function display_scan(scan_folder)
 	//wave/sdfr=scan_folder psd_y_stdev
 	wave/sdfr=scan_folder spec2d
 	wave/sdfr=scan_folder wavelength
-	if (numspectrometers == 2 || (numspectrometer == 1 && dual_pol_meas == 1))
+	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
 		wave/sdfr=scan_folder spec2d_t
 		wave/sdfr=scan_folder wavelength_t
 	endif
@@ -44,7 +44,7 @@ static function display_scan(scan_folder)
 	wave/sdfr=scan_folder wavelength_ax
 	//make_axis_wave(steps, "steps_ax")
 	//wave/sdfr=scan_folder steps_ax
-	if (numspectrometers == 2 || (numspectrometer == 1 && dual_pol_meas == 1))
+	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
 		make_axis_wave(wavelength_t, "wavelength_ax_t")
 		wave/sdfr=scan_folder wavelength_ax_t
 	endif
@@ -73,7 +73,7 @@ static function display_scan(scan_folder)
 	setactivesubwindow ##
 	
 	// append transverse spectra
-	if (numspectrometers == 2 || (numspectrometer == 1 && dual_pol_meas == 1))
+	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
 		modifygraph width = extra_width + 2*image_width - 2*spacer
 		display/w=(extra_width+image_width-2*spacer, 0, extra_width+2*image_width-2*spacer, image_length)/host=#; renamewindow #, g1
 		appendimage spec2d_t vs {wavelength_ax_t, *}

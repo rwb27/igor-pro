@@ -50,7 +50,7 @@ function set_general(mode, clear)
 	variable clear
 	
 	visa#cmd(hardware_id, ":stop")
-	print visa#read_str(hardware_id, "*opc?")
+	visa#read_str(hardware_id, "*opc?")
 	if (!stringmatch(mode, "run") && !stringmatch(mode, "single") && !stringmatch(mode, "stop"))
 		abort "invalid mode (run | single | stop)"
 	endif
@@ -148,10 +148,10 @@ function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
 	visa#cmd(hardware_id, ":channel" + ch + ":coupling " + coupling)
 	string/g $(param_dir + ":ch" + ch + "_coupling") = coupling
 	
-	if (stringmatch(unit, "V"))
+	if (stringmatch(unit, "V") || stringmatch(unit, "volt"))
 		visa#cmd(hardware_id, ":channel"+ch+":units volt")
 		string/g $(param_dir + ":ch" + ch + "_unit") = unit
-	elseif (stringmatch(unit, "A"))
+	elseif (stringmatch(unit, "A") || stringmatch(unit, "amp"))
 		visa#cmd(hardware_id, ":channel"+ch+":units ampere")
 		string/g $(param_dir + ":ch" + ch + "_unit") = unit
 	else
@@ -203,8 +203,8 @@ function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
 	string/g $(param_dir + ":trigger_mode") = mode
 	
 	// trigger source
-	if (!stringmatch(source, "channel*") && !stringmatch(source, "external") && !stringmatch(source, "line") && !stringmatch(source, "wgen"))
-		abort "invalid trigger source (channel<n> | external | line | wgen)"
+	if (!stringmatch(source, "ch*") && !stringmatch(source, "external") && !stringmatch(source, "line") && !stringmatch(source, "wgen"))
+		abort "invalid trigger source (ch*<n> | external | line | wgen)"
 	endif
 	visa#cmd(hardware_id, ":trigger:source "+source)
 	string/g $(param_dir + ":trigger_source") = source
@@ -214,7 +214,7 @@ function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
 	variable/g $(param_dir + ":trigger_level") = level
 	
 	// slope settings
-	if (!stringmatch(slope, "positive") && !stringmatch(slope, "negative") && !stringmatch(slope, "either") && !stringmatch(slope, "alternate"))
+	if (!stringmatch(slope, "pos*") && !stringmatch(slope, "neg*") && !stringmatch(slope, "either") && !stringmatch(slope, "alternate"))
 		abort "invalid trigger slope (positive | negative | either | alternate)"
 	endif
 	visa#cmd(hardware_id, ":trigger:slope "+slope)
@@ -344,7 +344,9 @@ static function capture_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			capture_all()
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -354,8 +356,10 @@ static function import_data_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			import_data("1", "")
-			import_data("1", "")
+			import_data("2", "")
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -365,7 +369,9 @@ static function run_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			set_general("run", 0)
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -375,7 +381,9 @@ static function single_acq_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			set_general("single", 0)
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -385,7 +393,9 @@ static function stop_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			set_general("stop", 0)
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -400,7 +410,9 @@ static function set_timebase_button(ba) : buttoncontrol
 			nvar/sdfr=$gv_folder scale = :timebase_settings:time_scale
 			nvar/sdfr=$gv_folder delay = :timebase_settings:time_delay
 			svar/sdfr=$gv_folder ref = :timebase_settings:time_reference
+			open_comms()
 			set_timebase(mode, range, scale, delay, ref)
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -410,13 +422,15 @@ static function get_timebase_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			get_timebase()
+			close_comms()
 			break
 	endswitch
 	return 0
 end
 
-static function set_channel1_button(ba) : buttoncontrol
+static function set_ch1_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
@@ -427,23 +441,27 @@ static function set_channel1_button(ba) : buttoncontrol
 			svar/sdfr=$gv_folder unit = :ch1_settings:ch1_unit
 			svar/sdfr=$gv_folder ch_label = :ch1_settings:ch1_label
 			nvar/sdfr=$gv_folder probe = :ch1_settings:ch1_probe
+			open_comms()
 			set_channel("1", range, scale, offset, coupling, unit, ch_label, probe)
+			close_comms()
 			break
 	endswitch
 	return 0
 end
 
-static function get_channel1_button(ba) : buttoncontrol
+static function get_ch1_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			get_channel("1")
+			close_comms()
 			break
 	endswitch
 	return 0
 end
 
-static function set_channel2_button(ba) : buttoncontrol
+static function set_ch2_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
@@ -454,17 +472,21 @@ static function set_channel2_button(ba) : buttoncontrol
 			svar/sdfr=$gv_folder unit = :ch2_settings:ch2_unit
 			svar/sdfr=$gv_folder ch_label = :ch2_settings:ch2_label
 			nvar/sdfr=$gv_folder probe = :ch2_settings:ch2_probe
+			open_comms()
 			set_channel("2", range, scale, offset, coupling, unit, ch_label, probe)
+			close_comms()
 			break
 	endswitch
 	return 0
 end
 
-static function get_channel2_button(ba) : buttoncontrol
+static function get_ch2_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			get_channel("2")
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -474,14 +496,16 @@ static function set_trigger_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
-			svar/sdfr=$gv_folder sweep = :trigger_settings:sweep
-			svar/sdfr=$gv_folder mode = :trigger_settings:mode
-			svar/sdfr=$gv_folder source = :trigger_settings:source
-			nvar/sdfr=$gv_folder level = :trigger_settings:level
-			svar/sdfr=$gv_folder slope = :trigger_settings:slope
-			svar/sdfr=$gv_folder rejectnoise = :trigger_settings:nreject
-			svar/sdfr=$gv_folder filter = :trigger_settings:hfreject
+			svar/sdfr=$gv_folder sweep = :trigger_settings:trigger_sweep
+			svar/sdfr=$gv_folder mode = :trigger_settings:trigger_mode
+			svar/sdfr=$gv_folder source = :trigger_settings:trigger_source
+			nvar/sdfr=$gv_folder level = :trigger_settings:trigger_level
+			svar/sdfr=$gv_folder slope = :trigger_settings:trigger_slope
+			svar/sdfr=$gv_folder rejectnoise = :trigger_settings:trigger_nreject
+			svar/sdfr=$gv_folder filter = :trigger_settings:trigger_hfreject
+			open_comms()
 			set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -491,7 +515,9 @@ static function get_trigger_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
+			open_comms()
 			get_trigger()
+			close_comms()
 			break
 	endswitch
 	return 0
@@ -513,29 +539,29 @@ static function/c insert_dso_panel(left, top) : panel
 	titlebox dso_controls title="DSO Controls", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 	titlebox dso_mode title="Mode:", pos={left, top}, frame=0, fSize=11; left+= 50
-	button dso_run,pos={left, top}, size={40,20}, fColor=(32768,65280,0), proc=run_button, title="Run";	top += 20
-	button dso_single,pos={left, top}, size={40,20}, fColor=(65280,65280,0), proc=single_acq_button, title="Single"; top += 20
-	button dso_stop,pos={left, top}, size={40,20}, fColor=(65280,0,0), proc=stop_button, title="Stop";
+	button dso_run,pos={left, top}, size={40,20}, fColor=(32768,65280,0), proc=dso#run_button, title="Run";	top += 20
+	button dso_single,pos={left, top}, size={40,20}, fColor=(65280,65280,0), proc=dso#single_acq_button, title="Single"; top += 20
+	button dso_stop,pos={left, top}, size={40,20}, fColor=(65280,0,0), proc=dso#stop_button, title="Stop";
 	left -= 50; top += 20
 	titlebox dso_timebase title="TimeBase:", pos={left, top}, frame=0, fSize=11; left+= 55
-	button dso_set_timebase,pos={left, top}, size={30,20}, proc=set_timebase_button, title="Set";	left += 30
-	button dso_get_timebase,pos={left, top}, size={30,20}, proc=get_timebase_button, title="Get"
+	button dso_set_timebase,pos={left, top}, size={30,20}, proc=dso#set_timebase_button, title="Set";	left += 30
+	button dso_get_timebase,pos={left, top}, size={30,20}, proc=dso#get_timebase_button, title="Get"
 	left -= 55 + 30; top += 20
 	titlebox dso_ch1 title="Channel 1:", pos={left, top}, frame=0, fSize=11; left+= 55
-	button dso_set_ch1,pos={left, top}, size={30,20}, proc=set_ch1_button, title="Set";	left += 30
-	button dso_get_ch1,pos={left, top}, size={30,20}, proc=get_ch1_button, title="Get"
+	button dso_set_ch1,pos={left, top}, size={30,20}, proc=dso#set_ch1_button, title="Set";	left += 30
+	button dso_get_ch1,pos={left, top}, size={30,20}, proc=dso#get_ch1_button, title="Get"
 	left -= 55 + 30; top += 20
 	titlebox dso_ch2 title="Channel 2:", pos={left, top}, frame=0, fSize=11; left+= 55
-	button dso_set_ch2,pos={left, top}, size={30,20}, proc=set_ch2_button, title="Set";	left += 30
-	button dso_get_ch2,pos={left, top}, size={30,20}, proc=get_ch2_button, title="Get"
+	button dso_set_ch2,pos={left, top}, size={30,20}, proc=dso#set_ch2_button, title="Set";	left += 30
+	button dso_get_ch2,pos={left, top}, size={30,20}, proc=dso#get_ch2_button, title="Get"
 	left -= 55 + 30; top += 20
 	titlebox dso_trigger title="Trigger:", pos={left, top}, frame=0, fSize=11; left+= 55
-	button dso_set_trigger,pos={left, top}, size={30,20}, proc=set_trigger_button, title="Set";	left += 30
-	button dso_get_trigger,pos={left, top}, size={30,20}, proc=get_trigger_button, title="Get"
+	button dso_set_trigger,pos={left, top}, size={30,20}, proc=dso#set_trigger_button, title="Set";	left += 30
+	button dso_get_trigger,pos={left, top}, size={30,20}, proc=dso#get_trigger_button, title="Get"
 	left -= 55 + 30; top += 20
 
-	button dso_capture,pos={left, top}, size={50,20}, proc=capture_button, title="Capture";	left += 50
-	button dso_import,pos={left, top}, size={50,20}, proc=import_data_button, title="Import"
+	button dso_capture,pos={left, top}, size={50,20}, proc=dso#capture_button, title="Capture";	left += 50
+	button dso_import,pos={left, top}, size={50,20}, proc=dso#import_data_button, title="Import"
 	left -= 50; top -= 17 + 20 + 20 + 20 + 20 + 20 + 20 + 20
 	
 	// set and display variables
@@ -543,99 +569,103 @@ static function/c insert_dso_panel(left, top) : panel
 	titlebox dso_params title="Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 		// timebase
+	dfref tb_path = $(gv_folder + ":timebase_settings")
 	titlebox timebase title="TimeBase", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 	setvariable timebase_set_mode, pos={left, top}, size={125,15}, bodywidth=70, title="mode"
-	//setvariable timebase_set_mode, value=gv_path:timebase_settings:time_mode
+	setvariable timebase_set_mode, value= tb_path:time_mode
 	top += 17
 	setvariable timebase_set_range, pos={left, top}, size={125,15}, bodywidth=70, title="range"
-	//setvariable timebase_set_range, value=gv_path:timebase_settings:time_range
+	setvariable timebase_set_range, value= tb_path:time_range
 	top += 17
 	setvariable timebase_set_scale, pos={left, top}, size={125,15}, bodywidth=70, title="scale"
-	//setvariable timebase_set_scale, value=gv_path:timebase_settings:time_scale
+	setvariable timebase_set_scale, value= tb_path:time_scale
 	top += 17
 	setvariable timebase_set_delay, pos={left, top}, size={125,15}, bodywidth=70, title="delay"
-	//setvariable timebase_set_delay, value=gv_path:timebase_settings:time_delay
+	setvariable timebase_set_delay, value= tb_path:time_delay
 	top += 17
 	setvariable timebase_set_reference, pos={left, top}, size={125,15}, bodywidth=70, title="reference"
-	//setvariable timebase_set_reference, value=gv_path:timebase_settings:time_reference
+	setvariable timebase_set_reference, value= tb_path:time_reference
 	top -= 17*5
 		// trigger
+	dfref trig_path = $(gv_folder + ":trigger_settings")
 	left += 135
 	titlebox trigger title="Trigger", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 	setvariable trigger_set_sweep, pos={left, top}, size={125,15}, bodywidth=70, title="sweep"
-	//setvariable trigger_set_sweep, value=gv_path:trigger_settings:sweep
+	setvariable trigger_set_sweep, value= trig_path:trigger_sweep
 	top += 17
 	setvariable trigger_set_mode, pos={left, top}, size={125,15}, bodywidth=70, title="mode"
-	//setvariable trigger_set_mode, value=gv_path:trigger_settings:mode
+	setvariable trigger_set_mode, value= trig_path:trigger_mode
 	top += 17
 	setvariable trigger_set_source, pos={left, top}, size={125,15}, bodywidth=70, title="source"
-	//setvariable trigger_set_source, value=gv_path:trigger_settings:source
+	setvariable trigger_set_source, value= trig_path:trigger_source
 	top += 17
 	setvariable trigger_set_level, pos={left, top}, size={125,15}, bodywidth=70, title="level"
-	//setvariable trigger_set_level, value=gv_path:trigger_settings:level
+	setvariable trigger_set_level, value= trig_path:trigger_level
 	top += 17
 	setvariable trigger_set_slope, pos={left, top}, size={125,15}, bodywidth=70, title="slope"
-	//setvariable trigger_set_slope, value=gv_path:trigger_settings:slope
+	setvariable trigger_set_slope, value= trig_path:trigger_slope
 	top += 17
 	setvariable trigger_set_nreject, pos={left, top}, size={125,15}, bodywidth=70, title="nreject"
-	//setvariable trigger_set_nreject, value=gv_path:trigger_settings:nreject
+	setvariable trigger_set_nreject, value= trig_path:trigger_nreject
 	top += 17
 	setvariable trigger_set_hfreject, pos={left, top}, size={125,15}, bodywidth=70, title="hfreject"
-	//setvariable trigger_set_hfreject, value=gv_path:trigger_settings:hfreject
+	setvariable trigger_set_hfreject, value= trig_path:trigger_hfreject
 	top -= 17*7
 		// channel 1
+	dfref ch1_path = $(gv_folder + ":ch1_settings")
 	left -= 135; top += 17*8
 	titlebox ch1 title="Channel 1", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 	setvariable ch1_set_range, pos={left, top}, size={125,15}, bodywidth=70, title="range"
-	//setvariable ch1_set_range, value=gv_path:ch1_settings:ch1_range
+	setvariable ch1_set_range, value= ch1_path:ch1_range
 	top += 17
 	setvariable ch1_set_scale, pos={left, top}, size={125,15}, bodywidth=70, title="scale"
-	//setvariable ch1_set_scale, value=gv_path:ch1_settings:ch1_scale
+	setvariable ch1_set_scale, value= ch1_path:ch1_scale
 	top += 17
 	setvariable ch1_set_offset, pos={left, top}, size={125,15}, bodywidth=70, title="offset"
-	//setvariable ch1_set_offset, value=gv_path:ch1_settings:ch1_offset
+	setvariable ch1_set_offset, value= ch1_path:ch1_offset
 	top += 17
 	setvariable ch1_set_coupling, pos={left, top}, size={125,15}, bodywidth=70, title="coupling"
-	//setvariable ch1_set_coupling, value=gv_path:ch1_settings:ch1_coupling
+	setvariable ch1_set_coupling, value= ch1_path:ch1_coupling
 	top += 17
 	setvariable ch1_set_unit, pos={left, top}, size={125,15}, bodywidth=70, title="unit"
-	//setvariable ch1_set_unit, value=gv_path:ch1_settings:ch1_unit
+	setvariable ch1_set_unit, value= ch1_path:ch1_unit
 	top += 17
 	setvariable ch1_set_label, pos={left, top}, size={125,15}, bodywidth=70, title="label"
-	//setvariable ch1_set_label, value=gv_path:ch1_settings:ch1_label
+	setvariable ch1_set_label, value= ch1_path:ch1_label
 	top += 17
 	setvariable ch1_set_probe, pos={left, top}, size={125,15}, bodywidth=70, title="probe"
-	//setvariable ch1_set_probe, value=gv_path:ch1_settings:ch1_probe
+	setvariable ch1_set_probe, value= ch1_path:ch1_probe
 	top += 17
 	top -= 17*8
 	
 		// channel 2
+	dfref ch2_path = $(gv_folder + ":ch2_settings")
 	left += 135
 	titlebox ch2 title="Channel 2", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 	setvariable ch2_set_range, pos={left, top}, size={125,15}, bodywidth=70, title="range"
-	//setvariable ch2_set_range, value=gv_path:ch2_settings:ch2_range
+	setvariable ch2_set_range, value= ch2_path:ch2_range
 	top += 17
 	setvariable ch2_set_scale, pos={left, top}, size={125,15}, bodywidth=70, title="scale"
-	//setvariable ch2_set_scale, value=gv_path:ch2_settings:ch2_scale
+	setvariable ch2_set_scale, value= ch2_path:ch2_scale
 	top += 17
 	setvariable ch2_set_offset, pos={left, top}, size={125,15}, bodywidth=70, title="offset"
-	//setvariable ch2_set_offset, value=gv_path:ch2_settings:ch2_offset
+	setvariable ch2_set_offset, value= ch2_path:ch2_offset
 	top += 17
 	setvariable ch2_set_coupling, pos={left, top}, size={125,15}, bodywidth=70, title="coupling"
-	//setvariable ch2_set_coupling, value=gv_path:ch2_settings:ch2_coupling
+	setvariable ch2_set_coupling, value= ch2_path:ch2_coupling
 	top += 17
 	setvariable ch2_set_unit, pos={left, top}, size={125,15}, bodywidth=70, title="unit"
-	//setvariable ch2_set_unit, value=gv_path:ch2_settings:ch2_unit
+	setvariable ch2_set_unit, value= ch2_path:ch2_unit
 	top += 17
 	setvariable ch2_set_label, pos={left, top}, size={125,15}, bodywidth=70, title="label"
-	//setvariable ch2_set_label, value=gv_path:ch2_settings:ch2_label
+	setvariable ch2_set_label, value= ch2_path:ch2_label
 	top += 17
 	setvariable ch2_set_probe, pos={left, top}, size={125,15}, bodywidth=70, title="probe"
-	//setvariable ch2_set_probe, value=gv_path:ch2_settings:ch2_probe
+	setvariable ch2_set_probe, value= ch2_path:ch2_probe
 	top += 17
 	top -= 17*8*2
 	

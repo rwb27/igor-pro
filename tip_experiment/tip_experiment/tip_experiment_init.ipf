@@ -9,7 +9,7 @@
 #include "princeton_instruments_pixis_256e_ccd"
 
 static constant g0 = 7.7480917e-5
-static strconstant gv_folder = "root:global_variables:tip_experiments"
+static strconstant gv_folder = "root:global_variables:tip_experiment"
 
 // FUNCTION 1 - Initialise the experiment structure the first time it is used. //
 static function init_experiment()
