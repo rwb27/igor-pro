@@ -65,11 +65,11 @@ static function display_scan(scan_folder)
 	display/w=(extra_width-spacer, 0, extra_width+image_width-spacer, image_length)/host=#; renamewindow #, g0
 	appendimage spec2d vs {wavelength_ax, *}
 	label bottom "wavelength (\\u)"; label left "step"
-	modifyimage spec2d ctab= {*,*,geo32,0}, ctabAutoscale=1
-	setaxis bottom 450e-9,1000e-9
+	modifyimage spec2d ctab= {*,*,geo,0}, ctabAutoscale=1
+	setaxis bottom 450e-9,950e-9
 	//modifygraph swapxy=1
 	modifygraph freepos=0, lblposmode=2
-	modifygraph mirror=1, minor=1, fsize=10, btlen=4, stlen=2
+	modifygraph mirror=1, minor=1, fsize=9, btlen=4, stlen=2
 	setactivesubwindow ##
 	
 	// append transverse spectra
@@ -78,11 +78,11 @@ static function display_scan(scan_folder)
 		display/w=(extra_width+image_width-2*spacer, 0, extra_width+2*image_width-2*spacer, image_length)/host=#; renamewindow #, g1
 		appendimage spec2d_t vs {wavelength_ax_t, *}
 		label bottom "wavelength (\\u)"; label left "step"
-		modifyimage spec2d_t ctab= {*,*,geo32,0}, ctabAutoscale=1
-		setaxis bottom 450e-9,1000e-9
+		modifyimage spec2d_t ctab= {*,*,geo,0}, ctabAutoscale=1
+		setaxis bottom 450e-9,950e-9
 		//modifygraph swapxy=1
 		modifygraph freepos=0, lblposmode=2
-		modifygraph mirror=1, minor=1, fsize=10, btlen=4, stlen=2
+		modifygraph mirror=1, minor=1, fsize=9, btlen=4, stlen=2
 		setactivesubwindow ##
 	endif
 	
@@ -97,10 +97,10 @@ static function display_scan(scan_folder)
 	modifygraph mode(psd_x)=3, marker(psd_x)=8, msize(psd_x)=1.2, rgb(psd_x)=(0,0,65280)
 	modifygraph mode(psd_y)=3, marker(psd_y)=8, msize(psd_y)=1.2, rgb(psd_y)=(65280,0,0)
 	label bottom "step"; label disp "displacement (\\u)"
-	label force_l "y_psd (\\u)"; label force_r "x_psd (\\u)"; label smu "current (\\u)"
+	label force_l "\s(psd_y) y_psd (\\u)"; label force_r "\s(psd_x) x_psd (\\u)"; label smu "current (\\u)"
 	modifygraph freepos=0, lblposmode=2
 	modifygraph mirror=1, mirror(force_l)=0, mirror(force_r)=0
-	modifygraph minor=1, fsize=10, btlen=4, stlen=2
+	modifygraph minor=1, fsize=9, btlen=4, stlen=2
 	modifygraph axisenab(disp)={0.8, 1.0}, axisenab(smu)={0.0, 0.4}
 	modifygraph axisenab(force_l)={0.4, 0.8}, axisenab(force_r)={0.4, 0.8}
 	setaxis/a
