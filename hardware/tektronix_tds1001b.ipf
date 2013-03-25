@@ -200,6 +200,14 @@ static function wave_mean(ch)
 	return mean(w)
 end
 
+static function meas(ch, type)
+	string ch, type
+	visa#cmd(hardware_id, "measurement:immed:source1 ch" + ch)
+	visa#cmd(hardware_id, "measurement:immed:type " + type)
+	variable value = visa#read(hardware_id, "measurement:immed:value?")
+	return value
+end
+
 static function/c wave_stats(ch)
 	string ch
 	make/free w

@@ -322,12 +322,15 @@ static function/c insert_smu_panel(left, top) : panel
 	setvariable smu_set_voltage, pos={left, top}, size={135,15}, bodywidth=70, title="voltage"
 	setvariable smu_set_voltage, value=gv_path:voltage, proc=smu#set_voltage_panel
 	top += 17
+	setvariable smu_set_voltage_range, pos={left, top}, size={135,15}, bodywidth=70, title="voltage range"
+	setvariable smu_set_voltage_range, value=gv_path:voltage_range, proc=smu#set_voltaget_range_panel
+	top += 17
 	setvariable smu_set_current_range, pos={left, top}, size={135,15}, bodywidth=70, title="current range"
 	setvariable smu_set_current_range, value=gv_path:current_range, proc=smu#set_current_range_panel
 	top += 17
 	setvariable smu_set_current_limit, pos={left, top}, size={135,15}, bodywidth=70, title="current limit"
 	setvariable smu_set_current_limit, value=gv_path:current_limit, proc=smu#set_current_limit_panel
-	top -= 17 + 17 + 17
+	top -= 17*4
 	// display only values
 	left += 135
 	titlebox smu_display title="Display Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
