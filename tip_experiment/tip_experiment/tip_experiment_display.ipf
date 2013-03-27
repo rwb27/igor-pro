@@ -27,7 +27,7 @@ static function display_scan(scan_folder)
 	wave/sdfr=scan_folder steps
 	wave/sdfr=scan_folder displacement
 	wave/sdfr=scan_folder current
-	wave/sdfr=scan_folder voltage
+	//wave/sdfr=scan_folder voltage
 	wave/sdfr=scan_folder psd_x
 	wave/sdfr=scan_folder psd_y
 	//wave/sdfr=scan_folder psd_x_stdev
