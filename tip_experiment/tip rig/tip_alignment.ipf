@@ -50,10 +50,15 @@ function align_tips(scan_size, scan_step)
 	variable init_a = pi_stage#get_pos_ch("a")
 	variable init_b = pi_stage#get_pos_ch("b")
 	variable init_c = pi_stage#get_pos_ch("c")
-	nvar pos_a = $(pi_path + ":pos_a")
-	nvar pos_b = $(pi_path + ":pos_b")
-	nvar pos_c = $(pi_path + ":pos_c")
+	//nvar pos_a = $(pi_path + ":pos_a")
+	//nvar pos_b = $(pi_path + ":pos_b")
+	//nvar pos_c = $(pi_path + ":pos_c")
+	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
 	variable gain = 1e8
+	
+	// initialise dso parameters
+	dfref tek_path = $tek#gv_path()
+	variable/g tek_path:num_points = 2500
 	
 	// store the current scan
 	string scan_folder = data#check_data_folder()
@@ -79,16 +84,20 @@ function align_tips(scan_size, scan_step)
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_r")
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_theta")
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
+	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd_freq")
+	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd_pk2pk")
 	nvar/sdfr=$tek#gv_path() num_points
 	make/o/n=(imax, imax, num_points) $(scan_folder + ":alignment_trace_y_psd")
 	wave x = $(scan_folder + ":alignment_scan_x")
 	wave y = $(scan_folder + ":alignment_scan_y")
-	wave r = $(scan_folder + ":alignment_scan_r")
+	wave scan_r = $(scan_folder + ":alignment_scan_r")
 	wave theta = $(scan_folder + ":alignment_scan_theta")
 	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
+	//wave y_psd_freq = $(scan_folder + ":alignment_scan_y_psd_freq")
+	//wave y_psd_pk = $(scan_folder + ":alignment_scan_y_psd_pk2pk")
 	wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
-	setscale/p x, pos_b - scan_size/2, scan_step, x, y, r, theta, y_psd
-	setscale/p y, pos_c - scan_size/2, scan_step, x, y, r, theta, y_psd
+	setscale/p x, init_b - scan_size/2, scan_step, x, y, scan_r, theta, y_psd
+	setscale/p y, init_c - scan_size/2, scan_step, x, y, scan_r, theta, y_psd
 	
 	// plot scan
 	display_scan(scan_folder)
@@ -109,25 +118,28 @@ function align_tips(scan_size, scan_step)
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data) 
 			data = lockin#measure_rtheta()
-			r[ib][ic] = real(data)/gain
+			scan_r[ib][ic] = real(data)/gain
 			theta[ib][ic] = imag(data)
-			make/free w
-			tek#import_data_free("2", w)
+			wave w = tek#import_data_free("2")
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
+			//y_psd_freq[ib][ic] = tek#meas("2", "freq")
+			//y_psd_pk[ib][ic] = tek#meas("2", "pk2pk")
 			doupdate
 			
 			pos_b += scan_step
 			pi_stage#move("B", pos_b)
-			sleep/s 0.25
+			sleep/s 0.5
 			ib += 1
 		while (ib < imax)
 		
+		// move back to initial B position
 		pos_b = init_b - scan_size/2
 		pos_c += scan_step
 		pi_stage#move("B", pos_b)
+		
 		pi_stage#move("C", pos_c)
-		sleep/s 0.25
+		sleep/s 0.5
 		ib = 0
 		ic += 1
 	while (ic < imax)
@@ -136,7 +148,7 @@ function align_tips(scan_size, scan_step)
 	
 	fit_alignment_data(scan_folder, x)
 	fit_alignment_data(scan_folder, y)
-	fit_alignment_data(scan_folder, r)
+	fit_alignment_data(scan_folder, scan_r)
 	fit_alignment_data(scan_folder, theta)
 	fit_alignment_data(scan_folder, y_psd)
 	
@@ -320,8 +332,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 		redimension/n=(i+1) res_scan_r, res_scan_theta, res_scan_y_psd, frequency
 		res_scan_r[i] = real(data); res_scan_theta[i] = imag(data)
 		
-		make/free w
-		tek#import_data_free("2", w)
+		wave w = tek#import_data_free("2")
 		res_scan_y_psd[i] = wavemax(w) - wavemin(w)
 		
 		frequency[i] = freq

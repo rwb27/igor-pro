@@ -89,7 +89,7 @@ static function import_data_complete(ch, wname)
 	return w
 end
 
-static function import_data(ch, wname)
+static function/wave import_data(ch, wname)
 	string ch, wname
 	
 	visa#read_str(hardware_id, "*opc?\n")							// request
@@ -133,9 +133,9 @@ static function import_data(ch, wname)
 	return w
 end
 
-static function import_data_free(ch, w)
+static function/wave import_data_free(ch)
 	string ch
-	wave w
+	make/free w
 	
 	visa#read_str(hardware_id, "*opc?\n")							// request
 	visa#cmd(hardware_id, "dat:sou ch" + ch + "\n")				// set source channel
@@ -195,12 +195,13 @@ end
 
 static function wave_mean(ch)
 	string ch
-	make/free w
-	import_data_free(ch, w)
+	wave w = import_data_free(ch)
 	return mean(w)
 end
 
 static function meas(ch, type)
+	// valid arguments: FREQuency, MEAN, PERIod, PK2pk, CRMs, MINImum, MAXImum,
+	//				RISe, FALL, PWIdth, NWIdth
 	string ch, type
 	visa#cmd(hardware_id, "measurement:immed:source1 ch" + ch)
 	visa#cmd(hardware_id, "measurement:immed:type " + type)
@@ -210,8 +211,7 @@ end
 
 static function/c wave_stats(ch)
 	string ch
-	make/free w
-	import_data_free(ch, w)
+	wave w = import_data_free(ch)
 	wavestats/q w
 	variable/c stats = cmplx(V_avg, V_sdev)
 	return stats

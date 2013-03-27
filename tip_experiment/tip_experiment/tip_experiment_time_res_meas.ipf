@@ -46,8 +46,8 @@ static function measure_time_resolved(scan_folder, i)
 	// re-arm time-resolved measurements
 	dfref pixis_path = $pixis#gv_path()
 	nvar/sdfr=pixis_path exp_time
-	//pixis#ready(exp_time)
-	//dso#arm_trigger()
+	pixis#ready(exp_time)
+	dso#arm_trigger()
 	
 	return 0
 end

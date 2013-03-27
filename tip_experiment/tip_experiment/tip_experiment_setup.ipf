@@ -35,7 +35,7 @@ function setup_exp(rst)
 		gain = 1000
 		vis_g0 = 20
 		if (scan_direction == -1)
-			trig_g0 = 0.5
+			trig_g0 = 1
 		elseif (scan_direction == 1)
 			trig_g0 = 15
 		endif
@@ -80,7 +80,7 @@ function setup_smu(rst)
 	endif
 	smu#open_comms()
 	smu#set_voltage(v)
-	smu#set_voltage_range(v_range)
+	//smu#set_voltage_range(v_range)
 	smu#set_current_limit(i_limit)
 	smu#set_current_range(i_range)
 	smu#output(1)
