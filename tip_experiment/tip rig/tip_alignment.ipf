@@ -50,9 +50,9 @@ function align_tips(scan_size, scan_step)
 	variable init_a = pi_stage#get_pos_ch("a")
 	variable init_b = pi_stage#get_pos_ch("b")
 	variable init_c = pi_stage#get_pos_ch("c")
-	//nvar pos_a = $(pi_path + ":pos_a")
-	//nvar pos_b = $(pi_path + ":pos_b")
-	//nvar pos_c = $(pi_path + ":pos_c")
+	nvar/sdfr=$pi_path pos_api = pos_a
+	nvar/sdfr=$pi_path pos_bpi = pos_b
+	nvar/sdfr=$pi_path pos_cpi = pos_c
 	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
 	variable gain = 1e8
 	
@@ -84,6 +84,8 @@ function align_tips(scan_size, scan_step)
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_r")
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_theta")
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
+	make/o/n=(imax, imax) $(scan_folder + ":x_pos")
+	make/o/n=(imax, imax) $(scan_folder + ":y_pos")
 	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd_freq")
 	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd_pk2pk")
 	nvar/sdfr=$tek#gv_path() num_points
@@ -96,6 +98,8 @@ function align_tips(scan_size, scan_step)
 	//wave y_psd_freq = $(scan_folder + ":alignment_scan_y_psd_freq")
 	//wave y_psd_pk = $(scan_folder + ":alignment_scan_y_psd_pk2pk")
 	wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
+	wave x_pos = $(scan_folder + ":x_pos")
+	wave y_pos = $(scan_folder + ":y_pos")
 	setscale/p x, init_b - scan_size/2, scan_step, x, y, scan_r, theta, y_psd
 	setscale/p y, init_c - scan_size/2, scan_step, x, y, scan_r, theta, y_psd
 	
@@ -114,6 +118,8 @@ function align_tips(scan_size, scan_step)
 	variable/c data
 	do
 		do
+			x_pos[ib][ic] = pos_bpi
+			y_pos[ib][ic] = pos_cpi
 			data = lockin#measure_xy()
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data) 
