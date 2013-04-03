@@ -108,16 +108,18 @@ function align_tips(scan_size, scan_step)
 	
 	pos_b = init_b - scan_size/2
 	pos_c = init_c - scan_size/2
-	pi_stage#move("B", pos_b)
-	pi_stage#move("C", pos_c)
 	
 	tek#get_waveform_params("2")
 	lockin#aphs(); sleep/s 1
 	
-	variable ib, ic
+	variable ib = 0, ic = 0
 	variable/c data
 	do
+		pi_stage#move("C", pos_c)
+		sleep/s 0.5
 		do
+			pi_stage#move("B", pos_b)
+			sleep/s 0.5
 			x_pos[ib][ic] = pos_bpi
 			y_pos[ib][ic] = pos_cpi
 			data = lockin#measure_xy()
@@ -132,21 +134,16 @@ function align_tips(scan_size, scan_step)
 			//y_psd_freq[ib][ic] = tek#meas("2", "freq")
 			//y_psd_pk[ib][ic] = tek#meas("2", "pk2pk")
 			doupdate
-			
+			// increment B position
 			pos_b += scan_step
-			pi_stage#move("B", pos_b)
-			sleep/s 0.5
 			ib += 1
 		while (ib < imax)
-		
 		// move back to initial B position
 		pos_b = init_b - scan_size/2
-		pos_c += scan_step
 		pi_stage#move("B", pos_b)
-		
-		pi_stage#move("C", pos_c)
-		sleep/s 0.5
 		ib = 0
+		// increment C position
+		pos_c += scan_step
 		ic += 1
 	while (ic < imax)
 	pi_stage#move("B", init_b)
