@@ -157,8 +157,9 @@ function unpack_experiment(data_folder)
 		endif
 		// save waves
 		wave w = data_folder_path:$getindexedobjnamedfr(data_folder_path, 1, i)
-		wname = getindexedobjname(data_folder, 1, i) + ".ibw"
-		save/p=current_data/c/o w as wname
+		wname = getindexedobjname(data_folder, 1, i)
+		save/p=current_data/c/o w as wname + ".ibw"
+		save/t/p=current_data/o w as wname + ".itx"
 	endfor
 	
 	// transfer folders in current folder to current data path
