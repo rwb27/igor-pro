@@ -32,6 +32,7 @@ function setup_exp(rst)
 	nvar/sdfr=amp_path gain = gain_dso
 	// reset to defaults
 	if (rst == 1)
+		dual_pol_meas = 0
 		gain = 1000
 		vis_g0 = 20
 		if (scan_direction == -1)
