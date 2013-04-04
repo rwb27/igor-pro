@@ -112,15 +112,16 @@ function unpack_experiment(data_folder)
 	current_data_path = initial_data_path + data_folder_rel	// set current data path
 	newpath/c/o current_data, current_data_path				// create and reference local folder
 	
+	variable j = 0
 	// transfer variables in current folder to a text wave
 	variable num_vars = countobjectsdfr(data_folder_path, 2)
 	if (num_vars != 0)
-		if (!waveexists(data_folder_path:parameters))
+		//if (!waveexists(data_folder_path:parameters))
 			make/t/o/n=(0, 2) data_folder_path:parameters
-		endif
+		//endif
 		wave/t params = data_folder_path:parameters
 		string vname
-		for(i = 0; i < num_vars; i += 1)
+		for(i = j; i < j + num_vars; i += 1)
 			// save variables to wave
 			nvar/sdfr=data_folder_path v = $getindexedobjnamedfr(data_folder_path, 2, i)
 			vname = getindexedobjname(data_folder, 2, i)
@@ -138,7 +139,7 @@ function unpack_experiment(data_folder)
 		endif
 		wave/t params = data_folder_path:parameters
 		string sname
-		for(i = 0; i < num_strs; i += 1)
+		for(i = j; i < j + num_strs; i += 1)
 			// save strings to wave
 			svar/sdfr=data_folder_path s = $getindexedobjnamedfr(data_folder_path, 3, i)
 			sname = getindexedobjname(data_folder, 3, i)
@@ -150,29 +151,27 @@ function unpack_experiment(data_folder)
 	
 	// transfer waves in current folder to current data path
 	variable num_waves = countobjectsdfr(data_folder_path, 1)
-	string wname
-	for(i = 0; i < num_waves; i += 1)
-		if (num_waves == 0)
-			break
-		endif
-		// save waves
-		wave w = data_folder_path:$getindexedobjnamedfr(data_folder_path, 1, i)
-		wname = getindexedobjname(data_folder, 1, i)
-		save/p=current_data/c/o w as wname + ".ibw"
-		save/t/p=current_data/o w as wname + ".itx"
-	endfor
+	if (num_waves != 0)
+		string wname
+		for(i = 0; i < num_waves; i += 1)
+			// save waves
+			wave w = data_folder_path:$getindexedobjnamedfr(data_folder_path, 1, i)
+			wname = getindexedobjname(data_folder, 1, i)
+			save/p=current_data/c/o w as wname + ".ibw"
+			save/t/p=current_data/o w as wname + ".itx"
+		endfor
+	endif
 	
 	// transfer folders in current folder to current data path
 	string new_data_folder
 	variable num_folders = countobjectsdfr(data_folder_path, 4)
-	for(i = 0; i < num_folders; i += 1)
-		if (num_folders == 0)
-			break
-		endif
-		// create folders
-		new_data_folder = data_folder + ":" + getindexedobjnamedfr(data_folder_path, 4, i)		
-		unpack_experiment(new_data_folder)
-	endfor
+	if (num_folders != 0)
+		for(i = 0; i < num_folders; i += 1)
+			// create folders
+			new_data_folder = data_folder + ":" + getindexedobjnamedfr(data_folder_path, 4, i)		
+			unpack_experiment(new_data_folder)
+		endfor
+	endif
 end
 
 function load_tip_experiment(tip_exp)
