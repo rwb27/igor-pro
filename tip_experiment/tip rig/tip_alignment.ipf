@@ -25,6 +25,7 @@ static function initialise()
 	variable/g $(gv_folder + ":frequency")
 	variable/g $(gv_folder + ":amplified_voltage")
 	variable/g $(gv_folder + ":amplified_offset")
+	variable/g $(gv_folder + ":alignment_set")
 end
 
 function align_tips(scan_size, scan_step)
@@ -44,6 +45,7 @@ function align_tips(scan_size, scan_step)
 	nvar frequency = $(sig_gen_path + ":frequency")
 	nvar amplified_voltage = $(gv_folder + ":amplified_voltage")
 	nvar amplified_offset = $(gv_folder + ":amplified_offset")
+	nvar/sdfr=$gv_folder set = alignment_set
 	
 	// initialise piezo information
 	string pi_path = pi_stage#gv_path()
@@ -75,6 +77,7 @@ function align_tips(scan_size, scan_step)
 	variable/g $(scan_folder + ":init_pos_a") = init_a
 	variable/g $(scan_folder + ":init_pos_b") = init_b
 	variable/g $(scan_folder + ":init_pos_c") = init_c
+	variable/g $(scan_folder + ":alignment_set") = set
 	string/g $(scan_folder + ":time_stamp") = time() + " " + date()
 	
 	// make alignment data waves
