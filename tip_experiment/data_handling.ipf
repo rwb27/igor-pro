@@ -135,6 +135,7 @@ function unpack_experiment(data_folder)
 		endfor
 	endif
 	
+	j = i
 	// transfer strings in current folder to a text wave
 	variable num_strs = countobjectsdfr(data_folder_path, 3)
 	if (num_strs != 0)
@@ -143,13 +144,13 @@ function unpack_experiment(data_folder)
 		endif
 		wave/t params = data_folder_path:parameters
 		string sname
-		for(i = j; i < j + num_strs; i += 1)
+		for(i = 0; i < num_strs; i += 1)
 			// save strings to wave
 			svar/sdfr=data_folder_path s = $getindexedobjnamedfr(data_folder_path, 3, i)
 			sname = getindexedobjname(data_folder, 3, i)
 			redimension/n=(dimsize(params, 0)+1, 2) params
-			params[i][0] = sname
-			params[i][1] = s
+			params[i+j][0] = sname
+			params[i+j][1] = s
 		endfor
 	endif
 	
