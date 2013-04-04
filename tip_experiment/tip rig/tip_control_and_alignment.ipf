@@ -79,7 +79,7 @@ function tip_control_and_alignment() : panel
 	alignment#initialise()
 	
 	// panel layout
-	newpanel/w=(500,80,850,600)/n=tip_control as "Tip Control and Alignment"
+	newpanel/w=(500,80,850,620)/n=tip_control as "Tip Control and Alignment"
 	modifypanel cbRGB=(60928,60928,60928), framestyle=1
 	setdrawlayer UserBack
 	showtools/a
@@ -207,7 +207,7 @@ function tip_control_and_alignment() : panel
 	
 	// alignment controls
 	left = 5; top = 370
-	l_size = 340; t_size = 145
+	l_size = 340; t_size = 165
 	groupbox alignment_group, pos={left, top}, size={l_size, t_size}, title="Tip Alignment"
 	groupbox alignment_group, labelBack=(56576,56576,56576), fStyle=1
 		// alignment controls
@@ -217,6 +217,9 @@ function tip_control_and_alignment() : panel
 	top += 20
 	setvariable set_scan_step, pos={left, top}, size={105,15}, bodyWidth=50, title="Scan Step"
 	setvariable set_scan_step, value= root:global_variables:tip_alignment:scan_step
+	top += 20
+	setvariable set_alignment_set, pos={left, top}, size={105,15}, bodyWidth=50, title="Scan Set"
+	setvariable set_alignment_set, value= root:global_variables:tip_alignment:alignment_set
 	top += 20
 	button align_tips, pos={left, top}, size={50,40}, proc=align_tips_button, title="Align\rTips"
 	button align_tips, fColor=(65280,65280,0)
@@ -230,14 +233,15 @@ function tip_control_and_alignment() : panel
 	left -= 60; top += 20
 	button fit_theta, pos={left, top}, size={50,20}, proc=fit_alignment_data_theta_button, title="Fit Theta"; left += 50
 	button fit_y_psd, pos={left, top}, size={50,20}, proc=fit_alignment_data_Y_psd_button, title="Fit yPSD"; left += 60
+	top -= 20
 	string align_path = alignment#gv_path()
 	valdisplay cent_b, pos={left, top}, size={100,20}, title="cent. ht. (b)"
 	string b = align_path + ":x0"
-	valdisplay cent_b, value= #b; left += 110
+	valdisplay cent_b, value= #b; top += 20
 	valdisplay cent_c, pos={left, top}, size={100,20}, title="cent. f. (c)"
 	string c = align_path + ":y0"
 	valdisplay cent_c, value= #c
-	left -= 220; top -= 60
+	left -= 110; top -= 80
 		// resonance scan controls
 	left += 110; top -= 40
 	setvariable set_freq_start, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Start"

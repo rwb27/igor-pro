@@ -232,6 +232,48 @@ static function display_scan(scan_folder)
 	wave r = $(scan_folder + ":alignment_scan_r")
 	wave theta = $(scan_folder + ":alignment_scan_theta")
 	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
+	
+	dowindow/k tip_alignment
+	display/n=tip_alignment
+	
+	textbox/c/n=textx/f=0/a=LT/x=10/y=3 "\\f02x"
+	textbox/c/n=texty/f=0/a=LT/x=10/y=22 "\\f02y"
+	textbox/c/n=textr/f=0/a=LT/x=10/y=40 "\\f02r"
+	textbox/c/n=texttheta/f=0/a=LT/x=10/y=58 "\\f02\\F'Symbol'q"
+	textbox/c/n=textypsd/f=0/a=LT/x=1/y=75 "\\f02psd_y"
+	
+	appendimage/l=lx x
+	appendimage/l=ly y
+	appendimage/l=lr r
+	appendimage/l=ltheta theta
+	appendimage y_psd
+	modifyimage ''#0 ctab={*,*,geo,0}
+	modifyimage ''#1 ctab={*,*,geo,0}
+	modifyimage ''#2 ctab={*,*,geo,0}
+	modifyimage ''#3 ctab={*,*,geo,0}
+	modifyimage ''#4 ctab={*,*,geo,0}
+	modifygraph width=80
+	modifygraph height={aspect, 5}
+	label lr "tip focus (\\F'Symbol'm\\F'Arial'm)"
+	label bottom "tip height (\\F'Symbol'm\\F'Arial'm)"
+	modifygraph tick=0, minor=1, btLen=4, stLen=2
+	modifygraph mirror=1, fSize=10, standoff=0, axOffset=-1, axOffset(bottom)=0
+	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
+	modifygraph axisEnab(ly)={0.6,0.79}, freePos(ly)=0
+	modifygraph axisEnab(lr)={0.4,0.59}, freePos(lr)=0
+	modifygraph axisEnab(ltheta)={0.2,0.39}, freePos(ltheta)=0
+	modifygraph axisEnab(left)={0,0.19}, freePos(left)=0
+	modifygraph lblposmode=4, lblpos=40
+	modifygraph lblpos(bottom)=30
+end
+
+static function display_scan2(scan_folder)
+	string scan_folder
+	wave x = $(scan_folder + ":alignment_scan_x")
+	wave y = $(scan_folder + ":alignment_scan_y")
+	wave r = $(scan_folder + ":alignment_scan_r")
+	wave theta = $(scan_folder + ":alignment_scan_theta")
+	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
 	nvar/sdfr=$scan_folder voltage, init_pos_a
 	
 	dowindow/k tip_alignment
