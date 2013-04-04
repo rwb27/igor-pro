@@ -157,7 +157,7 @@ static function restore_default_values()
 	variable/g $(gv_folder + ":current_set_point") = 1		// 1 A stopping point
 	variable/g $(gv_folder + ":trig_g0") = 0.5				// 0.5G0 trigger point
 	variable/g $(gv_folder + ":vis_g0") = 20				// 20G0 viewing range
-	variable/g $(gv_folder + ":dual_pol_meas") = 1
+	variable/g $(gv_folder + ":dual_pol_meas") = 0
 	// amplifier parameters
 	gv_path = "root:global_variables:amplifiers"
 	variable/g $(gv_path + ":gain_dso") = 1000
@@ -170,7 +170,7 @@ static function restore_default_values()
 	variable/g $(gv_path + ":bandwidth_force_dso") = 500e3
 	// smu parameters
 	gv_path = smu#gv_path()
-	variable/g $(gv_path + ":voltage") = 100e-3			// 100 mV standard for qc experiments
+	variable/g $(gv_path + ":voltage") = 10e-3			// 100 mV standard for qc experiments
 	variable/g $(gv_path + ":current_range") = 10e-9		// 10 nA setting is minimum possible for fast acqusition
 	variable/g $(gv_path + ":current_limit") = 250e-6		// 250 uA maximum for preventing tip damage
 	variable/g $(gv_path + ":output") = 1
