@@ -112,13 +112,17 @@ function unpack_experiment(data_folder)
 	current_data_path = initial_data_path + data_folder_rel	// set current data path
 	newpath/c/o current_data, current_data_path				// create and reference local folder
 	
+	if (waveexists(data_folder_path:parameters))
+		killwaves data_folder_path:parameters
+	endif
+	
 	variable j = 0
 	// transfer variables in current folder to a text wave
 	variable num_vars = countobjectsdfr(data_folder_path, 2)
 	if (num_vars != 0)
-		//if (!waveexists(data_folder_path:parameters))
+		if (!waveexists(data_folder_path:parameters))
 			make/t/o/n=(0, 2) data_folder_path:parameters
-		//endif
+		endif
 		wave/t params = data_folder_path:parameters
 		string vname
 		for(i = j; i < j + num_vars; i += 1)
