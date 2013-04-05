@@ -75,6 +75,7 @@ function tip_scan()			// tip experiment master function
 	// do experiment
 	variable condition = 1
 	variable set_point_reached = 0
+	variable keys
 	// initialise data
 	variable/c smu_data, force_x, force_y
 	variable i_range, current_pos
@@ -82,11 +83,18 @@ function tip_scan()			// tip experiment master function
 	// experiment loop
 	do
 		// check for experiment breaks
+		keys = getkeystate(0)
 		if (scan_step * i > scan_size)		// end at scan limit
 			break
-		elseif (getkeystate(0) & 32)			// manual escape (esc)
+		elseif (keys & 32)			// manual escape (esc)
 			print "scan aborted at step " + num2str(i)
 			break
+		elseif (keys & 0)			// ctrl key
+			set_point_reached = 1
+		//elseif (keys & 2)			// alt key
+			// do power experiment
+		elseif (keys & 4)			// shift key
+			set_point_reached = 0
 		endif
 		
 		// MOVEMENT PHASE
