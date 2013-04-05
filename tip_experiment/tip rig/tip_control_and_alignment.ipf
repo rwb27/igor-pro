@@ -79,7 +79,7 @@ function tip_control_and_alignment() : panel
 	alignment#initialise()
 	
 	// panel layout
-	newpanel/w=(500,80,850,620)/n=tip_control as "Tip Control and Alignment"
+	newpanel/w=(500,80,850,660)/n=tip_control as "Tip Control and Alignment"
 	modifypanel cbRGB=(60928,60928,60928), framestyle=1
 	setdrawlayer UserBack
 	showtools/a
@@ -142,7 +142,7 @@ function tip_control_and_alignment() : panel
 	
 	// pi stage
 	left = 5; top = 200
-	l_size = 340; t_size = 365 - top
+	l_size = 340; t_size = 405 - top
 	groupbox pi_group,pos={left, top},size={l_size, t_size},title="PI PI733.3CD Stage"
 	groupbox pi_group, labelBack=(56576,56576,56576), fStyle=1
 		// main buttons
@@ -156,8 +156,20 @@ function tip_control_and_alignment() : panel
 	button stage_update, pos={left, top}, size={60,20}, proc=pi_stage#update_button, title="Update"
 	top += 20
 	button stage_starting_pos, pos={left, top}, size={60,30}, proc=starting_pos_button, title="Starting\rPositions"
+	
 		// position display
-	left += 65; top -= 60
+	top += 40
+	setvariable stage_pos_a, pos={left, top}, size={70,15}, bodyWidth=55, proc=pi_stage#set_position_a_panel, title="A"
+	setvariable stage_pos_a, value= _NUM:20//root:global_variables:pi_pi733_3cd_stage:pos_a
+	top += 20
+	setvariable stage_pos_b, pos={left, top}, size={70,15}, bodyWidth=55, proc=pi_stage#set_position_b_panel, title="B"
+	setvariable stage_pos_b, value= _NUM:20//root:global_variables:pi_pi733_3cd_stage:pos_b
+	top += 20
+	setvariable stage_pos_c, pos={left, top}, size={70,15}, bodyWidth=55, proc=pi_stage#set_position_c_panel, title="C"
+	setvariable stage_pos_c, value= _NUM:5//root:global_variables:pi_pi733_3cd_stage:pos_c
+	
+		// position display
+	left += 65; top -= 60 + 80
 	valdisplay stage_a, pos={left, top}, size={110,15}, bodyWidth=60, title="lateral (a)"
 	valdisplay stage_a, limits={0,0,0}, barmisc={0,1000}
 	valdisplay stage_a, value= #"root:global_variables:pi_pi733_3cd_stage:pos_a"
@@ -179,11 +191,18 @@ function tip_control_and_alignment() : panel
 	top += 20
 	setvariable stage_vel_c, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_velocity_c_panel,title="c-velocity"
 	setvariable stage_vel_c, value= root:global_variables:pi_pi733_3cd_stage:vel_c
+		// dco display
 	top += 20
-	setvariable stage_dco_a, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_dco_panel, title="a-dco"
+	setvariable stage_dco_a, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_dco_a_panel, title="a-dco"
 	setvariable stage_dco_a, value= root:global_variables:pi_pi733_3cd_stage:dco_a
+	top += 20
+	setvariable stage_dco_b, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_dco_b_panel, title="b-dco"
+	setvariable stage_dco_b, value= root:global_variables:pi_pi733_3cd_stage:dco_b
+	top += 20
+	setvariable stage_dco_c, pos={left, top}, size={109,16}, bodyWidth=60, proc=pi_stage#set_dco_c_panel, title="c-dco"
+	setvariable stage_dco_c, value= root:global_variables:pi_pi733_3cd_stage:dco_c
 		// step display
-	left += 115; top -= 120
+	left += 115; top -= 160
 	setvariable stage_step_a, pos={left, top}, size={93,16}, bodyWidth=60, title="a-step"
 	setvariable stage_step_a, value= root:global_variables:pi_pi733_3cd_stage:step_a
 	top += 20
@@ -206,7 +225,7 @@ function tip_control_and_alignment() : panel
 	button stage_focusout, pos={out_l, out_t}, size={50,30}, proc=pi_stage#move_focusdown_button, title="Focus\rOut"
 	
 	// alignment controls
-	left = 5; top = 370
+	left = 5; top = 410
 	l_size = 340; t_size = 165
 	groupbox alignment_group, pos={left, top}, size={l_size, t_size}, title="Tip Alignment"
 	groupbox alignment_group, labelBack=(56576,56576,56576), fStyle=1

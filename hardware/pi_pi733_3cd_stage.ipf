@@ -24,6 +24,7 @@ static function initialise()
 	variable/g $(gv_folder + ":step_a"), $(gv_folder + ":step_b"), $(gv_folder + ":step_c")
 	get_pos()
 	get_velocity()
+	set_dco(1)
 	get_dco()
 end
 
@@ -79,7 +80,9 @@ static function move(ch, pos)
 	variable pos0 = visa#read(hardware_id, "pos? " + ch + "\n")
 	visa#cmd(hardware_id, "mov " + ch + num2str(pos) + "\n")
 	nvar vel = $(gv_folder + ":vel_" + ch)
-	sleep/s 0.1 + abs((pos - pos0) / vel)
+	variable translation_time = abs((pos - pos0) / vel)
+	variable delay = 0.25 + translation_time
+	sleep/s delay
 	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
@@ -365,6 +368,59 @@ static function get_velocity_button(ba) : buttoncontrol
 	return 0
 end
 
+static function set_position_a_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			move("A", dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_position_b_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			move("B", dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_position_c_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			move("C", dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
 
 static function set_velocity_a_panel(sva) : setvariablecontrol
 	struct wmsetvariableaction &sva
@@ -434,6 +490,63 @@ static function set_dco_panel(sva) : setvariablecontrol
 			string sval = sva.sval
 			open_comms()
 			set_dco(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_dco_a_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_dco_a(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_dco_b_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_dco_b(dval)
+			close_comms()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	return 0
+end
+
+static function set_dco_c_panel(sva) : setvariablecontrol
+	struct wmsetvariableaction &sva
+
+	switch( sva.eventcode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			variable dval = sva.dval
+			string sval = sva.sval
+			open_comms()
+			set_dco_c(dval)
 			close_comms()
 			break
 		case -1: // control being killed

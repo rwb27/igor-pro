@@ -100,6 +100,9 @@ static function/c insert_exp_panel(left, top) : panel
 	setvariable exp_set_vis_g0, pos={left, top}, size={105,15}, bodywidth=60, title="vis (G\B0\M)"
 	setvariable exp_set_vis_g0, value=gv_path:vis_g0
 	top += 17
+	setvariable exp_set_dpol, pos={left, top}, size={105,15}, bodywidth=60, title="Dual Pol."
+	setvariable exp_set_dpol, value=gv_path:dual_pol_meas
+	top += 17
 	//left -= 135; top -= 17*3
 	//top += 17*5
 	titlebox exp_display title="Display Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
