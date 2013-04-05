@@ -45,7 +45,7 @@ static function reset()
 	visa#cmd(hardware_id, "*rst")
 end
 
-function set_general(mode, clear)
+static function set_general(mode, clear)
 	string mode
 	variable clear
 	
@@ -63,7 +63,7 @@ function set_general(mode, clear)
 	string/g $(gv_folder + ":mode") = mode
 end
 
-function set_timebase(mode, range, scale, delay, ref)
+static function set_timebase(mode, range, scale, delay, ref)
 	variable range, scale, delay
 	string mode, ref
 	string param_dir = gv_folder + ":timebase_settings"
@@ -100,7 +100,7 @@ function set_timebase(mode, range, scale, delay, ref)
 	variable/g $(param_dir + ":time_delay") = delay
 end
 
-function get_timebase()
+static function get_timebase()
 	string param_dir = gv_folder + ":timebase_settings"
 	visa#check_folder(param_dir)
 	string/g $(param_dir + ":time_mode") = visa#read_str(hardware_id, ":timebase:mode?")
@@ -110,14 +110,14 @@ function get_timebase()
 	variable/g $(param_dir + ":time_delay") = visa#read(hardware_id, ":timebase:delay?")
 end
 
-function set_window_timebase(pos, range, scale)
+static function set_window_timebase(pos, range, scale)
 	variable pos, range, scale
 	visa#cmd(hardware_id, ":timebase:window:position " + num2str(pos))
 	visa#cmd(hardware_id, ":timebase:window:range " + num2str(range))
 	visa#cmd(hardware_id, ":timebase:window:scale " + num2str(scale))
 end
 
-function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
+static function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
 	variable range, scale, offset, probe
 	string ch, coupling, unit, ch_label
 	
@@ -166,7 +166,7 @@ function set_channel(ch, range, scale, offset, coupling, unit, ch_label, probe)
 	visa#cmd(hardware_id, ":channel"+ch+":display 1")
 end
 
-function get_channel(ch)
+static function get_channel(ch)
 	string ch
 	if (!stringmatch(ch, "1") && !stringmatch(ch, "2"))
 		abort "invalid channel number (1 | 2)"
@@ -182,7 +182,7 @@ function get_channel(ch)
 	string/g $(param_dir + ":ch" + ch + "_label") = visa#read_str(hardware_id, ":channel"+ch+":label?")
 end
 
-function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
+static function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
 	variable level
 	string sweep, mode, source, slope, rejectnoise, filter
 	string param_dir = gv_folder + ":trigger_settings"
@@ -235,7 +235,7 @@ function set_trigger(sweep, mode, source, level, slope, rejectnoise, filter)
 	string/g $(param_dir + ":trigger_hfreject") = filter
 end
 
-function get_trigger()
+static function get_trigger()
 	string param_dir = gv_folder + ":trigger_settings"
 	visa#check_folder(param_dir)
 	variable/g $(param_dir + ":trigger_level") = visa#read(hardware_id, ":trigger:level?")
@@ -247,7 +247,7 @@ function get_trigger()
 	string/g $(param_dir + ":trigger_hfreject") = visa#read_str(hardware_id, ":trigger:hfreject?")
 end
 
-function set_acquire(type)
+static function set_acquire(type)
 	string type
 	string param_dir = gv_folder + ":acquire_settings"
 	visa#check_folder(param_dir)
@@ -266,11 +266,11 @@ function set_acquire(type)
 	endif
 end
 
-function capture_all()
+static function capture_all()
 	visa#cmd(hardware_id, ":digitize")
 end
 
-Function capture(ch)
+static function capture(ch)
 	string ch
 	if (!stringmatch(ch, "1") && !stringmatch(ch, "2"))
 		abort "invalid channel number (1 | 2)"
@@ -278,7 +278,7 @@ Function capture(ch)
 	visa#cmd(hardware_id, ":digitize channel"+ch)
 end
 
-function import_data(ch, wname)
+static function/wave import_data(ch, wname)
 	string ch, wname
 	nvar instr = $(gv_folder + ":instr")
 	string param_dir = gv_folder + ":import_parameters"
@@ -320,6 +320,47 @@ function import_data(ch, wname)
 	variable/g $(param_dir + ":y_ref") = y_ref
 	variable/g $(param_dir + ":x_or") = x_or
 	variable/g $(param_dir + ":x_inc") = x_inc
+	return w
+end
+
+static function/wave import_data_free(ch)
+	string ch
+	make/free w
+	nvar instr = $(gv_folder + ":instr")
+	string param_dir = gv_folder + ":import_parameters"
+	visa#check_folder(param_dir)
+	visa#check_folder(data_folder)
+	
+	// import data
+	variable points = visa#read(hardware_id, ":acquire:points?")
+	variable/g $(param_dir + ":points") = points
+	
+	redimension/n=(points) w
+	w = 0
+	VISAwrite instr, ":waveform:source channel"+ch
+	VISAwrite instr, ":waveform:format byte"
+	VISAwrite instr, "waveform:unsigned 0"
+	VISAwrite instr, ":waveform:points "+num2str(points)
+	VISAwrite instr, ":waveform:data?"
+	VISAReadBinaryWave/type=(0x08)/b instr, w
+	deletepoints 0, 10, w
+	
+	// scale data
+	variable y_or, y_inc, y_ref, x_or, x_inc
+	y_or = visa#read(hardware_id, "waveform:yorigin?")
+	y_inc = visa#read(hardware_id, "waveform:yincrement?")
+	y_ref = visa#read(hardware_id, "waveform:yreference?")
+	x_or = visa#read(hardware_id, "waveform:xorigin?")
+	x_inc = visa#read(hardware_id, "waveform:xincrement?")
+	w = y_or + (y_inc * (w - y_ref))
+	setscale d, 0, 0, "V", w
+	setscale/p x, x_or, x_inc, "s", w
+	variable/g $(param_dir + ":y_or") = y_or
+	variable/g $(param_dir + ":y_inc") = y_inc
+	variable/g $(param_dir + ":y_ref") = y_ref
+	variable/g $(param_dir + ":x_or") = x_or
+	variable/g $(param_dir + ":x_inc") = x_inc
+	return w
 end
 
 static function check_trigger(force)
@@ -336,6 +377,12 @@ end
 
 static function arm_trigger()
 	visa#cmd(hardware_id, ":single")
+end
+
+static function wave_mean(ch)
+	string ch
+	wave w = import_data_free(ch)
+	return mean(w)
 end
 
 // Panel Controls

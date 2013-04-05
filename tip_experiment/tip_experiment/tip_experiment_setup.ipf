@@ -59,7 +59,10 @@ function setup_pi(rst)
 	endif
 	pi_stage#open_comms()
 	pi_stage#set_velocity_a(vel_a)
-	pi_stage#set_dco_a(dco_a)
+	// DCO off for dynamic movement, DCO on for holding static
+	pi_stage#set_dco_a(0)
+	pi_stage#set_dco_b(1)
+	pi_stage#set_dco_c(1)
 	pi_stage#get_pos()
 	pi_stage#close_comms()
 end
@@ -126,9 +129,9 @@ function setup_dso(rst)
 	variable ch2_offset = 0
 	
 	dso#open_comms()
-	set_timebase("main", t_range, 0, delay, "left")
-	set_channel("1", ch1_range, 0, ch1_offset, "dc", "V", "current", 1)
-	set_channel("2", ch2_range, 0, ch2_offset, "dc", "V", "force", 1)
+	dso#set_timebase("main", t_range, 0, delay, "left")
+	dso#set_channel("1", ch1_range, 0, ch1_offset, "dc", "V", "current", 1)
+	dso#set_channel("2", ch2_range, 0, ch2_offset, "dc", "V", "force", 1)
 	if (scan_direction == -1)
 		dso#set_trigger("auto", "edge", "channel1", trig_level, "positive", "0", "0")
 	elseif (scan_direction == 1)
