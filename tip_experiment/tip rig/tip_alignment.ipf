@@ -36,11 +36,6 @@ function align_tips(scan_size, scan_step)
 	//lockin#close_comms()
 	//tek#close_comms()
 	pi_stage#open_comms()
-	// DCO off for dynamic movement, DCO on for holding static
-	pi_stage#set_dco_a(1)
-	pi_stage#set_dco_b(0)
-	pi_stage#set_dco_c(0)
-	pi_stage#get_dco()
 	lockin#open_comms()
 	tek#open_comms(); tek#initialise()
 	sig_gen#open_comms()
@@ -62,6 +57,16 @@ function align_tips(scan_size, scan_step)
 	nvar/sdfr=$pi_path pos_cpi = pos_c
 	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
 	variable gain = 1e8
+	// turn dco off once you have recorded the initial position
+	// DCO off for dynamic movement, DCO on for holding static
+	pi_stage#set_dco_a(1)
+	pi_stage#set_dco_b(0)
+	pi_stage#set_dco_c(0)
+	sleep/s 1
+	// move to starting position
+	pi_stage#move("b", pos_b)
+	pi_stage#move("c", pos_c)
+	sleep/s 1
 	
 	// initialise dso parameters
 	dfref tek_path = $tek#gv_path()
@@ -154,6 +159,9 @@ function align_tips(scan_size, scan_step)
 		pos_c += scan_step
 		ic += 1
 	while (ic < imax)
+
+	pi_stage#set_dco(1)
+	sleep/s 1
 	pi_stage#move("B", init_b)
 	pi_stage#move("C", init_c)
 	
