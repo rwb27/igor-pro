@@ -1,7 +1,15 @@
 # Tip Experiment #
 
->#### Current Information ###
+>#### Current Information ####
 >**Status**: tested - some unknown VISA errors periodically appear in setup.
+
+#### Controls ####
+Controls which can be activated during tip scans are listed below:
+
+- **ESC** - aborts the current experimental run.
+- **CTRL** - enables set_point_reached, halting the scan and holding the separation fixed.
+- **SHIFT** - disables set_point_reached, allowing the scan to progress.
+- **ALT** - engages a previously defined measurement function to be used when the separation is fixed.
 
 #### Information ####
 The spectral images are stored with fixed row numbers for wavelength and variable column numbers for steps. When displaying the images the wavelength axis becomes the row-axis and the step becomes the column-axis. In Igor images this corresponds to the row being the x-axis and the column being the y-axis i.e. the spectral progression is viewed vertically.
