@@ -89,11 +89,13 @@ function tip_scan()			// tip experiment master function
 		elseif (keys & 32)			// manual escape (esc)
 			print "scan aborted at step " + num2str(i)
 			break
-		elseif (keys & 0)			// ctrl key
+		elseif (keys & 1)			// ctrl key
+			print "set point reached"
 			set_point_reached = 1
 		//elseif (keys & 2)			// alt key
 			// do power experiment
 		elseif (keys & 4)			// shift key
+			print "set point disabled"
 			set_point_reached = 0
 		endif
 		
