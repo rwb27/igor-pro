@@ -174,7 +174,7 @@ function unpack_experiment(data_folder)
 		for(i = 0; i < num_folders; i += 1)
 			// create folders
 			new_data_folder = data_folder + ":" + getindexedobjnamedfr(data_folder_path, 4, i)
-			if (!stringmatch(new_data_folder, "*spectra*") && !stringmatch(new_data_folder, "*time_resolved_data*"))		
+			if (!stringmatch(new_data_folder, "*spectra*"))		
 				unpack_experiment(new_data_folder)
 			endif
 		endfor
