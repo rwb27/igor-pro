@@ -4,7 +4,8 @@
 
 #include "data_handling"
 #include "pi_pi733_3cd_stage"
-//#include "OO spectrometer v4.2"
+#include "analysis_tools"
+#include "OO spectrometer v4.2"
 
 static strconstant gv_folder = "root:global_variables:hyperspectral_imaging"
 
@@ -15,19 +16,6 @@ static function initialise()
 	string/g $(gv_folder + ":image")
 end
 
-function wavelength_to_index(wavelength)
-	variable wavelength
-	wave wl_wave = root:oo:data:current:wl_wave
-	variable index, i = 0
-	do
-		i += 1
-	while (wl_wave[i] < wavelength)
-	if ((wl_wave[i] - wavelength) > (wavelength - wl_wave[i-1]))
-		i -= 1
-	endif
-	return i
-end
-
 static function scan(scan_size, scan_step)
 	// perform a spectral scan to obtain a hyperspectral image. //
 	variable scan_size, scan_step
@@ -35,6 +23,7 @@ static function scan(scan_size, scan_step)
 	data#check_folder(gv_folder)
 	string data_folder = data#check_data_folder()
 	string scan_folder = data#new_data_folder(data_folder + ":hyperspec_image_")
+	string/g $(gv_folder + ":current_scan_folder") = scan_folder
 	
 	// make hyperspectral image array
 	duplicate/o root:oo:data:current:wl_wave, $(scan_folder + ":wavelength")
@@ -51,8 +40,8 @@ static function scan(scan_size, scan_step)
 	endif
 	
 	// prepare scan preview
-	variable wavelength_1 = wavelength_to_index(520)
-	variable wavelength_2 = wavelength_to_index(633)
+	variable wavelength_1 = wavelength_to_index(wavelength, 520)
+	variable wavelength_2 = wavelength_to_index(wavelength, 633)
 	variable/g $(gv_folder + ":wavelength_1") = wavelength_1
 	variable/g $(gv_folder + ":wavelength_2") = wavelength_2
 	
@@ -139,7 +128,9 @@ end
 static function fit_scan(hs_scan, wavelength)
 	wave hs_scan
 	variable wavelength
-	variable index = wavelength_to_index(wavelength)
+	svar/sdfr=$gv_folder scan_folder = current_scan_folder
+	wave wl_wave = $(scan_folder + ":wavelength")
+	variable index = wavelength_to_index(wl_wave, wavelength)
 	variable z0, a0, x0, sigx, y0, sigy, corr
 		
 	// Amplitude: Difference between z0 and the grid centre value
@@ -173,7 +164,9 @@ end
 static function display_scan(hs_data, wavelength)
 	wave hs_data
 	variable wavelength
-	variable index = wavelength_to_index(wavelength)
+	svar/sdfr=$gv_folder scan_folder = current_scan_folder
+	wave wl_wave = $(scan_folder + ":wavelength")
+	variable index = wavelength_to_index(wl_wave, wavelength)
 	dowindow/k hyperspectral_image
 	display/n=hyperspectral_image
 	appendimage hs_data; modifyimage ''#0 plane=index
@@ -187,7 +180,9 @@ end
 static function display_multi_scan(hs_data1, hs_data2, wavelength)
 	wave hs_data1, hs_data2
 	variable wavelength
-	variable index = wavelength_to_index(wavelength)
+	svar/sdfr=$gv_folder scan_folder = current_scan_folder
+	wave wl_wave = $(scan_folder + ":wavelength")
+	variable index = wavelength_to_index(wl_wave, wavelength)
 	dowindow/k hyperspectral_image
 	display/n=hyperspectral_image
 	appendimage/l/t hs_data1; modifyimage ''#0 plane=index
@@ -393,8 +388,10 @@ function set_wavelength(sva) : setvariablecontrol
 			string sval = sva.sval
 			dowindow hyperspectral_image
 			if (V_flag == 1)
-				modifyimage ''#0 plane = wavelength_to_index(dval)
-				modifyimage ''#1 plane = wavelength_to_index(dval)
+				svar/sdfr=$gv_folder scan_folder = current_scan_folder
+				wave wl_wave = $(scan_folder + ":wavelength")
+				modifyimage ''#0 plane = wavelength_to_index(wl_wave, dval)
+				modifyimage ''#1 plane = wavelength_to_index(wl_wave, dval)
 				textbox/k/n=text0
 				textbox/c/n=text0/f=0/b=1/g=(65280,65280,0)/a=rt "\\Z10\\F'Symbol'l\\F'Arial' = "+num2str(dval)+" nm"
 			endif
@@ -415,8 +412,10 @@ function wavelength_slider(sa) : slidercontrol
 				variable curval = sa.curval
 				dowindow hyperspectral_image
 				if (V_flag == 1)
-					modifyimage ''#0 plane = wavelength_to_index(curval)
-					modifyimage ''#1 plane = wavelength_to_index(curval)
+					svar/sdfr=$gv_folder scan_folder = current_scan_folder
+					wave wl_wave = $(scan_folder + ":wavelength")
+					modifyimage ''#0 plane = wavelength_to_index(wl_wave, curval)
+					modifyimage ''#1 plane = wavelength_to_index(wl_wave, curval)
 					textbox/k/n=text0
 					textbox/c/n=text0/f=0/b=1/g=(65280,65280,0)/a=rt "\\Z10\\F'Symbol'l\\F'Arial' = "+num2str(curval)+" nm"
 				endif
