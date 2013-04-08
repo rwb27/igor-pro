@@ -218,36 +218,37 @@ function dc_amp_noise_test()
 	modifygraph mode=3, marker=8, msize=1.5, rgb(dc_noise_v)=(0,0,65280)
 	smu#open_comms()
 	do
+		sleep/s 0.1
 		iv = smu#measure_iv()
 		redimension/n=(numpnts(dc_noise_v)+1) dc_noise_v, dc_noise_i
 		dc_noise_v[n] = real(iv)
 		dc_noise_i[n] = imag(iv)
 		doupdate
 		n += 1
-	while (n < 100)
+	while (n < 500)
 	smu#close_comms()
-	make/o/n=6 dc_noise
+	make/t/o/n=(6,2) dc_noise
 	wavestats/q dc_noise_v
-	dc_noise[0] = V_avg
-	dc_noise[1] = V_sdev
-	dc_noise[2] = V_rms
+	dc_noise[0][0] = "V_avg"; dc_noise[0][1] = num2str(V_avg)
+	dc_noise[1][0] = "V_sdev"; dc_noise[1][1] = num2str(V_sdev)
+	dc_noise[2][0] = "V_rms"; dc_noise[2][1] = num2str(V_rms)
 	wavestats/q dc_noise_i
-	dc_noise[3] = V_avg
-	dc_noise[4] = V_sdev
-	dc_noise[5] = V_rms
+	dc_noise[3][0] = "I_avg"; dc_noise[3][1] = num2str(V_avg)
+	dc_noise[4][0] = "I_sdev"; dc_noise[4][1] = num2str(V_sdev)
+	dc_noise[5][0] = "I_rms"; dc_noise[5][1] = num2str(V_rms)
 	dso#open_comms()
 	dso#capture("1")
 	dso#import_data("1", "dc_amp_noise_trace")
 	dso#close_comms()
 	wave/sdfr=$dso#data_path() dc_amp_noise_trace
-	dc_amp_noise_trace /= 1e4 // gain
+	dc_amp_noise_trace /= 1e3 // gain
 	setscale d, 0, 0, "A", dc_amp_noise_trace
 	fft/out=3/dest=dc_amp_noise_trace_fft dc_amp_noise_trace
-	make/o/n=3 dc_amp_noise
+	make/t/o/n=(3,2) dc_amp_noise
 	wavestats/q dc_amp_noise_trace
-	dc_amp_noise[0] = V_avg
-	dc_amp_noise[1] = V_sdev
-	dc_amp_noise[2] = V_rms
+	dc_amp_noise[0][0] = "I_avg"; dc_amp_noise[0][1] = num2str(V_avg)
+	dc_amp_noise[1][0] = "I_sdev"; dc_amp_noise[1][1] = num2str(V_sdev)
+	dc_amp_noise[2][0] = "I_rms"; dc_amp_noise[2][1] = num2str(V_rms)
 end
 
 // AC NOISE TESTING
