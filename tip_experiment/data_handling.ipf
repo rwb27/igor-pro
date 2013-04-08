@@ -218,3 +218,36 @@ function load_tip_experiment(tip_exp)
 	movewave :xPSD, $(data_folder +":")
 	movewave :yPSD, $(data_folder +":")
 end
+
+// Panel //
+
+static function unpack_experiment_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			svar data_folder	// load internal string variable
+			data#unpack_experiment(data_folder)
+			break
+	endswitch
+	return 0
+end
+
+function data_handling_panel() : panel
+	variable left, right, top, bottom
+	dowindow/k data_panel
+	newpanel/w=(100,50,400,500)/n=data_panel as "Data Handling"
+	modifypanel cbRGB=(60928,60928,60928), framestyle=1
+	setdrawlayer UserBack
+	showtools/a
+	// title
+	left = 5; top = 5
+	titlebox title, pos={left, top}, size={60,25}, title="Data Handling", fsize=14, fstyle=1, frame=0
+	top += 25
+	// variables
+	popupmenu set_path_definition, pos={left, top}, size={95,15}, bodywidth=70, title="Path",value="lab;laptop"
+	popupmenu set_path_definition fSize=11, proc=define_path
+	top += 25
+	setvariable set_datafolder, pos={left, top}, size={250,20}, title="Data Folder"
+	setvariable set_datafolder, fSize=11
+	setvariable set_datafolder, value= _STR:"root:"
+end
