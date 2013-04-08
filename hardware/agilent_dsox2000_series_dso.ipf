@@ -31,6 +31,10 @@ static function/s gv_path()
 	return gv_folder
 end
 
+static function/s data_path()
+	return data_folder
+end
+
 static function initialise()
 	check_folder(data_folder)
 	visa#cmd(hardware_id, "*rst")
