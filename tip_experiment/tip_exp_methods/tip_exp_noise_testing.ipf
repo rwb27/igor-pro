@@ -175,16 +175,16 @@ function dc_noise_test()
 	label left "current noise (\\U)"; label right "voltage noise (\\U)"
 	label bottom "measurement"
 	modifygraph mode=3, marker=8, msize=1.5, rgb(dc_noise_v)=(0,0,65280)
-	open_smu()
+	smu#open_comms()
 	do
-		iv = measure_iv_smu()
+		iv = smu#measure_iv()
 		redimension/n=(numpnts(dc_noise_v)+1) dc_noise_v, dc_noise_i
 		dc_noise_v[n] = real(iv)
 		dc_noise_i[n] = imag(iv)
 		doupdate
 		n += 1
 	while (n < 100)
-	close_smu()
+	smu#close_comms()
 	make/o/n=6 dc_noise
 	wavestats/q dc_noise_v
 	dc_noise[0] = V_avg
@@ -216,16 +216,16 @@ function dc_amp_noise_test()
 	label left "current noise (\\U)"; label right "voltage noise (\\U)"
 	label bottom "measurement"
 	modifygraph mode=3, marker=8, msize=1.5, rgb(dc_noise_v)=(0,0,65280)
-	open_smu()
+	smu#open_comms()
 	do
-		iv = measure_iv_smu()
+		iv = smu#measure_iv()
 		redimension/n=(numpnts(dc_noise_v)+1) dc_noise_v, dc_noise_i
 		dc_noise_v[n] = real(iv)
 		dc_noise_i[n] = imag(iv)
 		doupdate
 		n += 1
 	while (n < 100)
-	close_smu()
+	smu#close_comms()
 	make/o/n=6 dc_noise
 	wavestats/q dc_noise_v
 	dc_noise[0] = V_avg
@@ -235,11 +235,11 @@ function dc_amp_noise_test()
 	dc_noise[3] = V_avg
 	dc_noise[4] = V_sdev
 	dc_noise[5] = V_rms
-	open_dso()
-	capture_dso("1")
-	import_data_dso("1", "dc_amp_noise_trace")
-	close_dso()
-	wave dc_amp_noise_trace
+	dso#open_comms()
+	dso#capture("1")
+	dso#import_data("1", "dc_amp_noise_trace")
+	dso#close_comms()
+	wave/sdfr=$dso#data_path() dc_amp_noise_trace
 	dc_amp_noise_trace /= 1e4 // gain
 	setscale d, 0, 0, "A", dc_amp_noise_trace
 	fft/out=3/dest=dc_amp_noise_trace_fft dc_amp_noise_trace
@@ -262,11 +262,11 @@ function ac_noise_dso_test()
 	else
 		setdatafolder $fname
 	endif
-	open_dso()
-	capture_dso("1")
-	import_data_dso("1", "ac_noise_trace")
-	close_dso()
-	wave ac_noise_trace
+	dso#open_comms()
+	dso#capture("1")
+	dso#import_data("1", "ac_noise_trace")
+	dso#close_comms()
+	wave/sdfr=$dso#data_path() ac_noise_trace
 	ac_noise_trace /= 1e8 // gain
 	setscale d, 0, 0, "A", ac_noise_trace
 	fft/out=3/dest=ac_noise_trace_fft ac_noise_trace
@@ -303,16 +303,16 @@ function ac_noise_test()
 	label left "noise amplitude (\\U)"; label right "noise phase (\\U)"
 	label bottom "measurement"
 	modifygraph mode=3, marker=8, msize=1.5, rgb(ac_noise_theta)=(0,0,65280)
-	open_lockin()
+	lockin#open_comms()
 	do
-		rtheta = measure_rtheta_lockin()
+		rtheta = lockin#measure_rtheta()
 		redimension/n=(numpnts(ac_noise_r)+1) ac_noise_r, ac_noise_theta
 		ac_noise_r[n] = real(rtheta)
 		ac_noise_theta[n] = imag(rtheta)
 		doupdate
 		n += 1
 	while (n < 250)
-	close_lockin()
+	lockin#close_comms()
 	ac_noise_r /= 1e8 // gain
 	make/o/n=8 ac_noise
 	wavestats/q ac_noise_r
@@ -370,15 +370,15 @@ function ac_noise_over_time(s)
 	nvar start_t, elapsed_t
 	variable i
 	
-	open_dso()
-	capture_dso("1")
-	import_data_dso("1", "ac_noise_trace")
-	close_dso()
+	dso#open_comms()
+	dso#capture("1")
+	dso#import_data("1", "ac_noise_trace")
+	dso#close_comms()
 	
 	elapsed_t = datetime - start_t
 	elapsed_t /= (60 * 60)			// convert secs to hours
 	
-	wave ac_noise_trace
+	wave/sdfr=$dso#data_path() ac_noise_trace
 	setscale d, 0, 0, "A", ac_noise_trace
 	ac_noise_trace /= 1e8			// gain
 	i = numpnts(datetimes)
