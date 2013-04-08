@@ -20,6 +20,7 @@ static function setup(rst)
 	setup_tek(rst)
 	setup_dso(rst)
 	setup_pixis(rst)
+	setup_spec()
 end
 
 function setup_exp(rst)
@@ -151,4 +152,9 @@ function setup_pixis(rst)
 	variable shiftrate = 9.2
 	exp_time = (us_range / 256) - shiftrate
 	pixis#ready(exp_time)
+end
+
+function setup_spec()
+	svar current_data_folder = root:data:current_scan_folder
+	duplicatedatafolder root:oo:data:current, current_data_folder
 end

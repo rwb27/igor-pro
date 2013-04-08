@@ -178,7 +178,7 @@ function tip_scan()			// tip experiment master function
 	tek#close_comms()
 	pi_stage#close_comms()
 	
-// ANALYSIS
+	// ANALYSIS
 
 	redimension/n=(numpnts(current)) conductance
 	conductance = (current / voltage) / g0
