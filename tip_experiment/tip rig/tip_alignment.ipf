@@ -232,6 +232,11 @@ function fit_alignment_data(scan_folder, data)
 	setdatafolder root:
 	//modifycontour $(scan_folder + ":fit_" + data) labels=0, ctabLines={*,*,Geo32,0}
 	
+	string expr = "(.*)_(.*)", wave_id, rest_of_wavename
+	splitstring/e=(expr) nameofwave(data), rest_of_wavename, wave_id
+	variable/g $(scan_folder + ":" + wave_id + "_x0") = w_coef[2]
+	variable/g $(scan_folder + ":" + wave_id + "_y0") = w_coef[4]
+	
 	variable/g $(scan_folder + ":x0") = w_coef[2]
 	variable/g $(scan_folder + ":y0") = w_coef[4]
 	variable/g $(gv_folder + ":x0") = w_coef[2]
@@ -249,11 +254,11 @@ static function display_scan(scan_folder)
 	dowindow/k tip_alignment
 	display/n=tip_alignment
 	
-	textbox/c/n=textx/f=0/a=LT/x=10/y=3 "\\f02x"
-	textbox/c/n=texty/f=0/a=LT/x=10/y=22 "\\f02y"
-	textbox/c/n=textr/f=0/a=LT/x=10/y=40 "\\f02r"
-	textbox/c/n=texttheta/f=0/a=LT/x=10/y=58 "\\f02\\F'Symbol'q"
-	textbox/c/n=textypsd/f=0/a=LT/x=1/y=75 "\\f02psd_y"
+	//textbox/c/n=textx/f=0/a=LT/x=10/y=3 "\\f02x"
+	//textbox/c/n=texty/f=0/a=LT/x=10/y=22 "\\f02y"
+	//textbox/c/n=textr/f=0/a=LT/x=10/y=40 "\\f02r"
+	//textbox/c/n=texttheta/f=0/a=LT/x=10/y=58 "\\f02\\F'Symbol'q"
+	//textbox/c/n=textypsd/f=0/a=LT/x=1/y=75 "\\f02psd_y"
 	
 	appendimage/l=lx x
 	appendimage/l=ly y
