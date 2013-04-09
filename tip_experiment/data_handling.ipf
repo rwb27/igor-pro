@@ -2,6 +2,7 @@
 #pragma version = 6.20
 #pragma rtGlobals=1		// Use modern global access method.
 
+static strconstant gv_folder = "root:global_variables:data_handling"
 // These folders must exist
 strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
 strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - experiment:data:raw data"
@@ -233,11 +234,21 @@ end
 
 // Panel //
 
+static function check_data_folder_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			data#check_data_folder()
+			break
+	endswitch
+	return 0
+end
+
 static function unpack_experiment_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
-			svar data_folder	// load internal string variable
+			svar/sdfr=$gv_folder data_folder
 			data#unpack_experiment(data_folder)
 			break
 	endswitch
@@ -245,9 +256,14 @@ static function unpack_experiment_button(ba) : buttoncontrol
 end
 
 function data_handling_panel() : panel
+
+	check_folder("root:global_variables")
+	check_folder(gv_folder)
+	string/g scan_folder = "root:"
+	
 	variable left, right, top, bottom
 	dowindow/k data_panel
-	newpanel/w=(100,50,400,500)/n=data_panel as "Data Handling"
+	newpanel/w=(100,50,400,160)/n=data_panel as "Data Handling"
 	modifypanel cbRGB=(60928,60928,60928), framestyle=1
 	setdrawlayer UserBack
 	showtools/a
@@ -259,7 +275,15 @@ function data_handling_panel() : panel
 	popupmenu set_path_definition, pos={left, top}, size={95,15}, bodywidth=70, title="Path",value="lab;laptop"
 	popupmenu set_path_definition fSize=11, proc=define_path
 	top += 25
-	setvariable set_datafolder, pos={left, top}, size={250,20}, title="Data Folder"
+	setvariable set_datafolder, pos={left, top}, size={290,20}, title="Data Folder"
 	setvariable set_datafolder, fSize=11
-	setvariable set_datafolder, value= _STR:"root:"
+	setvariable set_datafolder, value= scan_folder
+	// buttons
+	top += 20
+	button unpack_exp, pos={left, top}, size={50,30}, proc=data#unpack_experiment_button, title="Unpack\rFolder"
+	button unpack_exp, fColor=(32768,65280,0)
+	//top += 40
+	left += 50
+	button check_df, pos={left, top}, size={60,30}, proc=data#check_data_folder_button, title="Check\rDataFolder"
+	top += 40
 end
