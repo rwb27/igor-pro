@@ -106,17 +106,29 @@ function unpack_experiment(data_folder)
 	
 	// define string splitting
 	string expr = "root:data:(.+)"
-	variable i
-	
 	// set current paths/folders
 	splitstring/e=(expr) data_folder, data_folder_rel			// get relative folder path
-	current_data_path = initial_data_path + data_folder_rel	// set current data path
-	newpath/c/o current_data, current_data_path				// create and reference local folder
+	// check all of relative folder path exists
+	string df_rel = ""
+	variable k
+	do
+		df_rel += parsefilepath(0, data_folder_rel, ":", 0, k) + ":"
+		if (stringmatch(df_rel, ":"))
+			break
+		endif
+		current_data_path = initial_data_path + df_rel
+		newpath/c/o current_data, current_data_path	
+		k += 1
+	while (!stringmatch(df_rel, data_folder_rel+":"))
+	
+	//current_data_path = initial_data_path + data_folder_rel	// set current data path
+	//newpath/c/o current_data, current_data_path				// create and reference local folder
 	
 	if (waveexists(data_folder_path:parameters))
 		killwaves data_folder_path:parameters
 	endif
 	
+	variable i
 	variable j = 0
 	// transfer variables in current folder to a text wave
 	variable num_vars = countobjectsdfr(data_folder_path, 2)
