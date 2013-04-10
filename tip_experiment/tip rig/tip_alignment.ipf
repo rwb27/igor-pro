@@ -165,11 +165,11 @@ function align_tips(scan_size, scan_step)
 	pi_stage#move("B", init_b)
 	pi_stage#move("C", init_c)
 	
-	fit_alignment_data(scan_folder, x)
-	fit_alignment_data(scan_folder, y)
-	fit_alignment_data(scan_folder, scan_r)
-	fit_alignment_data(scan_folder, theta)
-	fit_alignment_data(scan_folder, y_psd)
+	fit_alignment_data($scan_folder, x)
+	fit_alignment_data($scan_folder, y)
+	fit_alignment_data($scan_folder, scan_r)
+	fit_alignment_data($scan_folder, theta)
+	fit_alignment_data($scan_folder, y_psd)
 	
 	// close comms
 	pi_stage#close_comms()
@@ -179,11 +179,11 @@ function align_tips(scan_size, scan_step)
 end
 
 function fit_alignment_data(scan_folder, data)
-	string scan_folder
+	dfref scan_folder
 	wave data
 	
 	dowindow/f tip_alignment
-	setdatafolder $scan_folder
+	setdatafolder scan_folder
 	
 	variable z0, a0, x0, sigx, y0, sigy, corr
 	imagestats data
@@ -198,8 +198,8 @@ function fit_alignment_data(scan_folder, data)
 	
 	// Constraints on fit
 	// Note: {K0,K1,K2,K3,K4,K5,K6} = {z0,a0,x0,sigx,y0,sigy,corr}
-	make/o/t/n=0 $(scan_folder + ":t_constraints")
-	wave/t t_constraints = $(scan_folder + ":t_constraints")
+	make/o/t/n=0 scan_folder:t_constraints
+	wave/t/sdfr=scan_folder t_constraints
 	variable q = 0		// Constraint counter
 	
 	// Constraint -- x0 and y0 must lie within the scan area
@@ -223,8 +223,8 @@ function fit_alignment_data(scan_folder, data)
 	t_constraints[q] = "K6 > -1"; q = q+1
 	t_constraints[q] = "K6 < 1"; q = q+1
 	
-	make/d/n=7/o $(scan_folder + ":w_coef")
-	wave w_coef = $(scan_folder + ":w_coef")
+	make/d/n=7/o scan_folder:w_coef
+	wave/sdfr=scan_folder w_coef
 	w_coef[0] = {z0, a0, x0, sigx, y0, sigy, corr}
 	//funcfitmd/nthr=0/q gauss2d w_coef  data /d/c=t_constraints
 	curvefit/x=1/nthr=0/q gauss2d, kwcwave=w_coef, data /d/c=t_constraints
@@ -234,13 +234,15 @@ function fit_alignment_data(scan_folder, data)
 	
 	string expr = "(.*)_(.*)", wave_id, rest_of_wavename
 	splitstring/e=(expr) nameofwave(data), rest_of_wavename, wave_id
-	variable/g $(scan_folder + ":" + wave_id + "_x0") = w_coef[2]
-	variable/g $(scan_folder + ":" + wave_id + "_y0") = w_coef[4]
+	variable/g scan_folder:$(wave_id + "_x0") = w_coef[2]
+	variable/g scan_folder:$(wave_id + "_y0") = w_coef[4]
 	
-	variable/g $(scan_folder + ":x0") = w_coef[2]
-	variable/g $(scan_folder + ":y0") = w_coef[4]
-	variable/g $(gv_folder + ":x0") = w_coef[2]
-	variable/g $(gv_folder + ":y0") = w_coef[4]
+	//variable/g scan_folder:x0 = w_coef[2]
+	//variable/g scan_folder:y0 = w_coef[4]
+	
+	//data#check_gvpath(gv_folder)
+	//variable/g $(gv_folder):x0 = w_coef[2]
+	//variable/g $(gv_folder):y0 = w_coef[4]
 end
 
 static function display_scan(scan_folder)
@@ -477,8 +479,15 @@ function fit_alignment_data_x_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
-			wave data = $(scan_folder + ":alignment_scan_x")
-			fit_alignment_data(scan_folder, data)
+			string var = "x"
+			wave wdata = $(scan_folder + ":alignment_scan_" + var)
+			fit_alignment_data($scan_folder, wdata)
+			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			variable/g $(scan_folder):x0 = x0
+			variable/g $(scan_folder):y0 = y0
+			data#check_gvpath(gv_folder)
+			variable/g $(gv_folder):x0 = x0
+			variable/g $(gv_folder):y0 = y0
 			break
 		case -1:
 			break
@@ -491,8 +500,15 @@ function fit_alignment_data_y_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
-			wave data = $(scan_folder + ":alignment_scan_y")
-			fit_alignment_data(scan_folder, data)
+			string var = "y"
+			wave wdata = $(scan_folder + ":alignment_scan_" + var)
+			fit_alignment_data($scan_folder, wdata)
+			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			variable/g $(scan_folder):x0 = x0
+			variable/g $(scan_folder):y0 = y0
+			data#check_gvpath(gv_folder)
+			variable/g $(gv_folder):x0 = x0
+			variable/g $(gv_folder):y0 = y0
 			break
 		case -1:
 			break
@@ -505,8 +521,15 @@ function fit_alignment_data_r_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
-			wave data = $(scan_folder + ":alignment_scan_r")
-			fit_alignment_data(scan_folder, data)
+			string var = "r"
+			wave wdata = $(scan_folder + ":alignment_scan_" + var)
+			fit_alignment_data($scan_folder, wdata)
+			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			variable/g $(scan_folder):x0 = x0
+			variable/g $(scan_folder):y0 = y0
+			data#check_gvpath(gv_folder)
+			variable/g $(gv_folder):x0 = x0
+			variable/g $(gv_folder):y0 = y0
 			break
 		case -1:
 			break
@@ -519,8 +542,15 @@ function fit_alignment_data_theta_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
-			wave data = $(scan_folder + ":alignment_scan_theta")
-			fit_alignment_data(scan_folder, data)
+			string var = "theta"
+			wave wdata = $(scan_folder + ":alignment_scan_" + var)
+			fit_alignment_data($scan_folder, wdata)
+			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			variable/g $(scan_folder):x0 = x0
+			variable/g $(scan_folder):y0 = y0
+			data#check_gvpath(gv_folder)
+			variable/g $(gv_folder):x0 = x0
+			variable/g $(gv_folder):y0 = y0
 			break
 		case -1:
 			break
@@ -533,8 +563,15 @@ function fit_alignment_data_y_psd_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
-			wave data = $(scan_folder + ":alignment_scan_y_psd")
-			fit_alignment_data(scan_folder, data)
+			string var = "y_psd"
+			wave wdata = $(scan_folder + ":alignment_scan_" + var)
+			fit_alignment_data($scan_folder, wdata)
+			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			variable/g $(scan_folder):x0 = x0
+			variable/g $(scan_folder):y0 = y0
+			data#check_gvpath(gv_folder)
+			variable/g $(gv_folder):x0 = x0
+			variable/g $(gv_folder):y0 = y0
 			break
 		case -1:
 			break
