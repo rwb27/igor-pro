@@ -6,6 +6,7 @@
 #include "pi_pi733_3cd_stage"
 #include "hp33120a_sig_gen"
 #include "srs_sr830_lockin_amplifier"
+#include "srs_sr830_lockin_amplifier_2"
 #include "tektronix_tds1001b"
 #include "fit_functions"
 
@@ -36,7 +37,7 @@ function align_tips(scan_size, scan_step)
 	//lockin#close_comms()
 	//tek#close_comms()
 	pi_stage#open_comms()
-	lockin#open_comms()
+	lockin#open_comms(); lockin2#open_comms()
 	tek#open_comms(); tek#initialise()
 	sig_gen#open_comms()
 	
@@ -97,6 +98,19 @@ function align_tips(scan_size, scan_step)
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_r")
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_theta")
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
+	
+	// lockin2
+	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fx")
+	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fy")
+	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fr")
+	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_ftheta")
+	wave fx = $(scan_folder + ":alignment_scan_fx")
+	wave fy = $(scan_folder + ":alignment_scan_fy")
+	wave fr = $(scan_folder + ":alignment_scan_fr")
+	wave ftheta = $(scan_folder + ":alignment_scan_ftheta")
+	setscale/p x, init_b - scan_size/2, scan_step, fx, fy, fr, ftheta
+	setscale/p y, init_c - scan_size/2, scan_step, fx, fy, fr, ftheta
+	
 	make/o/n=(imax, imax) $(scan_folder + ":x_pos")
 	make/o/n=(imax, imax) $(scan_folder + ":y_pos")
 	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd_freq")
@@ -123,7 +137,7 @@ function align_tips(scan_size, scan_step)
 	pos_c = init_c - scan_size/2
 	
 	tek#get_waveform_params("2")
-	lockin#aphs(); sleep/s 1
+	lockin#aphs(); lockin2#aphs(); sleep/s 1
 	
 	variable ib = 0, ic = 0
 	variable/c data
@@ -135,12 +149,24 @@ function align_tips(scan_size, scan_step)
 			sleep/s 0.5
 			x_pos[ib][ic] = pos_bpi
 			y_pos[ib][ic] = pos_cpi
+			
+			// electronic lock-in measurements
 			data = lockin#measure_xy()
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data) 
 			data = lockin#measure_rtheta()
 			scan_r[ib][ic] = real(data)/gain
 			theta[ib][ic] = imag(data)
+			
+			// force lock-in measurements
+			data = lockin2#measure_xy()
+			fx[ib][ic] = real(data)
+			fy[ib][ic] = imag(data) 
+			data = lockin2#measure_rtheta()
+			fr[ib][ic] = real(data)/gain
+			ftheta[ib][ic] = imag(data)
+			
+			// oscilloscope force measurement
 			wave w = tek#import_data_free("2")
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
@@ -165,16 +191,23 @@ function align_tips(scan_size, scan_step)
 	pi_stage#move("B", init_b)
 	pi_stage#move("C", init_c)
 	
+	// fit electronic scan
 	fit_alignment_data($scan_folder, x)
 	fit_alignment_data($scan_folder, y)
 	fit_alignment_data($scan_folder, scan_r)
 	fit_alignment_data($scan_folder, theta)
 	fit_alignment_data($scan_folder, y_psd)
 	
+	// fit force scan
+	fit_alignment_data($scan_folder, fx)
+	fit_alignment_data($scan_folder, fy)
+	fit_alignment_data($scan_folder, fr)
+	fit_alignment_data($scan_folder, ftheta)
+	
 	// close comms
 	pi_stage#close_comms()
 	tek#close_comms()
-	lockin#close_comms()
+	lockin#close_comms(); lockin2#close_comms()
 	sig_gen#close_comms()
 end
 
@@ -274,17 +307,33 @@ static function display_scan(scan_folder)
 	modifyimage ''#4 ctab={*,*,geo,0}
 	modifygraph width=80
 	modifygraph height={aspect, 5}
-	label lr "tip focus (\\F'Symbol'm\\F'Arial'm)"
-	label bottom "tip height (\\F'Symbol'm\\F'Arial'm)"
-	modifygraph tick=0, minor=1, btLen=4, stLen=2
-	modifygraph mirror=1, fSize=10, standoff=0, axOffset=-1, axOffset(bottom)=0
+	
+	// force alignment scans
+	appendimage/l=lx/b=b1 fx
+	appendimage/l=ly/b=b1 fy
+	appendimage/l=lr/b=b1 fr
+	appendimage/l=ltheta/b=b1 ftheta
+	modifyimage ''#5 ctab={*,*,geo,0}
+	modifyimage ''#6 ctab={*,*,geo,0}
+	modifyimage ''#7 ctab={*,*,geo,0}
+	modifyimage ''#8 ctab={*,*,geo,0}
+	modifygraph width=2*80
+	modifygraph axisEnab(bottom)={0,0.49}, freePos(bottom)=0
+	modifygraph axisEnab(b1)={0.51,1.0}, freePos(b1)=0
+	
 	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
 	modifygraph axisEnab(ly)={0.6,0.79}, freePos(ly)=0
 	modifygraph axisEnab(lr)={0.4,0.59}, freePos(lr)=0
 	modifygraph axisEnab(ltheta)={0.2,0.39}, freePos(ltheta)=0
 	modifygraph axisEnab(left)={0,0.19}, freePos(left)=0
+	
 	modifygraph lblposmode=4, lblpos=40
 	modifygraph lblpos(bottom)=30
+	
+	label lr "tip focus (\\F'Symbol'm\\F'Arial'm)"
+	label bottom "tip height (\\F'Symbol'm\\F'Arial'm)"
+	modifygraph tick=0, minor=1, btLen=4, stLen=2
+	modifygraph mirror=1, fSize=10, standoff=0, axOffset=-1, axOffset(bottom)=0
 end
 
 static function display_scan2(scan_folder)
