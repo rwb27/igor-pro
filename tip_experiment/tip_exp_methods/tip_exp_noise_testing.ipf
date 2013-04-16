@@ -265,9 +265,11 @@ function ac_noise_dso_test()
 	endif
 	dso#open_comms()
 	dso#capture("1")
-	dso#import_data("1", "ac_noise_trace")
+	dso#import_data("1", "ac_trace")
 	dso#close_comms()
-	wave/sdfr=$dso#data_path() ac_noise_trace
+	dfref dso = $dso#data_path()
+	duplicate/o dso:ac_trace, ac_noise_trace
+	wave ac_noise_trace
 	ac_noise_trace /= 1e8 // gain
 	setscale d, 0, 0, "A", ac_noise_trace
 	fft/out=3/dest=ac_noise_trace_fft ac_noise_trace
@@ -275,12 +277,12 @@ function ac_noise_dso_test()
 	display/n=noise_testing ac_noise_trace
 	label left "current (\\U)"; label bottom "time (\\U)"
 	modifygraph rgb=(0,0,0)
-	make/o/n=4 ac_noise_dso
+	make/t/o/n=(4,2) ac_noise_dso
 	wavestats/q ac_noise_trace
-	ac_noise_dso[0] = V_avg
-	ac_noise_dso[1] = V_sdev
-	ac_noise_dso[2] = V_rms
-	ac_noise_dso[3] = V_adev
+	ac_noise_dso[0][0] = "V_avg"; ac_noise_dso[0][1] = num2str(V_avg)
+	ac_noise_dso[1][0] = "V_sdev"; ac_noise_dso[1][1] = num2str(V_sdev)
+	ac_noise_dso[2][0] = "V_rms"; ac_noise_dso[2][1] = num2str(V_rms)
+	ac_noise_dso[3][0] = "V_adev"; ac_noise_dso[3][1] = num2str(V_adev)
 end
 
 // AC noise on Lock-In Amp

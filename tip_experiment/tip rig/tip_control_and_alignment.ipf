@@ -261,6 +261,17 @@ function tip_control_and_alignment() : panel
 	string c = align_path + ":y0"
 	valdisplay cent_c, value= #c
 	left -= 110; top -= 80
+	
+	// force alignment buttons
+	left += 220; top += 80
+	top -= 20
+	button fit_fx, pos={left, top}, size={30,20}, proc=fit_alignment_data_fx_button, title="Fit FX"; left += 30
+	button fit_fy, pos={left, top}, size={30,20}, proc=fit_alignment_data_fy_button, title="Fit FY"; left += 30
+	button fit_fr, pos={left, top}, size={30,20}, proc=fit_alignment_data_fr_button, title="Fit FR"
+	left -= 60; top += 20
+	button fit_ftheta, pos={left, top}, size={50,20}, proc=fit_alignment_data_fthet_button, title="Fit FTheta"; left += 50
+	left -= 220+50; top -= 80
+	
 		// resonance scan controls
 	left += 110; top -= 40
 	setvariable set_freq_start, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Start"
@@ -274,6 +285,16 @@ function tip_control_and_alignment() : panel
 	top += 20
 	button res_scan, pos={left, top}, size={70,40}, proc=resonance_scan_button, title="Resonance\rScan"
 	button res_scan, fColor=(65280,65280,0)
+	
+		// electronic/force alignment set/display
+	left += 70
+	setvariable set_elec_align, pos={left, top}, size={140,15}, bodyWidth=30, title="Electronic Alignment"
+	setvariable set_elec_align, limits={0,1,1}, value= root:global_variables:tip_alignment:electronic_alignment
+	top += 20
+	setvariable set_force_align, pos={left, top}, size={140,15}, bodyWidth=30, title="Force Alignment"
+	setvariable set_force_align, limits={0,1,1}, value= root:global_variables:tip_alignment:force_alignment
+	top -= 20; left -= 70
+	
 		// hp signal generator controls
 	left += 110; top -= 3*20
 	setvariable x20_amplitude, pos={left, top}, size={105,15}, bodyWidth=50, proc=set_x20_amplitude_panel, title="Amplitude"

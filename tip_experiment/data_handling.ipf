@@ -32,10 +32,11 @@ function/s check_folder(data_folder)
 	return data_folder
 end
 
-function check_gvpath(gv_folder)
+function/s check_gvpath(gv_folder)
 	string gv_folder
 	check_folder("root:global_variables")
 	check_folder(gv_folder)
+	return gv_folder
 end
 
 function/s check_data_folder()
@@ -329,11 +330,46 @@ function update_experiment(data_folder)
 			wname = getindexedobjnamedfr(data_folder_path, 1, i)
 			
 			// update wave analysis
+			// resonance scans
+			if (stringmatch(wname, "*resonance_scan*"))
+				nvar/z/sdfr=data_folder_path alignment_set
+				if (!nvar_exists(alignment_set))
+					variable/g data_folder_path:alignment_set = 0
+				endif
+			endif
+			if (stringmatch(wname, "*resonance_scan_r"))
+				nvar/z/sdfr=data_folder_path electronic_alignment
+				if (!nvar_exists(electronic_alignment))
+					variable/g data_folder_path:electronic_alignment = 1
+				endif
+			endif
+			if (stringmatch(wname, "*resonance_scan_fr"))
+				nvar/z/sdfr=data_folder_path force_alignment
+				if (!nvar_exists(force_alignment))
+					variable/g data_folder_path:force_alignment = 1
+				endif
+			endif
+			// alignment scans
 			if (stringmatch(wname, "*alignment_scan*"))
 				string df = getdatafolder(1, data_folder_path)
 				alignment#fit_alignment_data(data_folder_path, w)
+				nvar/z/sdfr=data_folder_path alignment_set
+				if (!nvar_exists(alignment_set))
+					variable/g data_folder_path:alignment_set = 0
+				endif
 			endif
-			
+			if (stringmatch(wname, "*alignment_scan_r"))
+				nvar/z/sdfr=data_folder_path electronic_alignment
+				if (!nvar_exists(electronic_alignment))
+					variable/g data_folder_path:electronic_alignment = 1
+				endif
+			endif
+			if (stringmatch(wname, "*alignment_scan_fr"))
+				nvar/z/sdfr=data_folder_path force_alignment
+				if (!nvar_exists(force_alignment))
+					variable/g data_folder_path:force_alignment = 1
+				endif
+			endif
 		endfor
 	endif
 	
