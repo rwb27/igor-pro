@@ -261,6 +261,17 @@ function tip_control_and_alignment() : panel
 	string c = align_path + ":y0"
 	valdisplay cent_c, value= #c
 	left -= 110; top -= 80
+	
+	// force alignment buttons
+	left += 220; top += 80
+	top -= 20
+	button fit_fx, pos={left, top}, size={30,20}, proc=fit_alignment_data_fx_button, title="Fit FX"; left += 30
+	button fit_fy, pos={left, top}, size={30,20}, proc=fit_alignment_data_fy_button, title="Fit FY"; left += 30
+	button fit_fr, pos={left, top}, size={30,20}, proc=fit_alignment_data_fr_button, title="Fit FR"
+	left -= 60; top += 20
+	button fit_ftheta, pos={left, top}, size={50,20}, proc=fit_alignment_data_fthet_button, title="Fit FTheta"; left += 50
+	left -= 220+50; top -= 80
+	
 		// resonance scan controls
 	left += 110; top -= 40
 	setvariable set_freq_start, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Start"

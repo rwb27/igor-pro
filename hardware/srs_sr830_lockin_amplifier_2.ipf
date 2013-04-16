@@ -4,7 +4,7 @@
 
 #include "visa_comms"
 static strconstant hardware_id = "srs_sr830_lockin_amplifier_2"
-static strconstant resourceName = "GPIB0::19::INSTR"
+static strconstant resourceName = "GPIB0::6::INSTR"
 static strconstant gv_folder = "root:global_variables:srs_sr830_lockin_amplifier_2"
 
 static function open_comms()
