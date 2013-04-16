@@ -27,7 +27,8 @@ static function initialise()
 	variable/g $(gv_folder + ":amplified_voltage")
 	variable/g $(gv_folder + ":amplified_offset")
 	variable/g $(gv_folder + ":alignment_set")
-	variable/g $(gv_folder + ":force_alignment") = 1
+	variable/g $(gv_folder + ":electronic_alignment")
+	variable/g $(gv_folder + ":force_alignment")
 end
 
 function align_tips(scan_size, scan_step)
@@ -48,6 +49,7 @@ function align_tips(scan_size, scan_step)
 	nvar amplified_voltage = $(gv_folder + ":amplified_voltage")
 	nvar amplified_offset = $(gv_folder + ":amplified_offset")
 	nvar/sdfr=$gv_folder set = alignment_set
+	nvar/sdfr=$gv_folder electronic_alignment
 	nvar/sdfr=$gv_folder force_alignment
 	
 	// initialise piezo information
@@ -62,7 +64,7 @@ function align_tips(scan_size, scan_step)
 	variable gain = 1e8
 	// turn dco off once you have recorded the initial position
 	// DCO off for dynamic movement, DCO on for holding static
-	pi_stage#set_dco_a(1)
+	pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
 	pi_stage#set_dco_b(0)
 	pi_stage#set_dco_c(0)
 	sleep/s 1
@@ -91,47 +93,53 @@ function align_tips(scan_size, scan_step)
 	variable/g $(scan_folder + ":init_pos_b") = init_b
 	variable/g $(scan_folder + ":init_pos_c") = init_c
 	variable/g $(scan_folder + ":alignment_set") = set
+	variable/g $(scan_folder + ":electronic_alignment") = electronic_alignment
 	variable/g $(scan_folder + ":force_alignment") = force_alignment
 	string/g $(scan_folder + ":time_stamp") = time() + " " + date()
 	
 	// make alignment data waves
 	variable imax = scan_size/scan_step
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_x")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_r")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_theta")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
 	
-	// lockin2
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fx")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fy")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fr")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_ftheta")
-	wave fx = $(scan_folder + ":alignment_scan_fx")
-	wave fy = $(scan_folder + ":alignment_scan_fy")
-	wave fr = $(scan_folder + ":alignment_scan_fr")
-	wave ftheta = $(scan_folder + ":alignment_scan_ftheta")
-	setscale/p x, init_b - scan_size/2, scan_step, fx, fy, fr, ftheta
-	setscale/p y, init_c - scan_size/2, scan_step, fx, fy, fr, ftheta
+	// lock-in 1
+	if (electronic_alignment)
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_x")
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y")
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_r")
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_theta")
+		wave x = $(scan_folder + ":alignment_scan_x")
+		wave y = $(scan_folder + ":alignment_scan_y")
+		wave scan_r = $(scan_folder + ":alignment_scan_r")
+		wave theta = $(scan_folder + ":alignment_scan_theta")
+		setscale/p x, init_b - scan_size/2, scan_step, x, y, scan_r, theta
+		setscale/p y, init_c - scan_size/2, scan_step, x, y, scan_r, theta
+	endif
+	
+	nvar/sdfr=$tek#gv_path() num_points
+	make/o/n=(imax, imax, num_points) $(scan_folder + ":alignment_trace_y_psd")
+	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
+	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
+	wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
+	setscale/p x, init_b - scan_size/2, scan_step, y_psd, y_psd_trace
+	setscale/p y, init_c - scan_size/2, scan_step, y_psd, y_psd_trace
+	
+	// lock-in 2
+	if (force_alignment)
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fx")
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fy")
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fr")
+		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_ftheta")
+		wave fx = $(scan_folder + ":alignment_scan_fx")
+		wave fy = $(scan_folder + ":alignment_scan_fy")
+		wave fr = $(scan_folder + ":alignment_scan_fr")
+		wave ftheta = $(scan_folder + ":alignment_scan_ftheta")
+		setscale/p x, init_b - scan_size/2, scan_step, fx, fy, fr, ftheta
+		setscale/p y, init_c - scan_size/2, scan_step, fx, fy, fr, ftheta
+	endif
 	
 	make/o/n=(imax, imax) $(scan_folder + ":x_pos")
 	make/o/n=(imax, imax) $(scan_folder + ":y_pos")
-	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd_freq")
-	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd_pk2pk")
-	nvar/sdfr=$tek#gv_path() num_points
-	make/o/n=(imax, imax, num_points) $(scan_folder + ":alignment_trace_y_psd")
-	wave x = $(scan_folder + ":alignment_scan_x")
-	wave y = $(scan_folder + ":alignment_scan_y")
-	wave scan_r = $(scan_folder + ":alignment_scan_r")
-	wave theta = $(scan_folder + ":alignment_scan_theta")
-	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
-	//wave y_psd_freq = $(scan_folder + ":alignment_scan_y_psd_freq")
-	//wave y_psd_pk = $(scan_folder + ":alignment_scan_y_psd_pk2pk")
-	wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
 	wave x_pos = $(scan_folder + ":x_pos")
 	wave y_pos = $(scan_folder + ":y_pos")
-	setscale/p x, init_b - scan_size/2, scan_step, x, y, scan_r, theta, y_psd
-	setscale/p y, init_c - scan_size/2, scan_step, x, y, scan_r, theta, y_psd
 	
 	// plot scan
 	display_scan(scan_folder)
@@ -140,7 +148,13 @@ function align_tips(scan_size, scan_step)
 	pos_c = init_c - scan_size/2
 	
 	tek#get_waveform_params("2")
-	lockin#aphs(); lockin2#aphs(); sleep/s 1
+	if (electronic_alignment)
+		lockin#aphs()
+	endif
+	if (force_alignment)
+		lockin2#aphs()
+	endif
+	sleep/s 1
 	
 	variable ib = 0, ic = 0
 	variable/c data
@@ -154,27 +168,30 @@ function align_tips(scan_size, scan_step)
 			y_pos[ib][ic] = pos_cpi
 			
 			// electronic lock-in measurements
-			data = lockin#measure_xy()
-			x[ib][ic] = real(data)
-			y[ib][ic] = imag(data) 
-			data = lockin#measure_rtheta()
-			scan_r[ib][ic] = real(data)/gain
-			theta[ib][ic] = imag(data)
+			if (electronic_alignment)
+				data = lockin#measure_xy()
+				x[ib][ic] = real(data)
+				y[ib][ic] = imag(data) 
+				data = lockin#measure_rtheta()
+				scan_r[ib][ic] = real(data)/gain
+				theta[ib][ic] = imag(data)
+			endif
 			
 			// force lock-in measurements
-			data = lockin2#measure_xy()
-			fx[ib][ic] = real(data)
-			fy[ib][ic] = imag(data) 
-			data = lockin2#measure_rtheta()
-			fr[ib][ic] = real(data)/gain
-			ftheta[ib][ic] = imag(data)
+			if (force_alignment)
+				data = lockin2#measure_xy()
+				fx[ib][ic] = real(data)
+				fy[ib][ic] = imag(data) 
+				data = lockin2#measure_rtheta()
+				fr[ib][ic] = real(data)/gain
+				ftheta[ib][ic] = imag(data)
+			endif
 			
 			// oscilloscope force measurement
 			wave w = tek#import_data_free("2")
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
-			//y_psd_freq[ib][ic] = tek#meas("2", "freq")
-			//y_psd_pk[ib][ic] = tek#meas("2", "pk2pk")
+			
 			doupdate
 			// increment B position
 			pos_b += scan_step
@@ -195,22 +212,31 @@ function align_tips(scan_size, scan_step)
 	pi_stage#move("C", init_c)
 	
 	// fit electronic scan
-	fit_alignment_data($scan_folder, x)
-	fit_alignment_data($scan_folder, y)
-	fit_alignment_data($scan_folder, scan_r)
-	fit_alignment_data($scan_folder, theta)
-	fit_alignment_data($scan_folder, y_psd)
+	if (electronic_alignment)
+		fit_alignment_data($scan_folder, x)
+		fit_alignment_data($scan_folder, y)
+		fit_alignment_data($scan_folder, scan_r)
+		fit_alignment_data($scan_folder, theta)
+		fit_alignment_data($scan_folder, y_psd)
+	endif
 	
 	// fit force scan
-	fit_alignment_data($scan_folder, fx)
-	fit_alignment_data($scan_folder, fy)
-	fit_alignment_data($scan_folder, fr)
-	fit_alignment_data($scan_folder, ftheta)
+	if (force_alignment)
+		fit_alignment_data($scan_folder, fx)
+		fit_alignment_data($scan_folder, fy)
+		fit_alignment_data($scan_folder, fr)
+		fit_alignment_data($scan_folder, ftheta)
+	endif
 	
 	// close comms
 	pi_stage#close_comms()
 	tek#close_comms()
-	lockin#close_comms(); lockin2#close_comms()
+	if (electronic_alignment)
+		lockin#close_comms()
+	endif
+	if (force_alignment)
+		lockin2#close_comms()
+	endif
 	sig_gen#close_comms()
 end
 
@@ -283,11 +309,22 @@ end
 
 static function display_scan(scan_folder)
 	string scan_folder
-	wave x = $(scan_folder + ":alignment_scan_x")
-	wave y = $(scan_folder + ":alignment_scan_y")
-	wave r = $(scan_folder + ":alignment_scan_r")
-	wave theta = $(scan_folder + ":alignment_scan_theta")
-	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
+	nvar/sdfr=$gv_folder electronic_alignment
+	nvar/sdfr=$gv_folder force_alignment
+	
+	if (electronic_alignment)
+		wave x = $(scan_folder + ":alignment_scan_x")
+		wave y = $(scan_folder + ":alignment_scan_y")
+		wave r = $(scan_folder + ":alignment_scan_r")
+		wave theta = $(scan_folder + ":alignment_scan_theta")
+		wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
+	endif
+	if (force_alignment)
+		wave fx = $(scan_folder + ":alignment_scan_fx")
+		wave fy = $(scan_folder + ":alignment_scan_fy")
+		wave fr = $(scan_folder + ":alignment_scan_fr")
+		wave ftheta = $(scan_folder + ":alignment_scan_ftheta")
+	endif
 	
 	// force alignment
 	wave fx = $(scan_folder + ":alignment_scan_fx")
@@ -304,31 +341,35 @@ static function display_scan(scan_folder)
 	//textbox/c/n=texttheta/f=0/a=LT/x=10/y=58 "\\f02\\F'Symbol'q"
 	//textbox/c/n=textypsd/f=0/a=LT/x=1/y=75 "\\f02psd_y"
 	
-	appendimage/l=lx x
-	appendimage/l=ly y
-	appendimage/l=lr r
-	appendimage/l=ltheta theta
-	appendimage y_psd
-	modifyimage ''#0 ctab={*,*,geo,0}
-	modifyimage ''#1 ctab={*,*,geo,0}
-	modifyimage ''#2 ctab={*,*,geo,0}
-	modifyimage ''#3 ctab={*,*,geo,0}
-	modifyimage ''#4 ctab={*,*,geo,0}
-	modifygraph width=80
-	modifygraph height=5*80
+	if (electronic_alignment)
+		appendimage/l=lx x
+		appendimage/l=ly y
+		appendimage/l=lr r
+		appendimage/l=ltheta theta
+		appendimage y_psd
+		modifyimage ''#0 ctab={*,*,geo,0}
+		modifyimage ''#1 ctab={*,*,geo,0}
+		modifyimage ''#2 ctab={*,*,geo,0}
+		modifyimage ''#3 ctab={*,*,geo,0}
+		modifyimage ''#4 ctab={*,*,geo,0}
+		modifygraph width=80
+		modifygraph height={aspect, 5}
+	endif
 	
 	// force alignment scans
-	appendimage/l=lx/b=b1 fx
-	appendimage/l=ly/b=b1 fy
-	appendimage/l=lr/b=b1 fr
-	appendimage/l=ltheta/b=b1 ftheta
-	modifyimage ''#5 ctab={*,*,geo,0}
-	modifyimage ''#6 ctab={*,*,geo,0}
-	modifyimage ''#7 ctab={*,*,geo,0}
-	modifyimage ''#8 ctab={*,*,geo,0}
-	modifygraph width=2*80
-	modifygraph axisEnab(bottom)={0,0.49}, freePos(bottom)=0
-	modifygraph axisEnab(b1)={0.51,1.0}, freePos(b1)=0
+	if (force_alignment)
+		appendimage/l=lx/b=b1 fx
+		appendimage/l=ly/b=b1 fy
+		appendimage/l=lr/b=b1 fr
+		appendimage/l=ltheta/b=b1 ftheta
+		modifyimage ''#5 ctab={*,*,geo,0}
+		modifyimage ''#6 ctab={*,*,geo,0}
+		modifyimage ''#7 ctab={*,*,geo,0}
+		modifyimage ''#8 ctab={*,*,geo,0}
+		modifygraph width=2*80
+		modifygraph axisEnab(bottom)={0,0.49}, freePos(bottom)=0
+		modifygraph axisEnab(b1)={0.51,1.0}, freePos(b1)=0
+	endif
 	
 	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
 	modifygraph axisEnab(ly)={0.6,0.79}, freePos(ly)=0
@@ -421,6 +462,11 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	lockin#open_comms(); lockin2#open_comms()
 	tek#open_comms(); tek#initialise()
 	
+	// load scan parameters
+	nvar/sdfr=$gv_folder set = alignment_set
+	nvar/sdfr=$gv_folder electronic_alignment
+	nvar/sdfr=$gv_folder force_alignment
+	
 	// get position information
 	string pi_path = pi_stage#gv_path()
 	pi_stage#get_pos()					// 'b' is up/down, 'c' is focus
@@ -438,19 +484,26 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	variable/g $(scan_folder + ":init_pos_b") = init_b
 	variable/g $(scan_folder + ":init_pos_c") = init_c
 	string/g $(scan_folder + ":time_stamp") = time() + " " + date()
+	variable/g $(scan_folder + ":alignment_set") = set
+	variable/g $(scan_folder + ":electronic_alignment") = electronic_alignment
+	variable/g $(scan_folder + ":force_alignment") = force_alignment
 	
 	// make alignment data waves
-	make/o/n=0 $(scan_folder + ":resonance_scan_r"), $(scan_folder + ":resonance_scan_theta")
-	make/o/n=0 $(scan_folder + ":resonance_scan_y_psd")
 	make/o/n=0 $(scan_folder + ":frequency")
-	
-	// force alignment
-	make/o/n=0 $(scan_folder + ":resonance_scan_fr"), $(scan_folder + ":resonance_scan_ftheta")
-	wave res_scan_fr = $(scan_folder + ":resonance_scan_fr"), res_scan_ftheta = $(scan_folder + ":resonance_scan_ftheta")
-	
-	wave res_scan_r = $(scan_folder + ":resonance_scan_r"), res_scan_theta = $(scan_folder + ":resonance_scan_theta")
-	wave res_scan_y_psd = $(scan_folder + ":resonance_scan_y_psd")
 	wave frequency = $(scan_folder + ":frequency")
+	
+	if (electronic_alignment)
+		make/o/n=0 $(scan_folder + ":resonance_scan_r"), $(scan_folder + ":resonance_scan_theta")
+		wave res_scan_r = $(scan_folder + ":resonance_scan_r"), res_scan_theta = $(scan_folder + ":resonance_scan_theta")
+	endif
+	if (force_alignment)
+		make/o/n=0 $(scan_folder + ":resonance_scan_fr"), $(scan_folder + ":resonance_scan_ftheta")
+		wave res_scan_fr = $(scan_folder + ":resonance_scan_fr"), res_scan_ftheta = $(scan_folder + ":resonance_scan_ftheta")
+	endif
+	
+	make/o/n=0 $(scan_folder + ":resonance_scan_y_psd")
+	wave res_scan_y_psd = $(scan_folder + ":resonance_scan_y_psd")
+	
 	dowindow/k tip_resonance
 	display/n=tip_resonance
 	appendtograph res_scan_y_psd vs frequency
@@ -477,22 +530,36 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	variable/c data
 	variable i = 0
 	tek#get_waveform_params("2")
-	lockin#aphs(); lockin2#aphs(); sleep/s 1
+	if (electronic_alignment)
+		lockin#aphs()
+	endif
+	if (force_alignment)
+		lockin2#aphs()
+	endif
+	sleep/s 1
 	do
 		sig_gen#set_frequency(freq); sleep/s 0.5
-		data = lockin#measure_rtheta()
-		redimension/n=(i+1) res_scan_r, res_scan_theta, res_scan_y_psd, frequency
-		res_scan_r[i] = real(data); res_scan_theta[i] = imag(data)
+		redimension/n=(i+1) frequency
+		frequency[i] = freq
+		
+		// electronic alignment
+		if (electronic_alignment)
+			data = lockin#measure_rtheta()
+			redimension/n=(i+1) res_scan_r, res_scan_theta
+			res_scan_r[i] = real(data); res_scan_theta[i] = imag(data)
+		endif
 		
 		// force alignment
-		data = lockin2#measure_rtheta()
-		redimension/n=(i+1) res_scan_fr, res_scan_ftheta
-		res_scan_fr[i] = real(data); res_scan_ftheta[i] = imag(data)
+		if (force_alignment)
+			data = lockin2#measure_rtheta()
+			redimension/n=(i+1) res_scan_fr, res_scan_ftheta
+			res_scan_fr[i] = real(data); res_scan_ftheta[i] = imag(data)
+		endif
 		
 		wave w = tek#import_data_free("2")
+		redimension/n=(i+1) res_scan_y_psd
 		res_scan_y_psd[i] = wavemax(w) - wavemin(w)
 		
-		frequency[i] = freq
 		doupdate
 		i += 1
 		freq += freq_inc
@@ -501,7 +568,12 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	// close communications
 	pi_stage#open_comms()
 	sig_gen#open_comms()
-	lockin#open_comms(); lockin2#close_comms()
+	if (electronic_alignment)
+		lockin#open_comms()
+	endif
+	if (force_alignment)
+		lockin2#close_comms()
+	endif
 	tek#close_comms()
 end
 

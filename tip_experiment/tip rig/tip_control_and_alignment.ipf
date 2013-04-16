@@ -285,6 +285,16 @@ function tip_control_and_alignment() : panel
 	top += 20
 	button res_scan, pos={left, top}, size={70,40}, proc=resonance_scan_button, title="Resonance\rScan"
 	button res_scan, fColor=(65280,65280,0)
+	
+		// electronic/force alignment set/display
+	left += 70
+	setvariable set_elec_align, pos={left, top}, size={140,15}, bodyWidth=30, title="Electronic Alignment"
+	setvariable set_elec_align, limits={0,1,1}, value= root:global_variables:tip_alignment:electronic_alignment
+	top += 20
+	setvariable set_force_align, pos={left, top}, size={140,15}, bodyWidth=30, title="Force Alignment"
+	setvariable set_force_align, limits={0,1,1}, value= root:global_variables:tip_alignment:force_alignment
+	top -= 20; left -= 70
+	
 		// hp signal generator controls
 	left += 110; top -= 3*20
 	setvariable x20_amplitude, pos={left, top}, size={105,15}, bodyWidth=50, proc=set_x20_amplitude_panel, title="Amplitude"
