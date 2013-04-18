@@ -206,7 +206,7 @@ function align_tips(scan_size, scan_step)
 		ic += 1
 	while (ic < imax)
 
-	pi_stage#set_dco(1)
+	//pi_stage#set_dco(1)
 	sleep/s 1
 	pi_stage#move("B", init_b)
 	pi_stage#move("C", init_c)
@@ -353,7 +353,7 @@ static function display_scan(scan_folder)
 		modifyimage ''#3 ctab={*,*,geo,0}
 		modifyimage ''#4 ctab={*,*,geo,0}
 		modifygraph width=80
-		modifygraph height={aspect, 5}
+		modifygraph height=5*80
 	endif
 	
 	// force alignment scans
