@@ -52,22 +52,25 @@ function align_tips(scan_size, scan_step)
 	nvar/sdfr=$gv_folder electronic_alignment
 	nvar/sdfr=$gv_folder force_alignment
 	
-	// initialise piezo information
-	string pi_path = pi_stage#gv_path()
-	variable init_a = pi_stage#get_pos_ch("a")
-	variable init_b = pi_stage#get_pos_ch("b")
-	variable init_c = pi_stage#get_pos_ch("c")
-	nvar/sdfr=$pi_path pos_api = pos_a
-	nvar/sdfr=$pi_path pos_bpi = pos_b
-	nvar/sdfr=$pi_path pos_cpi = pos_c
-	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
-	variable gain = 1e8
-	// turn dco off once you have recorded the initial position
+	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
 	pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
 	pi_stage#set_dco_b(0)
 	pi_stage#set_dco_c(0)
 	sleep/s 1
+	
+	// initialise piezo positions
+	string pi_path = pi_stage#gv_path()
+	pi_stage#get_pos()
+	nvar/sdfr=$pi_path pos_api = pos_a
+	nvar/sdfr=$pi_path pos_bpi = pos_b
+	nvar/sdfr=$pi_path pos_cpi = pos_c
+	variable init_a = pos_api //pi_stage#get_pos_ch("a")
+	variable init_b = pos_bpi //pi_stage#get_pos_ch("b")
+	variable init_c = pso_cpi //pi_stage#get_pos_ch("c")
+	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
+	variable gain = 1e8
+	
 	// move to starting position
 	pi_stage#move("b", pos_b)
 	pi_stage#move("c", pos_c)
@@ -99,6 +102,8 @@ function align_tips(scan_size, scan_step)
 	
 	// make alignment data waves
 	variable imax = scan_size/scan_step
+	
+// consider the scaling of the wave and whether this affects the final position
 	
 	// lock-in 1
 	if (electronic_alignment)
@@ -144,9 +149,6 @@ function align_tips(scan_size, scan_step)
 	// plot scan
 	display_scan(scan_folder)
 	
-	pos_b = init_b - scan_size/2
-	pos_c = init_c - scan_size/2
-	
 	tek#get_waveform_params("2")
 	if (electronic_alignment)
 		lockin#aphs()
@@ -156,16 +158,19 @@ function align_tips(scan_size, scan_step)
 	endif
 	sleep/s 1
 	
+	pos_b = init_b - scan_size/2
+	pos_c = init_c - scan_size/2
+	
+// possibly rearrange the move commands to be after the loop has finished
+// this may have something to do with the way Igor stores/scales 2d waves.
 	variable ib = 0, ic = 0
 	variable/c data
 	do
 		pi_stage#move("C", pos_c)
-		sleep/s 0.5
+		sleep/s 0.25
 		do
 			pi_stage#move("B", pos_b)
-			sleep/s 0.5
-			x_pos[ib][ic] = pos_bpi
-			y_pos[ib][ic] = pos_cpi
+			sleep/s 0.25
 			
 			// electronic lock-in measurements
 			if (electronic_alignment)
@@ -192,6 +197,10 @@ function align_tips(scan_size, scan_step)
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
 			
+			// record position
+			x_pos[ib][ic] = pos_bpi
+			y_pos[ib][ic] = pos_cpi
+			
 			doupdate
 			// increment B position
 			pos_b += scan_step
@@ -206,8 +215,8 @@ function align_tips(scan_size, scan_step)
 		ic += 1
 	while (ic < imax)
 
-	pi_stage#set_dco(1)
-	sleep/s 1
+	// move to initial positions with the dco in the same confiuration as the experiment was taken
+	// dco possibly causes some deviation from the correct alignment position
 	pi_stage#move("B", init_b)
 	pi_stage#move("C", init_c)
 	
@@ -249,17 +258,18 @@ function fit_alignment_data(scan_folder, data)
 	
 	variable z0, a0, x0, sigx, y0, sigy, corr
 	imagestats data
-	variable ix = dimsize(data, 0)-1, iy = dimsize(data, 1)-1
-	z0 = 1/4 * (data[0][0] + data[ix][0] + data[0][iy] + data[ix][iy])
-	a0 = data[ix/2][iy/2] - z0
-	x0 = dimoffset(data, 0) + ix/2 * dimdelta(data, 0)
-	sigx = 0.5
-	y0 = dimoffset(data, 1) + iy/2 * dimdelta(data, 1)
-	sigy = 0.5
-	corr = 0
 	
-	// Constraints on fit
-	// Note: {K0,K1,K2,K3,K4,K5,K6} = {z0,a0,x0,sigx,y0,sigy,corr}
+	variable ix = dimsize(data, 0)-1, iy = dimsize(data, 1)-1
+	z0 = 1/4 * (data[0][0] + data[ix][0] + data[0][iy] + data[ix][iy])		// background
+	a0 = data[ix/2][iy/2] - z0										// amplitude
+	x0 = dimoffset(data, 0) + ix/2 * dimdelta(data, 0)					// x centre
+	sigx = 0.25													// x width
+	y0 = dimoffset(data, 1) + iy/2 * dimdelta(data, 1)					// y centre
+	sigy = 0.25													// y width
+	corr = 0														// correlation
+	
+	// constraints on fit
+	// note: {K0,K1,K2,K3,K4,K5,K6} = {z0, a0, x0, sigx, y0, sigy, corr}
 	make/o/t/n=0 scan_folder:t_constraints
 	wave/t/sdfr=scan_folder t_constraints
 	variable q = 0		// Constraint counter
@@ -288,8 +298,8 @@ function fit_alignment_data(scan_folder, data)
 	make/d/n=7/o scan_folder:w_coef
 	wave/sdfr=scan_folder w_coef
 	w_coef[0] = {z0, a0, x0, sigx, y0, sigy, corr}
-	//funcfitmd/nthr=0/q gauss2d w_coef  data /d/c=t_constraints
-	curvefit/x=1/nthr=0/q gauss2d, kwcwave=w_coef, data /d/c=t_constraints
+	funcfitmd/nthr=0/q gauss2d_elliptic w_coef  data /d/c=t_constraints
+	//curvefit/x=1/nthr=0/q gauss2d, kwcwave=w_coef, data /d/c=t_constraints
 	modifycontour/w=tip_alignment $("fit_" + nameofwave(data)) labels=0, ctabLines={*,*,Geo,0}
 	wave w_sigma
 	setdatafolder root:
@@ -305,6 +315,12 @@ function fit_alignment_data(scan_folder, data)
 	//data#check_gvpath(gv_folder)
 	//variable/g $(gv_folder):x0 = w_coef[2]
 	//variable/g $(gv_folder):y0 = w_coef[4]
+end
+
+static function gauss2d_elliptic(w, x, y) : fitfunc
+	wave w
+	variable x, y
+	return w[0]+w[1]*exp(-1/2/(1-w[6]^2)*((x-w[2])^2/w[3]^2+(y-w[4])^2/w[5]^2)-2*w[6]*(x-w[2])*(y-w[4])/w[3]/w[5])
 end
 
 static function display_scan(scan_folder)

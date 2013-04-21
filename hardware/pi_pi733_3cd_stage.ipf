@@ -32,7 +32,7 @@ static function/s gv_path()
 	return gv_folder
 end
 
-function startup()
+static function startup()
 	visa#cmd(hardware_id, "onl 1\n")
 	sleep/s 0.5
 	close_loop()
@@ -42,7 +42,7 @@ function startup()
 	get_velocity()
 end
 
-function shutdown()
+static function shutdown()
 	zero_stage_pos()
 	sleep/s 20.0
 	open_loop()
@@ -51,7 +51,7 @@ function shutdown()
 end
 
 // set pi stage to 'closed-loop' operation (required for 'move_pi' command to work)
-function close_loop()
+static function close_loop()
 	visa#cmd(hardware_id, "svo a1\n")
 	visa#cmd(hardware_id, "svo b1\n")
 	visa#cmd(hardware_id, "svo c1\n")
@@ -59,7 +59,7 @@ end
 
 // set pi stage to 'open-loop' operation
 // (always run before turning the controller to 'offline mode' and then powering down)
-function open_loop()
+static function open_loop()
 	visa#cmd(hardware_id, "svo a0\n")
 	visa#cmd(hardware_id, "svo b0\n")
 	visa#cmd(hardware_id, "svo c0\n")
@@ -81,12 +81,12 @@ static function move(ch, pos)
 	visa#cmd(hardware_id, "mov " + ch + num2str(pos) + "\n")
 	nvar vel = $(gv_folder + ":vel_" + ch)
 	variable translation_time = abs((pos - pos0) / vel)
-	variable delay = 0.25 + translation_time
+	variable delay = 0.25 + translation_time							// add 0.25 to translation time
 	sleep/s delay
 	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
-function move_rel(ch, rpos)
+static function move_rel(ch, rpos)
 	string ch
 	variable rpos
 	visa#cmd(hardware_id, "mvr " + ch + num2str(rpos) + "\n")
@@ -126,7 +126,7 @@ static function get_dco()
 	variable/g $(gv_folder + ":dco_c") = visa#read(hardware_id, "dco? c\n")
 end
 
-function set_step(step)
+static function set_step(step)
 	variable step
 	variable/g $(gv_folder + ":step_a") = step
 	variable/g $(gv_folder + ":step_b") = step
@@ -162,19 +162,19 @@ static function set_velocity(v)
 	get_velocity()
 end
 
-function set_dco_a(dco)
+static function set_dco_a(dco)
 	variable dco
 	visa#cmd(hardware_id, "dco a" + num2str(dco) + "\n")
 	variable/g $(gv_folder + ":dco_a") = visa#read(hardware_id, "dco? a\n")
 end
 
-function set_dco_b(dco)
+static function set_dco_b(dco)
 	variable dco
 	visa#cmd(hardware_id, "dco b" + num2str(dco) + "\n")
 	variable/g $(gv_folder + ":dco_b") = visa#read(hardware_id, "dco? b\n")
 end
 
-function set_dco_c(dco)
+static function set_dco_c(dco)
 	variable dco
 	visa#cmd(hardware_id, "dco c" + num2str(dco) + "\n")
 	variable/g $(gv_folder + ":dco_c") = visa#read(hardware_id, "dco? c\n")
@@ -188,13 +188,13 @@ static function set_dco(dco)
 	get_dco()
 end
 
-function zero_stage_pos()
+static function zero_stage_pos()
 	visa#cmd(hardware_id, "mov a0\n")
 	visa#cmd(hardware_id, "mov b0\n")
 	visa#cmd(hardware_id, "mov c0\n")
 end
 
-function stop()
+static function stop()
 	visa#cmd(hardware_id, "stp a\n")
 end
 
