@@ -216,9 +216,12 @@ function align_tips(scan_size, scan_step)
 	while (ic < imax)
 
 	// move to initial positions with the dco in the same confiuration as the experiment was taken
-	// dco possibly causes some deviation from the correct alignment position
 	pi_stage#move("B", init_b)
 	pi_stage#move("C", init_c)
+	
+	// dco possibly causes some deviation from the correct alignment position
+	//pi_stage#set_dco(1)
+	//sleep/s 1
 	
 	// fit electronic scan
 	if (electronic_alignment)
@@ -369,7 +372,7 @@ static function display_scan(scan_folder)
 		modifyimage ''#3 ctab={*,*,geo,0}
 		modifyimage ''#4 ctab={*,*,geo,0}
 		modifygraph width=80
-		modifygraph height={aspect, 5}
+		modifygraph height=5*80
 	endif
 	
 	// force alignment scans
@@ -523,10 +526,14 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	dowindow/k tip_resonance
 	display/n=tip_resonance
 	appendtograph res_scan_y_psd vs frequency
-	appendtograph/l=force_mag res_scan_fr vs frequency
-	appendtograph/r=force_phase res_scan_ftheta vs frequency
-	appendtograph/l=lr res_scan_r vs frequency
-	appendtograph/l=lt res_scan_theta vs frequency
+	if (force_alignment)
+		appendtograph/l=force_mag res_scan_fr vs frequency
+		appendtograph/r=force_phase res_scan_ftheta vs frequency
+	endif
+	if (electronic_alignment)
+		appendtograph/l=lr res_scan_r vs frequency
+		appendtograph/l=lt res_scan_theta vs frequency
+	endif
 	
 	label left "force"; label lr "3w current (pA)"; label lt "phase (deg)"; label bottom "frequency (Hz)"
 	modifygraph mirror=0,tick=2,standoff=0
@@ -538,7 +545,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	modifygraph freePos(force_mag)=0, freepos(force_mag)=0, lblpos(force_phase)=0, lblpos(force_phase)=0
 	
 	modifygraph freePos(lt)=0, freepos(lr)=0, lblpos(lt)=0, lblpos(lr)=0
-	modifygraph width=250, height={aspect, 2}
+	modifygraph width=200, height={aspect, 2}
 	modifygraph muloffset(''#1)={0,10000}
 	showinfo
 	
