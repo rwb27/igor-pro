@@ -67,7 +67,7 @@ function align_tips(scan_size, scan_step)
 	nvar/sdfr=$pi_path pos_cpi = pos_c
 	variable init_a = pos_api //pi_stage#get_pos_ch("a")
 	variable init_b = pos_bpi //pi_stage#get_pos_ch("b")
-	variable init_c = pso_cpi //pi_stage#get_pos_ch("c")
+	variable init_c = pos_cpi //pi_stage#get_pos_ch("c")
 	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
 	variable gain = 1e8
 	
@@ -75,6 +75,8 @@ function align_tips(scan_size, scan_step)
 	pi_stage#move("b", pos_b)
 	pi_stage#move("c", pos_c)
 	sleep/s 1
+	pos_b = init_b - scan_size/2
+	pos_c = init_c - scan_size/2
 	
 	// initialise dso parameters
 	dfref tek_path = $tek#gv_path()
@@ -115,8 +117,8 @@ function align_tips(scan_size, scan_step)
 		wave y = $(scan_folder + ":alignment_scan_y")
 		wave scan_r = $(scan_folder + ":alignment_scan_r")
 		wave theta = $(scan_folder + ":alignment_scan_theta")
-		setscale/p x, init_b - scan_size/2, scan_step, x, y, scan_r, theta
-		setscale/p y, init_c - scan_size/2, scan_step, x, y, scan_r, theta
+		setscale/p x, pos_b, scan_step, x, y, scan_r, theta
+		setscale/p y, pos_c, scan_step, x, y, scan_r, theta
 	endif
 	
 	nvar/sdfr=$tek#gv_path() num_points
@@ -157,9 +159,6 @@ function align_tips(scan_size, scan_step)
 		lockin2#aphs()
 	endif
 	sleep/s 1
-	
-	pos_b = init_b - scan_size/2
-	pos_c = init_c - scan_size/2
 	
 // possibly rearrange the move commands to be after the loop has finished
 // this may have something to do with the way Igor stores/scales 2d waves.
@@ -320,7 +319,7 @@ function fit_alignment_data(scan_folder, data)
 	//variable/g $(gv_folder):y0 = w_coef[4]
 end
 
-static function gauss2d_elliptic(w, x, y) : fitfunc
+function gauss2d_elliptic(w, x, y) : fitfunc
 	wave w
 	variable x, y
 	return w[0]+w[1]*exp(-1/2/(1-w[6]^2)*((x-w[2])^2/w[3]^2+(y-w[4])^2/w[5]^2)-2*w[6]*(x-w[2])*(y-w[4])/w[3]/w[5])
