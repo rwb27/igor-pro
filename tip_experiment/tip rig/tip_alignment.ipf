@@ -51,6 +51,7 @@ function align_tips(scan_size, scan_step)
 	nvar/sdfr=$gv_folder set = alignment_set
 	nvar/sdfr=$gv_folder electronic_alignment
 	nvar/sdfr=$gv_folder force_alignment
+	variable gain = 1e8			// 100 MV/A transimpedance amplifier
 	
 	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
@@ -69,7 +70,6 @@ function align_tips(scan_size, scan_step)
 	variable init_b = pos_bpi //pi_stage#get_pos_ch("b")
 	variable init_c = pos_cpi //pi_stage#get_pos_ch("c")
 	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
-	variable gain = 1e8
 	
 	// move to starting position
 	pi_stage#move("b", pos_b)
@@ -484,6 +484,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	nvar/sdfr=$gv_folder set = alignment_set
 	nvar/sdfr=$gv_folder electronic_alignment
 	nvar/sdfr=$gv_folder force_alignment
+	variable gain = 1e8			// 100 MV/A transimpedance amplifier
 	
 	// get position information
 	string pi_path = pi_stage#gv_path()
@@ -513,10 +514,14 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	if (electronic_alignment)
 		make/o/n=0 $(scan_folder + ":resonance_scan_r"), $(scan_folder + ":resonance_scan_theta")
 		wave res_scan_r = $(scan_folder + ":resonance_scan_r"), res_scan_theta = $(scan_folder + ":resonance_scan_theta")
+		setscale d, 0, 0, "A", res_scan_r
+		setscale d, 0, 0, "\degree", res_scan_theta
 	endif
 	if (force_alignment)
 		make/o/n=0 $(scan_folder + ":resonance_scan_fr"), $(scan_folder + ":resonance_scan_ftheta")
 		wave res_scan_fr = $(scan_folder + ":resonance_scan_fr"), res_scan_ftheta = $(scan_folder + ":resonance_scan_ftheta")
+		setscale d, 0, 0, "V", res_scan_fr
+		setscale d, 0, 0, "\degree", res_scan_ftheta
 	endif
 	
 	make/o/n=0 $(scan_folder + ":resonance_scan_y_psd")
@@ -568,7 +573,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 		if (electronic_alignment)
 			data = lockin#measure_rtheta()
 			redimension/n=(i+1) res_scan_r, res_scan_theta
-			res_scan_r[i] = real(data); res_scan_theta[i] = imag(data)
+			res_scan_r[i] = real(data)/gain; res_scan_theta[i] = imag(data)
 		endif
 		
 		// force alignment
