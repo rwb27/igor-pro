@@ -65,7 +65,7 @@ static function open_loop()
 	visa#cmd(hardware_id, "svo c0\n")
 end
 
-static function move(ch, pos)
+static function move_abs(ch, pos)
 	string ch
 	variable pos
 	if  ((stringmatch(ch, "A") == 1) || (stringmatch(ch, "B") == 1))		//Stops the stage being commanded to move beyond its limits of movement	
@@ -86,13 +86,30 @@ static function move(ch, pos)
 	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
+static function move(ch, pos)
+	string ch
+	variable pos
+	if  ((stringmatch(ch, "A") == 1) || (stringmatch(ch, "B") == 1))		//Stops the stage being commanded to move beyond its limits of movement	
+		if ((pos < 0) || (pos >= 100))
+	    		abort "out of range (x, y)"
+		endif
+	else
+		if ((pos < 0) || (pos >= 10))
+	    		abort "out of range (z)"
+		endif
+	endif
+	nvar/sdfr=$gv_folder ch_pos = $("pos_" + ch)
+	ch_pos = pos
+	visa#cmd(hardware_id, "mov " + ch + num2str(pos) + "\n")
+end
+
 static function move_rel(ch, rpos)
 	string ch
 	variable rpos
 	visa#cmd(hardware_id, "mvr " + ch + num2str(rpos) + "\n")
-	nvar vel = $(gv_folder + ":vel_" + ch)
-	sleep/s 0.1 + abs(rpos / vel)
-	variable/g $(gv_folder + ":pos_" + ch) = visa#read(hardware_id, "pos? " + ch + "\n")
+	nvar/sdfr=$gv_folder pos = $("pos_" + ch), vel = $("vel_" + ch)
+	sleep/s 0.25 + abs(rpos / vel)
+	pos = visa#read(hardware_id, "pos? " + ch + "\n")
 end
 
 static function get_pos_ch(ch)

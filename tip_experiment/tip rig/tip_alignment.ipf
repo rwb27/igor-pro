@@ -35,9 +35,6 @@ function align_tips(scan_size, scan_step)
 	variable scan_size, scan_step
 	
 	// open comms
-	//pi_stage#close_comms()
-	//lockin#close_comms()
-	//tek#close_comms()
 	pi_stage#open_comms()
 	lockin#open_comms(); lockin2#open_comms()
 	tek#open_comms(); tek#initialise()
@@ -51,7 +48,7 @@ function align_tips(scan_size, scan_step)
 	nvar/sdfr=$gv_folder set = alignment_set
 	nvar/sdfr=$gv_folder electronic_alignment
 	nvar/sdfr=$gv_folder force_alignment
-	variable gain = 1e8			// 100 MV/A transimpedance amplifier
+	variable gain = 1e8				// 100 MV/A transimpedance amplifier
 	
 	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
@@ -72,9 +69,9 @@ function align_tips(scan_size, scan_step)
 	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
 	
 	// move to starting position
-	pi_stage#move("b", pos_b)
-	pi_stage#move("c", pos_c)
-	sleep/s 1
+	//pi_stage#move("b", pos_b)
+	//pi_stage#move("c", pos_c)
+	//sleep/s 1
 	pos_b = init_b - scan_size/2
 	pos_c = init_c - scan_size/2
 	
@@ -105,7 +102,7 @@ function align_tips(scan_size, scan_step)
 	// make alignment data waves
 	variable imax = scan_size/scan_step
 	
-// consider the scaling of the wave and whether this affects the final position
+// consider the scaling of the wave and whether this affects the final position	UNCHANGED
 	
 	// lock-in 1
 	if (electronic_alignment)
@@ -119,6 +116,7 @@ function align_tips(scan_size, scan_step)
 		wave theta = $(scan_folder + ":alignment_scan_theta")
 		setscale/p x, pos_b, scan_step, x, y, scan_r, theta
 		setscale/p y, pos_c, scan_step, x, y, scan_r, theta
+		setscale d, 0, 0, "\\degree", theta
 	endif
 	
 	nvar/sdfr=$tek#gv_path() num_points
@@ -126,8 +124,8 @@ function align_tips(scan_size, scan_step)
 	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
 	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
 	wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
-	setscale/p x, init_b - scan_size/2, scan_step, y_psd, y_psd_trace
-	setscale/p y, init_c - scan_size/2, scan_step, y_psd, y_psd_trace
+	setscale/p x, pos_b, scan_step, y_psd, y_psd_trace
+	setscale/p y, pos_c, scan_step, y_psd, y_psd_trace
 	
 	// lock-in 2
 	if (force_alignment)
@@ -139,14 +137,10 @@ function align_tips(scan_size, scan_step)
 		wave fy = $(scan_folder + ":alignment_scan_fy")
 		wave fr = $(scan_folder + ":alignment_scan_fr")
 		wave ftheta = $(scan_folder + ":alignment_scan_ftheta")
-		setscale/p x, init_b - scan_size/2, scan_step, fx, fy, fr, ftheta
-		setscale/p y, init_c - scan_size/2, scan_step, fx, fy, fr, ftheta
+		setscale/p x, pos_b, scan_step, fx, fy, fr, ftheta
+		setscale/p y, pos_c, scan_step, fx, fy, fr, ftheta
+		setscale d, 0, 0, "\\degree", ftheta 
 	endif
-	
-	make/o/n=(imax, imax) $(scan_folder + ":x_pos")
-	make/o/n=(imax, imax) $(scan_folder + ":y_pos")
-	wave x_pos = $(scan_folder + ":x_pos")
-	wave y_pos = $(scan_folder + ":y_pos")
 	
 	// plot scan
 	display_scan(scan_folder)
@@ -160,16 +154,19 @@ function align_tips(scan_size, scan_step)
 	endif
 	sleep/s 1
 	
-// possibly rearrange the move commands to be after the loop has finished
+// possibly rearrange the move commands to be after the loop has finished		DONE
 // this may have something to do with the way Igor stores/scales 2d waves.
 	variable ib = 0, ic = 0
 	variable/c data
+	pi_stage#move("b", pos_b)
+	pi_stage#move("c", pos_c)
+	sleep/s 1
 	do
-		pi_stage#move("C", pos_c)
-		sleep/s 0.25
+		//pi_stage#move("C", pos_c)
+		//sleep/s 0.25
 		do
-			pi_stage#move("B", pos_b)
-			sleep/s 0.25
+			//pi_stage#move("B", pos_b)
+			//sleep/s 0.25
 			
 			// electronic lock-in measurements
 			if (electronic_alignment)
@@ -196,14 +193,14 @@ function align_tips(scan_size, scan_step)
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
 			
-			// record position
-			x_pos[ib][ic] = pos_bpi
-			y_pos[ib][ic] = pos_cpi
-			
 			doupdate
 			// increment B position
 			pos_b += scan_step
 			ib += 1
+			
+			// move to new position
+			pi_stage#move("b", pos_b)
+			sleep/s 0.5
 		while (ib < imax)
 		// move back to initial B position
 		pos_b = init_b - scan_size/2
@@ -212,6 +209,9 @@ function align_tips(scan_size, scan_step)
 		// increment C position
 		pos_c += scan_step
 		ic += 1
+		// move to new position
+		pi_stage#move("c", pos_c)
+		sleep/s 0.5
 	while (ic < imax)
 
 	// move to initial positions with the dco in the same confiuration as the experiment was taken
@@ -262,7 +262,7 @@ function fit_alignment_data(scan_folder, data)
 	imagestats data
 	
 	variable ix = dimsize(data, 0)-1, iy = dimsize(data, 1)-1
-	z0 = 1/4 * (data[0][0] + data[ix][0] + data[0][iy] + data[ix][iy])		// background
+	z0 = 0.25 * (data[0][0] + data[ix][0] + data[0][iy] + data[ix][iy])		// background
 	a0 = data[ix/2][iy/2] - z0										// amplitude
 	x0 = dimoffset(data, 0) + ix/2 * dimdelta(data, 0)					// x centre
 	sigx = 0.25													// x width
@@ -302,12 +302,13 @@ function fit_alignment_data(scan_folder, data)
 	w_coef[0] = {z0, a0, x0, sigx, y0, sigy, corr}
 	funcfitmd/nthr=0/q gauss2d_elliptic w_coef  data /d/c=t_constraints
 	//curvefit/x=1/nthr=0/q gauss2d, kwcwave=w_coef, data /d/c=t_constraints
-	modifycontour/w=tip_alignment $("fit_" + nameofwave(data)) labels=0, ctabLines={*,*,Geo,0}
+	modifycontour/w=tip_alignment $("fit_" + nameofwave(data)) labels=0//, ctabLines={*,*,Geo,0}
 	wave w_sigma
 	setdatafolder root:
 	
 	string expr = "(.*)_(.*)", wave_id, rest_of_wavename
 	splitstring/e=(expr) nameofwave(data), rest_of_wavename, wave_id
+	duplicate/o w_coef, scan_folder:$(wave_id + "_w_coef")
 	variable/g scan_folder:$(wave_id + "_x0") = w_coef[2]
 	variable/g scan_folder:$(wave_id + "_y0") = w_coef[4]
 	
