@@ -34,6 +34,7 @@ end
 function align_tips(scan_size, scan_step)
 	variable scan_size, scan_step
 	
+	// SETUP
 	// open comms
 	pi_stage#open_comms()
 	lockin#open_comms(); lockin2#open_comms()
@@ -52,21 +53,30 @@ function align_tips(scan_size, scan_step)
 	
 	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
+	//pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
+	//pi_stage#set_dco_b(0)
+	//pi_stage#set_dco_c(0)
+	//sleep/s 1
+	
+	// initialise piezo positions
+	string pi_path = pi_stage#gv_path()
+	pi_stage#set_dco(1); sleep/s 1
+	pi_stage#get_pos()
+	nvar/sdfr=$pi_path pos_a0 = pos_a
+	nvar/sdfr=$pi_path pos_b0 = pos_b
+	nvar/sdfr=$pi_path pos_c0 = pos_c
+	variable init_a = pos_a0 //pi_stage#get_pos_ch("a")
+	variable init_b = pos_b0 //pi_stage#get_pos_ch("b")
+	variable init_c = pos_c0 //pi_stage#get_pos_ch("c")
+	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
+	print "starting at", pos_b, pos_c
+
+	// turn dco off before you have recorded the initial position to keep things consistent with end set
+	// DCO off for dynamic movement, DCO on for holding static
 	pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
 	pi_stage#set_dco_b(0)
 	pi_stage#set_dco_c(0)
 	sleep/s 1
-	
-	// initialise piezo positions
-	string pi_path = pi_stage#gv_path()
-	pi_stage#get_pos()
-	nvar/sdfr=$pi_path pos_api = pos_a
-	nvar/sdfr=$pi_path pos_bpi = pos_b
-	nvar/sdfr=$pi_path pos_cpi = pos_c
-	variable init_a = pos_api //pi_stage#get_pos_ch("a")
-	variable init_b = pos_bpi //pi_stage#get_pos_ch("b")
-	variable init_c = pos_cpi //pi_stage#get_pos_ch("c")
-	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
 	
 	// move to starting position
 	//pi_stage#move("b", pos_b)
@@ -102,18 +112,16 @@ function align_tips(scan_size, scan_step)
 	// make alignment data waves
 	variable imax = scan_size/scan_step
 	
-// consider the scaling of the wave and whether this affects the final position	UNCHANGED
-	
 	// lock-in 1
 	if (electronic_alignment)
 		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_x")
 		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y")
 		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_r")
 		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_theta")
-		wave x = $(scan_folder + ":alignment_scan_x")
-		wave y = $(scan_folder + ":alignment_scan_y")
-		wave scan_r = $(scan_folder + ":alignment_scan_r")
-		wave theta = $(scan_folder + ":alignment_scan_theta")
+		wave/sdfr=$scan_folder x = alignment_scan_x
+		wave/sdfr=$scan_folder y = alignment_scan_y
+		wave/sdfr=$scan_folder scan_r = alignment_scan_r
+		wave/sdfr=$scan_folder theta = alignment_scan_theta
 		setscale/p x, pos_b, scan_step, x, y, scan_r, theta
 		setscale/p y, pos_c, scan_step, x, y, scan_r, theta
 		setscale d, 0, 0, "\\degree", theta
@@ -133,29 +141,27 @@ function align_tips(scan_size, scan_step)
 		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fy")
 		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fr")
 		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_ftheta")
-		wave fx = $(scan_folder + ":alignment_scan_fx")
-		wave fy = $(scan_folder + ":alignment_scan_fy")
-		wave fr = $(scan_folder + ":alignment_scan_fr")
-		wave ftheta = $(scan_folder + ":alignment_scan_ftheta")
+		wave/sdfr=$scan_folder fx = alignment_scan_fx
+		wave/sdfr=$scan_folder fy = alignment_scan_fy
+		wave/sdfr=$scan_folder fr = alignment_scan_fr
+		wave/sdfr=$scan_folder ftheta = alignment_scan_ftheta
 		setscale/p x, pos_b, scan_step, fx, fy, fr, ftheta
 		setscale/p y, pos_c, scan_step, fx, fy, fr, ftheta
 		setscale d, 0, 0, "\\degree", ftheta 
 	endif
 	
-	// plot scan
-	display_scan(scan_folder)
+	display_scan(scan_folder)			// display scan
 	
-	tek#get_waveform_params("2")
+	tek#get_waveform_params("2")			// get oscilloscope waveform scaling parameters
 	if (electronic_alignment)
-		lockin#aphs()
+		lockin#aphs()				// auto-phase lock-in amplifier
 	endif
 	if (force_alignment)
-		lockin2#aphs()
+		lockin2#aphs()				// auto-phase lock-in amplifier
 	endif
-	sleep/s 1
+	sleep/s 1					// wait for auto-phase to complete
 	
-// possibly rearrange the move commands to be after the loop has finished		DONE
-// this may have something to do with the way Igor stores/scales 2d waves.
+	// MEASUREMENTS
 	variable ib = 0, ic = 0
 	variable/c data
 	pi_stage#move("b", pos_b)
@@ -167,8 +173,7 @@ function align_tips(scan_size, scan_step)
 		do
 			//pi_stage#move("B", pos_b)
 			//sleep/s 0.25
-			
-			// electronic lock-in measurements
+			// electronic lock-in measurements //
 			if (electronic_alignment)
 				data = lockin#measure_xy()
 				x[ib][ic] = real(data)
@@ -177,8 +182,7 @@ function align_tips(scan_size, scan_step)
 				scan_r[ib][ic] = real(data)/gain
 				theta[ib][ic] = imag(data)
 			endif
-			
-			// force lock-in measurements
+			// force lock-in measurements //
 			if (force_alignment)
 				data = lockin2#measure_xy()
 				fx[ib][ic] = real(data)
@@ -187,41 +191,52 @@ function align_tips(scan_size, scan_step)
 				fr[ib][ic] = real(data)/gain
 				ftheta[ib][ic] = imag(data)
 			endif
-			
-			// oscilloscope force measurement
+			// oscilloscope force measurement //
 			wave w = tek#import_data_free("2")
 			y_psd_trace[ib][ic][] = w[r]
 			y_psd[ib][ic] = wavemax(w) - wavemin(w)
 			
 			doupdate
-			// increment B position
+			// increment B position //
 			pos_b += scan_step
 			ib += 1
-			
-			// move to new position
+			// move to new position //
 			pi_stage#move("b", pos_b)
 			sleep/s 0.5
 		while (ib < imax)
-		// move back to initial B position
+		// move back to initial B position //
 		pos_b = init_b - scan_size/2
-		pi_stage#move("B", pos_b)
+		pi_stage#move("b", pos_b)
 		ib = 0
-		// increment C position
+		// increment C position //
 		pos_c += scan_step
 		ic += 1
-		// move to new position
+		// move to new position //
 		pi_stage#move("c", pos_c)
 		sleep/s 0.5
 	while (ic < imax)
 
 	// move to initial positions with the dco in the same confiuration as the experiment was taken
-	pi_stage#move("B", init_b)
-	pi_stage#move("C", init_c)
+	pi_stage#move("b", init_b)
+	pi_stage#move("c", init_c)
+	print "ending at", pos_b, pos_c
 	
 	// dco possibly causes some deviation from the correct alignment position
-	//pi_stage#set_dco(1)
-	//sleep/s 1
+	pi_stage#set_dco(1)
+	sleep/s 1
 	
+	// close comms
+	pi_stage#close_comms()
+	tek#close_comms()
+	if (electronic_alignment)
+		lockin#close_comms()
+	endif
+	if (force_alignment)
+		lockin2#close_comms()
+	endif
+	sig_gen#close_comms()
+
+	// ANALYSIS
 	// fit electronic scan
 	if (electronic_alignment)
 		fit_alignment_data($scan_folder, x)
@@ -238,17 +253,6 @@ function align_tips(scan_size, scan_step)
 		fit_alignment_data($scan_folder, fr)
 		fit_alignment_data($scan_folder, ftheta)
 	endif
-	
-	// close comms
-	pi_stage#close_comms()
-	tek#close_comms()
-	if (electronic_alignment)
-		lockin#close_comms()
-	endif
-	if (force_alignment)
-		lockin2#close_comms()
-	endif
-	sig_gen#close_comms()
 end
 
 function fit_alignment_data(scan_folder, data)
