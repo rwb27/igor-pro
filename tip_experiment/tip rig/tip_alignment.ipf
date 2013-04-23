@@ -60,28 +60,33 @@ function align_tips(scan_size, scan_step)
 	
 	// initialise piezo positions
 	string pi_path = pi_stage#gv_path()
-	pi_stage#set_dco(1); sleep/s 1
-	pi_stage#get_pos()
-	nvar/sdfr=$pi_path pos_a0 = pos_a
+	// initial position setup //
+	pi_stage#set_dco(1); sleep/s 1			// dco on
+	pi_stage#get_pos()					// read dco on position	
+	
+	nvar/sdfr=$pi_path pos_a0 = pos_a		// load read piezo positions
 	nvar/sdfr=$pi_path pos_b0 = pos_b
 	nvar/sdfr=$pi_path pos_c0 = pos_c
-	variable init_a = pos_a0 //pi_stage#get_pos_ch("a")
+	variable init_a = pos_a0 //pi_stage#get_pos_ch("a")	// set initial piezo position
 	variable init_b = pos_b0 //pi_stage#get_pos_ch("b")
 	variable init_c = pos_c0 //pi_stage#get_pos_ch("c")
-	variable pos_a = init_a, pos_b = init_b, pos_c = init_c
-	print "starting at", pos_b, pos_c
-
+	variable pos_a = init_a, pos_b = init_b, pos_c = init_c	// set variable to change as initial position
+	
+	print "(dco=1) starting at", pos_b, pos_c, "(", pos_b0, pos_c0, ")"	// quote initial positions with dco on
+	pi_stage#move("b", init_b); pi_stage#move("c", init_c)	// move stage to position with dco on
+	sleep/s 1
+	
 	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
-	pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
+	pi_stage#set_dco_a(1)	// should be on since holding static but tests indicate it may be better off
 	pi_stage#set_dco_b(0)
 	pi_stage#set_dco_c(0)
 	sleep/s 1
 	
-	// move to starting position
-	//pi_stage#move("b", pos_b)
-	//pi_stage#move("c", pos_c)
-	//sleep/s 1
+	pi_stage#move("b", init_b); pi_stage#move("c", init_c)	// move stage to position with dco off
+	sleep/s 1
+	
+	// get starting positions
 	pos_b = init_b - scan_size/2
 	pos_c = init_c - scan_size/2
 	
@@ -202,7 +207,7 @@ function align_tips(scan_size, scan_step)
 			ib += 1
 			// move to new position //
 			pi_stage#move("b", pos_b)
-			sleep/s 0.5
+			//sleep/s 0.5
 		while (ib < imax)
 		// move back to initial B position //
 		pos_b = init_b - scan_size/2
@@ -213,17 +218,21 @@ function align_tips(scan_size, scan_step)
 		ic += 1
 		// move to new position //
 		pi_stage#move("c", pos_c)
-		sleep/s 0.5
+		//sleep/s 0.5
 	while (ic < imax)
 
 	// move to initial positions with the dco in the same confiuration as the experiment was taken
-	pi_stage#move("b", init_b)
-	pi_stage#move("c", init_c)
-	print "ending at", pos_b, pos_c
+	
+	pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco off
+	print "(dco=0) ending at", pos_b, pos_c, "(", pos_b0, pos_c0, ")"
 	
 	// dco possibly causes some deviation from the correct alignment position
-	pi_stage#set_dco(1)
+	pi_stage#set_dco(1)	// set dco on
 	sleep/s 1
+	pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco on
+	sleep/s 1
+	pi_stage#get_pos()
+	print "(dco=1) ending at", pos_b, pos_c, "(", pos_b0, pos_c0, ")"
 	
 	// close comms
 	pi_stage#close_comms()
