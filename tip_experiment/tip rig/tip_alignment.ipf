@@ -29,6 +29,9 @@ static function initialise()
 	variable/g $(gv_folder + ":alignment_set")
 	variable/g $(gv_folder + ":electronic_alignment")
 	variable/g $(gv_folder + ":force_alignment")
+	variable/g $(gv_folder + ":set_point_a")
+	variable/g $(gv_folder + ":set_point_b")
+	variable/g $(gv_folder + ":set_point_c")
 end
 
 function align_tips(scan_size, scan_step)
@@ -53,38 +56,27 @@ function align_tips(scan_size, scan_step)
 	
 	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
-	//pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
-	//pi_stage#set_dco_b(0)
-	//pi_stage#set_dco_c(0)
-	//sleep/s 1
-	
-	// initialise piezo positions
-	string pi_path = pi_stage#gv_path()
-	// initial position setup //
-	pi_stage#set_dco(1); sleep/s 1			// dco on
-	pi_stage#get_pos()					// read dco on position	
-	
-	nvar/sdfr=$pi_path pos_a0 = pos_a		// load read piezo positions
-	nvar/sdfr=$pi_path pos_b0 = pos_b
-	nvar/sdfr=$pi_path pos_c0 = pos_c
-	variable init_a = pos_a0 //pi_stage#get_pos_ch("a")	// set initial piezo position
-	variable init_b = pos_b0 //pi_stage#get_pos_ch("b")
-	variable init_c = pos_c0 //pi_stage#get_pos_ch("c")
-	variable pos_a = init_a, pos_b = init_b, pos_c = init_c	// set variable to change as initial position
-	
-	print "(dco=1) starting at", pos_b, pos_c, "(", pos_b0, pos_c0, ")"	// quote initial positions with dco on
-	pi_stage#move("b", init_b); pi_stage#move("c", init_c)	// move stage to position with dco on
-	sleep/s 1
-	
-	// turn dco off before you have recorded the initial position to keep things consistent with end set
-	// DCO off for dynamic movement, DCO on for holding static
-	pi_stage#set_dco_a(1)	// should be on since holding static but tests indicate it may be better off
+	pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
 	pi_stage#set_dco_b(0)
 	pi_stage#set_dco_c(0)
 	sleep/s 1
 	
-	pi_stage#move("b", init_b); pi_stage#move("c", init_c)	// move stage to position with dco off
+	// initialise piezo positions
+	string pi_path = pi_stage#gv_path()
+	pi_stage#get_pos()					// read dco on position	
+	nvar/sdfr=$pi_path pos_a0 = pos_a		// load read piezo positions
+	nvar/sdfr=$pi_path pos_b0 = pos_b
+	nvar/sdfr=$pi_path pos_c0 = pos_c
+	nvar/sdfr=$gv_folder set_point_a, set_point_b, set_point_c
+	variable init_a = set_point_a //pos_a0 //pi_stage#get_pos_ch("a")	// set initial piezo position
+	variable init_b = set_point_b //pos_b0 //pi_stage#get_pos_ch("b")
+	variable init_c =set_point_c //pos_c0 //pi_stage#get_pos_ch("c")
+	variable pos_a = init_a, pos_b = init_b, pos_c = init_c	// set variable to change as initial position
+	
+	print "\rTips initially at:", init_b, init_c, "(", pos_b0, pos_c0, ")"	// quote initial positions with dco on
+	pi_stage#move("b", init_b); pi_stage#move("c", init_c)	// move stage to position with dco on
 	sleep/s 1
+	print "Starting scan at:", pos_b, pos_c, "(", pos_b0, pos_c0, ")"	// quote initial positions with dco on
 	
 	// get starting positions
 	pos_b = init_b - scan_size/2
@@ -171,7 +163,7 @@ function align_tips(scan_size, scan_step)
 	variable/c data
 	pi_stage#move("b", pos_b)
 	pi_stage#move("c", pos_c)
-	sleep/s 1
+	sleep/s 2
 	do
 		//pi_stage#move("C", pos_c)
 		//sleep/s 0.25
@@ -223,16 +215,18 @@ function align_tips(scan_size, scan_step)
 
 	// move to initial positions with the dco in the same confiuration as the experiment was taken
 	
-	pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco off
-	print "(dco=0) ending at", pos_b, pos_c, "(", pos_b0, pos_c0, ")"
+	//pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco off
+	//print "scan ending at", init_b, init_c, "(", pos_b0, pos_c0, ")"
 	
 	// dco possibly causes some deviation from the correct alignment position
-	pi_stage#set_dco(1)	// set dco on
-	sleep/s 1
+	//pi_stage#set_dco(1)	// set dco on
+	//sleep/s 2
+	//pi_stage#get_pos()
+	//print "(dco=0) ending at", init_b, init_c, "(", pos_b0, pos_c0, ")"
 	pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco on
 	sleep/s 1
 	pi_stage#get_pos()
-	print "(dco=1) ending at", pos_b, pos_c, "(", pos_b0, pos_c0, ")"
+	print "Ending scan at:", init_b, init_c, "(", pos_b0, pos_c0, ")"
 	
 	// close comms
 	pi_stage#close_comms()
@@ -670,12 +664,7 @@ function fit_alignment_data_x_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -692,12 +681,7 @@ function fit_alignment_data_y_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -714,12 +698,7 @@ function fit_alignment_data_r_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -736,12 +715,7 @@ function fit_alignment_data_theta_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -758,12 +732,7 @@ function fit_alignment_data_y_psd_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $"psd_x0", y0 = $"psd_y0"
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -781,12 +750,7 @@ function fit_alignment_data_fx_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -803,12 +767,7 @@ function fit_alignment_data_fy_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -825,12 +784,7 @@ function fit_alignment_data_fr_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
@@ -847,15 +801,24 @@ function fit_alignment_data_fthet_button(ba) : buttoncontrol
 			wave wdata = $(scan_folder + ":alignment_scan_" + var)
 			fit_alignment_data($scan_folder, wdata)
 			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
-			dfref df = $scan_folder
-			variable/g df:x0 = x0
-			variable/g df:y0 = y0
-			dfref gvf = $data#check_gvpath(gv_folder)
-			variable/g gvf:x0 = x0
-			variable/g gvf:y0 = y0
+			set_centroid(x0, y0)
 			break
 		case -1:
 			break
 	endswitch
 	return 0
+end
+
+static function set_centroid(x0, y0)
+	variable x0, y0
+	svar/sdfr=$gv_folder current_scan_folder
+	dfref df = $current_scan_folder
+	variable/g df:x0 = x0
+	variable/g df:y0 = y0
+	dfref gvf = $data#check_gvpath(gv_folder)
+	variable/g gvf:x0 = x0
+	variable/g gvf:y0 = y0
+	variable/g gvf:set_point_b = x0
+	variable/g gvf:set_point_c = y0
+	print "Tips centred at:", x0, y0
 end
