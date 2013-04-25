@@ -328,3 +328,69 @@ static function init_button(ba) : buttoncontrol
 	endswitch
 	return 0
 end
+
+// Panel //
+
+static function/c insert_actuators_panel(left, top) : panel
+	variable left, top
+	
+	dfref gv_path_x = $gv_folder_x
+	dfref gv_path_y = $gv_folder_y
+	dfref gv_path_z = $gv_folder_z
+	
+	actuators#open_comms()
+	actuators#initialise()
+	actuators#close_comms()
+	
+	variable l_size = 340, t_size = 165
+	groupbox newport_group, pos={left, top}, size={l_size, t_size}, title="Newport NanoPZ/HLX Actuators"
+	groupbox newport_group, labelBack=(56576,56576,56576), fStyle=1
+		// buttons
+	left = 10; top += 20
+	button startup_actuators, pos={left, top}, size={60,20}, proc=actuators#startup_button, title="Startup"
+	button startup_actuators, fColor=(32768,65280,0)
+	top += 20
+	button shutdown_actuators, pos={left, top}, size={60,20}, proc=actuators#shutdown_button, title="Shutdown"
+	button shutdown_actuators, fColor=(65280,0,0)
+	top += 20
+	button actuators_update, pos={left,top}, size={60,20}, proc=actuators#update_button, title="Update"
+	top += 20
+	button init_actuators, pos={left,top}, size={60,20}, proc=actuators#init_button, title="Initialise"
+		// position display
+	left += 65; top -= 60
+	valdisplay actuator_x, pos={left, top}, size={110,15}, bodyWidth=60, title="height (x)"
+	valdisplay actuator_x, limits={0,0,0}, barmisc={0,1000}
+	valdisplay actuator_x, value= #"root:global_variables:newport_actuators_x:pos_x"
+	top += 20
+	valdisplay actuator_y, pos={left, top}, size={110,15}, bodyWidth=60, title="focus (y)"
+	valdisplay actuator_y, limits={0,0,0}, barmisc={0,1000}
+	valdisplay actuator_y, value= #"root:global_variables:newport_actuators_y:pos_y"
+	top += 20
+	valdisplay actuator_z, pos={left, top}, size={110,15}, bodyWidth=60, title="lateral (z)"
+	valdisplay actuator_z, limits={0,0,0}, barmisc={0,1000}
+	valdisplay actuator_z, value= #"root:global_variables:newport_actuators_z:pos_z"
+		// step display
+	left += 115; top -= 40
+	setvariable actuators_step_x, pos={left, top}, size={92,15}, bodyWidth=60, title="ht step"
+	setvariable actuators_step_x, value= root:global_variables:newport_actuators_x:step_x
+	top += 20
+	setvariable actuators_step_y, pos={left, top},size={92,15},bodyWidth=60,title="f step"
+	setvariable actuators_step_y, value= root:global_variables:newport_actuators_y:step_y
+	top += 20
+	setvariable actuators_step_z, pos={left, top},size={92,15},bodyWidth=60,title="lat step"
+	setvariable actuators_step_z, value= root:global_variables:newport_actuators_z:step_z
+		// movement controls
+	left = 190; top += 20
+	variable t_spacer = 25, l_spacer = 50, t_spacer2 = t_spacer + 5
+	variable up_l = left + l_spacer, up_t = top, in_l = left + 2*l_spacer, in_t = top	// top row
+	variable left_l = left, left_t = top + t_spacer2, right_l = left + 2*l_spacer, right_t = top + t_spacer2	// middle row
+	variable out_l = left, out_t = top + 2*t_spacer, down_l = left + l_spacer, down_t = top + 2*t_spacer	// bottom row
+	button actuators_left, pos={left_l, left_t}, size={50,20}, proc=actuators#move_left_button, title="Left"
+	button actuators_focusout, pos={out_l, out_t}, size={50,30}, proc=actuators#move_focusdown_button, title="Focus\rOut"
+	button actuators_down, pos={down_l, down_t}, size={50,20}, proc=actuators#move_down_button, title="Down"
+	button actuators_up, pos={up_l, up_t}, size={50,20}, proc=actuators#move_up_button, title="Up"
+	button actuators_right, pos={right_l, right_t}, size={50,20}, proc=actuators#move_right_button, title="Right"
+	button actuators_focusin, pos={in_l, in_t}, size={50,30}, proc=actuators#move_focusup_button, title="Focus\rIn"
+	
+	return cmplx(l_size, t_size)
+end
