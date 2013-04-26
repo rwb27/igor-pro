@@ -50,4 +50,5 @@ end
 
 static function aphs()
 	visa#cmd(hardware_id, "APHS\r")
+	sleep/s 2
 end

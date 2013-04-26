@@ -121,7 +121,7 @@ function align_tips(scan_size, scan_step)
 		wave/sdfr=$scan_folder theta = alignment_scan_theta
 		setscale/p x, pos_b, scan_step, x, y, scan_r, theta
 		setscale/p y, pos_c, scan_step, x, y, scan_r, theta
-		setscale d, 0, 0, "\\degree", theta
+		setscale d, 0, 0, "°", theta
 	endif
 	
 	nvar/sdfr=$tek#gv_path() num_points
@@ -144,7 +144,7 @@ function align_tips(scan_size, scan_step)
 		wave/sdfr=$scan_folder ftheta = alignment_scan_ftheta
 		setscale/p x, pos_b, scan_step, fx, fy, fr, ftheta
 		setscale/p y, pos_c, scan_step, fx, fy, fr, ftheta
-		setscale d, 0, 0, "\\degree", ftheta 
+		setscale d, 0, 0, "°", ftheta 
 	endif
 	
 	display_scan(scan_folder)			// display scan
@@ -523,13 +523,13 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 		make/o/n=0 $(scan_folder + ":resonance_scan_r"), $(scan_folder + ":resonance_scan_theta")
 		wave res_scan_r = $(scan_folder + ":resonance_scan_r"), res_scan_theta = $(scan_folder + ":resonance_scan_theta")
 		setscale d, 0, 0, "A", res_scan_r
-		setscale d, 0, 0, "\degree", res_scan_theta
+		setscale d, 0, 0, "°", res_scan_theta
 	endif
 	if (force_alignment)
 		make/o/n=0 $(scan_folder + ":resonance_scan_fr"), $(scan_folder + ":resonance_scan_ftheta")
 		wave res_scan_fr = $(scan_folder + ":resonance_scan_fr"), res_scan_ftheta = $(scan_folder + ":resonance_scan_ftheta")
 		setscale d, 0, 0, "V", res_scan_fr
-		setscale d, 0, 0, "\degree", res_scan_ftheta
+		setscale d, 0, 0, "°", res_scan_ftheta
 	endif
 	
 	make/o/n=0 $(scan_folder + ":resonance_scan_y_psd")

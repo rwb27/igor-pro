@@ -21,19 +21,22 @@ function measure_signal()
 	// set up which voltages to test //
 	make/o/n=0 sf:voltage_range
 	wave/sdfr=sf voltage_range
-	variable i, V = 0
+	variable i, V = 2
 	do
 		i = numpnts(voltage_range)
 		redimension/n=(i+1) voltage_range
 		voltage_range[i] = V
-		if (V >= 3.9 && V < 3.999)
+		if (V >= 3.950 && V < 4.000)
 			V += 0.001
-		elseif (V == 3.5)
-			V += 0.4
+		elseif (V == 3.9)
+			V += 0.05
+		elseif (V == 4.0)
+			V += 0.1
 		else
-			V += 0.5
+			V += 0.1
 		endif
-	while (V <= 20)
+	while (V <= 18)
+	setscale d, 0, 0, "V", voltage_range
 	
 	// load scan parameters and signal information
 	nvar/sdfr=$gv_folder electronic_alignment
@@ -45,16 +48,16 @@ function measure_signal()
 	
 	// create data waves //
 	if (electronic_alignment)
-		make/o/n=(numpnts(voltage_range)) scan_x, scan_y, scan_r, scan_theta
+		make/o/n=(numpnts(voltage_range)) sf:scan_x, sf:scan_y, sf:scan_r, sf:scan_theta
 		wave/sdfr=sf scan_x, scan_y, scan_r, scan_theta
 		setscale d, 0, 0, "A", scan_r
-		setscale d, 0, 0, "\\degree", scan_theta
+		setscale d, 0, 0, "°", scan_theta
 	endif
 	if (force_alignment)
-		make/o/n=(numpnts(voltage_range)) scan_fx, scan_fy, scan_fr, scan_ftheta
+		make/o/n=(numpnts(voltage_range)) sf:scan_fx, sf:scan_fy, sf:scan_fr, sf:scan_ftheta
 		wave/sdfr=sf scan_fx, scan_fy, scan_fr, scan_ftheta
 		setscale d, 0, 0, "V", scan_fr
-		setscale d, 0, 0, "\\degree", scan_ftheta
+		setscale d, 0, 0, "°", scan_ftheta
 	endif
 	
 	// display data //
@@ -65,13 +68,21 @@ function measure_signal()
 		appendtograph/r scan_theta vs voltage_range
 	endif
 	if (force_alignment)
-		appendtograph/l=force_l scan_r vs voltage_range
-		appendtograph/r=force_r scan_theta vs voltage_range
+		appendtograph/l=force_l scan_fr vs voltage_range
+		appendtograph/r=force_r scan_ftheta vs voltage_range
 	endif
 	modifygraph axisEnab(left)={0.5,1.0}, freePos(left)=0
 	modifygraph axisEnab(right)={0.5,1.0}, freePos(right)=0
 	modifygraph axisEnab(force_l)={0.0,0.5}, freePos(force_l)=0
 	modifygraph axisEnab(force_r)={0.0,0.5}, freePos(force_r)=0
+	modifygraph log(left)=1, log(force_l)=1
+	modifygraph rgb=(0,0,0), lstyle(scan_theta)=2, lstyle(scan_ftheta)=2
+	label left "3f current (\\U)"
+	label right "phase (\\U)"
+	label force_l "amplitude (\\U)"
+	label force_r "phase (\\U)"
+	label bottom "voltage (\\U)"
+	modifygraph lblPosMode=1
 	
 	// setup measurements //
 	// open comms
@@ -85,7 +96,6 @@ function measure_signal()
 	if (force_alignment)
 		lockin2#aphs()				// auto-phase lock-in amplifier
 	endif
-	sleep/s 1					// wait for auto-phase to complete
 	
 	// take measurements //
 	variable/c data
@@ -107,9 +117,10 @@ function measure_signal()
 			scan_fx[i] = real(data)
 			scan_fy[i] = imag(data) 
 			data = lockin2#measure_rtheta()
-			scan_fr[i] = real(data)/gain
+			scan_fr[i] = real(data)
 			scan_ftheta[i] = imag(data)
 		endif
+		doupdate
 	endfor
 	
 	// close comms
