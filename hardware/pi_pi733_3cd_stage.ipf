@@ -558,8 +558,8 @@ end
 
 function starting_pos()
 	pi_stage#open_comms()
-	pi_stage#move("a", 50)
-	pi_stage#move("b", 50)
+	pi_stage#move("a", 20)
+	pi_stage#move("b", 20)
 	pi_stage#move("c", 5)
 	pi_stage#close_comms()
 end

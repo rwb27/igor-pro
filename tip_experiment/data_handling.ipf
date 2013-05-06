@@ -22,14 +22,46 @@ end
 
 function/s check_folder(data_folder)
 	string data_folder
-	if (stringmatch(data_folder, "*:"))
-		string expr = "(.*):(.*)"
-		splitstring/e=(expr) data_folder, data_folder
-	endif
+	data_folder = removeending(data_folder, ":")
+	string df_rel = ""
+	variable k = 1
+	do
+		df_rel = removeending(parsefilepath(1, data_folder, ":", 0, k), ":")
+		if (stringmatch(df_rel, ""))
+			break
+		elseif (stringmatch(df_rel,"root"))
+			k += 1
+			continue
+		endif
+		if (!datafolderexists(df_rel))
+			newdatafolder $df_rel
+		endif	
+		k += 1
+	while (!stringmatch(df_rel, data_folder))
 	if (!datafolderexists(data_folder))
 		newdatafolder $data_folder
 	endif
 	return data_folder
+end
+
+function/s check_path(path, pathname)
+	string path, pathname
+	path = removeending(path, ":")
+	string path_rel = ""
+	variable k = 1
+	do
+		path_rel = removeending(parsefilepath(1, path, ":", 0, k), ":")
+		if (stringmatch(path_rel, ""))
+			break
+		elseif (stringmatch(path_rel,"root"))
+			k += 1
+			continue
+		endif
+		newpath/c/o/q temp, path_rel
+		k += 1
+	while (!stringmatch(path_rel, path))
+	newpath/c/o/q $pathname, path
+	return pathname
 end
 
 function/s check_gvpath(gv_folder)

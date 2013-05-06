@@ -183,7 +183,7 @@ function dc_noise_test()
 		dc_noise_i[n] = imag(iv)
 		doupdate
 		n += 1
-	while (n < 100)
+	while (n < 500)
 	smu#close_comms()
 	make/o/n=6 dc_noise
 	wavestats/q dc_noise_v

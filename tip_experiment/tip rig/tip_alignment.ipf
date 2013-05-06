@@ -156,10 +156,9 @@ function align_tips(scan_size, scan_step)
 	if (force_alignment)
 		lockin2#aphs()				// auto-phase lock-in amplifier
 	endif
-	sleep/s 1					// wait for auto-phase to complete
 	
 	// MEASUREMENTS
-	variable ib = 0, ic = 0
+	variable ib = 0, ic = 0, inc=1
 	variable/c data
 	pi_stage#move("b", pos_b)
 	pi_stage#move("c", pos_c)
@@ -205,6 +204,7 @@ function align_tips(scan_size, scan_step)
 		pos_b = init_b - scan_size/2
 		pi_stage#move("b", pos_b)
 		ib = 0
+		
 		// increment C position //
 		pos_c += scan_step
 		ic += 1
