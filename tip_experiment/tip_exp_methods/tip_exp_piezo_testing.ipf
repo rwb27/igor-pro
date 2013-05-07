@@ -3,7 +3,7 @@
 #include "Infinity v3.0"
 #include "data_handling"
 
-function test_piezo()
+function drift_test()
 	dfref pztf = $(data#check_folder("root:piezo_testing"))
 	dfref images = $(data#check_folder("root:piezo_testing:images"))
 	variable n = 12*60
@@ -63,4 +63,101 @@ function test_piezo()
 	pzt[10][0] = "avg"; pzt[10][1] = num2str(V_avg)
 	pzt[11][0] = "sdev"; pzt[11][1] = num2str(1000*V_sdev)
 	pzt[12][0] = "pk-pk"; pzt[12][1] = num2str(1000*(V_max-V_min))
+end
+
+function stability_test()
+	dfref pztf = $(data#check_folder("root:piezo_testing"))
+	variable i=0, n = 200, j
+	make/o/n=(0) pztf:position_a, pztf:position_b, pztf:position_c
+	wave/sdfr=pztf position_a, position_b, position_c
+	
+	dowindow/k pz_test
+	display/n=pz_test
+	appendtograph position_a
+	appendtograph position_b
+	appendtograph/r position_c
+	
+	make/o/n=(11) pztf:pos_range_a = 10*x, pztf:pos_range_b = 10*x
+	make/o/n=(11) pztf:pos_range_c = x
+	wave/sdfr=pztf pos_range_a, pos_range_b, pos_range_c
+	
+	make/o/n=(numpnts(pos_range_a, 3) pztf:stability_test_a
+	make/o/n=(numpnts(pos_range_b, 3) pztf:stability_test_b
+	make/o/n=(numpnts(pos_range_c, 3) pztf:stability_test_c
+	wave/sdfr=pztf stability_test_a, stability_test_b, stability_test_c
+	make/o/n=0 pztf:stability_test_results
+	wave/sdfr=pztf stability_test_results
+	
+	dowindow/k pz_stability_test
+	display/n=pz_stability_test
+	appendtograph stability_test_a[][1] vs pos_range_a
+	appendtograph stability_test_b[][1] vs pos_range_b
+	appendtograph/r stability_test_c[][1] vs pos_range_c
+	
+	variable pos
+	pi_stage#open_comms()
+	// test channel a
+	for (j=0; j<numpnts(pos_range_a); j+=1)
+		pos = pos_range_a[j]
+		pi_stage#move("a", pos)
+		i = 0
+		do
+			pos = pi_stage#get_pos_ch("a")
+			redimension/n=(i+1) position_a
+			position_a[i] = pos
+			doupdate
+			i += 1
+		while (i < n)
+		wavestats/q position_a
+		variable a_avg = V_avg
+		variable a_sdev = 1000*V_sdev
+		variable a_pk = 1000*(V_max-V_min)
+		stability_test_a[j][0] = a_avg
+		stability_test_a[j][1] = a_sdev
+		stability_test_a[j][2] = a_pk
+		doupdate
+	endfor
+	// test channel b
+	for (j=0; j<numpnts(pos_range_b); j+=1)
+		pos = pos_range_b[j]
+		pi_stage#move("b", pos)
+		i = 0
+		do
+			pos = pi_stage#get_pos_ch("b")
+			redimension/n=(i+1) position_b
+			position_b[i] = pos
+			doupdate
+			i += 1
+		while (i < n)
+		wavestats/q position_b
+		variable b_avg = V_avg
+		variable b_sdev = 1000*V_sdev
+		variable b_pk = 1000*(V_max-V_min)
+		stability_test_b[j][0] = a_avg
+		stability_test_b[j][1] = a_sdev
+		stability_test_b[j][2] = a_pk
+		doupdate
+	endfor
+	// test channel c
+	for (j=0; j<numpnts(pos_range_c); j+=1)
+		pos = pos_range_c[j]
+		pi_stage#move("c", pos)
+		i = 0
+		do
+			pos = pi_stage#get_pos_ch("c")
+			redimension/n=(i+1) position_c
+			position_c[i] = pos
+			doupdate
+			i += 1
+		while (i < n)
+		wavestats/q position_c
+		variable c_avg = V_avg
+		variable c_sdev = 1000*V_sdev
+		variable c_pk = 1000*(V_max-V_min)
+		stability_test_c[j][0] = a_avg
+		stability_test_c[j][1] = a_sdev
+		stability_test_c[j][2] = a_pk
+		doupdate
+	endfor
+	pi_stage#close_comms()
 end
