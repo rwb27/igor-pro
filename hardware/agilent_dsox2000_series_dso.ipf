@@ -49,6 +49,10 @@ static function reset()
 	visa#cmd(hardware_id, "*rst")
 end
 
+static function autoscale()
+	visa#cmd(hardware_id, ":autoscale")
+end
+
 static function set_general(mode, clear)
 	string mode
 	variable clear
