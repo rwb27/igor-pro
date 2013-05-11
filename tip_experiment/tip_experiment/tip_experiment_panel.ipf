@@ -31,6 +31,16 @@ static function restore_defaults_button(ba) : buttoncontrol
 	return 0
 end
 
+static function initialise_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	switch(ba.eventcode)
+		case 2:
+			tip_exp_init#init_experiment()
+			break
+	endswitch
+	return 0
+end
+
 function set_scan_direction(pa) : popupmenucontrol
 	struct wmpopupaction &pa
 	switch(pa.eventcode)
@@ -58,11 +68,12 @@ static function/c insert_exp_panel(left, top) : panel
 	
 	dfref gv_path = $gv_folder
 	
-	variable l_size = 350, t_size = 120
+	variable l_size = 490, t_size = 120
 	groupbox exp_group, pos={left, top}, size={l_size, t_size}, frame=0, title="Experiment"
 	groupbox exp_group, labelBack=(56576,56576,56576), fsize=12, fStyle=1
 	left += 5; top += 17
 	
+	// COLUMN 1
 	// buttons
 	titlebox exp_controls title="Exp. Controls", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
@@ -70,7 +81,11 @@ static function/c insert_exp_panel(left, top) : panel
 	button exp_tip_scan, fColor=(32768,65280,0)
 	top += 20
 	button exp_defaults,pos={left, top}, size={60,30}, proc=tip_panel#restore_defaults_button, title="Restore\rDefaults"
-	top -= 17 + 20
+	top += 30
+	button exp_init,pos={left, top}, size={60,20}, proc=tip_panel#initialise_button, title="Initialise"
+	top -= 17 + 20 + 30
+	
+	// COLUMN 2
 	// set and display variables
 	left += 90
 	titlebox exp_scan_params title="Scan Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
@@ -90,8 +105,10 @@ static function/c insert_exp_panel(left, top) : panel
 	popupmenu exp_scan_direction fSize=11, proc=set_scan_direction
 	top += 17
 	top -= 17*5
+	
+	// COLUMN 3
 	// display only values
-	left += 135
+	left += 140
 	titlebox exp_params title="Exp. Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
 	top += 17
 	setvariable exp_set_trig_g0, pos={left, top}, size={105,15}, bodywidth=60, title="trig (G\B0\M)"
@@ -100,7 +117,7 @@ static function/c insert_exp_panel(left, top) : panel
 	setvariable exp_set_vis_g0, pos={left, top}, size={105,15}, bodywidth=60, title="vis (G\B0\M)"
 	setvariable exp_set_vis_g0, value=gv_path:vis_g0
 	top += 17
-	setvariable exp_set_dpol, pos={left, top}, size={105,15}, bodywidth=60, title="Dual Pol."
+	setvariable exp_set_dpol, pos={left, top}, size={105,15}, bodywidth=60, title="dual pol."
 	setvariable exp_set_dpol, value=gv_path:dual_pol_meas
 	top += 17
 	//left -= 135; top -= 17*3
@@ -110,6 +127,17 @@ static function/c insert_exp_panel(left, top) : panel
 	valdisplay exp_current_step, pos={left, top}, size={115,15}, bodyWidth=50, title="current step"
 	valdisplay exp_current_step, limits={0,0,0}, barmisc={0,1000}
 	valdisplay exp_current_step, value= #"root:global_variables:tip_experiment:current_step"
+	top -= 17*5
+	
+	// COLUMN 4
+	left += 110
+	titlebox exp_params2 title="Exp. Parameters", pos={left, top}, frame=0, fSize=11, fstyle=1
+	top += 17
+	setvariable exp_set_current_set_point, pos={left, top}, size={140,15}, bodywidth=60, title="current set point"
+	setvariable exp_set_current_set_point, value=gv_path:current_set_point
+	top += 17
+	setvariable exp_set_dso_gain, pos={left, top}, size={140,15}, bodywidth=60, title="DSO gain"
+	setvariable exp_set_dso_gain, value=root:global_variables:amplifiers:gain_dso
 	
 	return cmplx(l_size, t_size)
 end
@@ -121,7 +149,7 @@ function tip_scan_panel() : panel
 	dowindow/k tip_scanning_panel
 	
 	// panel layout
-	newpanel/w=(500,50,900,750)/n=tip_scanning_panel as "Tip Scanning"
+	newpanel/w=(500,50,1000,750)/n=tip_scanning_panel as "Tip Scanning"
 	modifypanel cbRGB=(60928,60928,60928), framestyle=1
 	setdrawlayer UserBack
 	showtools/a

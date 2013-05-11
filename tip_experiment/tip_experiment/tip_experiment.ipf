@@ -163,6 +163,7 @@ function tip_scan()			// tip experiment master function
 			tip_exp_time_res#measure_time_resolved(scan_folder, i)
 		endif
 		if (imag(smu_data) >= current_set_point)		// prevents movement once current limit reached
+			print "set point reached - current (", imag(smu_data),") > set point (", current_set_point,")"
 			set_point_reached = 1
 		endif
 		

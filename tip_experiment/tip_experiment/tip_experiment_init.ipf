@@ -154,10 +154,10 @@ static function restore_default_values()
 	variable/g $(gv_folder + ":scan_step") = 1e-3			// 1 nm steps
 	variable/g $(gv_folder + ":scan_size") = 5			// 5 um max
 	variable/g $(gv_folder + ":scan_direction") = -1		// approaching
-	variable/g $(gv_folder + ":current_set_point") = 1		// 1 A stopping point
-	variable/g $(gv_folder + ":trig_g0") = 0.5				// 0.5G0 trigger point
+	variable/g $(gv_folder + ":current_set_point") = 2e-3	// 2 mA stopping point
+	variable/g $(gv_folder + ":trig_g0") = 1				// 0.5G0 trigger point
 	variable/g $(gv_folder + ":vis_g0") = 20				// 20G0 viewing range
-	variable/g $(gv_folder + ":dual_pol_meas") = 0
+	variable/g $(gv_folder + ":dual_pol_meas") = 1
 	// amplifier parameters
 	gv_path = "root:global_variables:amplifiers"
 	variable/g $(gv_path + ":gain_dso") = 1000
@@ -173,7 +173,7 @@ static function restore_default_values()
 	variable/g $(gv_path + ":voltage") = 10e-3			// 100 mV standard for qc experiments
 	variable/g $(gv_path + ":current_range") = 10e-9		// 10 nA setting is minimum possible for fast acqusition
 	variable/g $(gv_path + ":current_limit") = 250e-6		// 250 uA maximum for preventing tip damage
-	variable/g $(gv_path + ":output") = 1
+	variable/g $(gv_path + ":output") = 0
 	// dso parameters
 	gv_path = dso#gv_path()
 	variable/g $(gv_path + ":timebase_settings:time_range") = 10e-3
