@@ -35,6 +35,8 @@ static function measure_time_resolved(scan_folder, i)
 	dfref smu_path = $smu#gv_path()
 	nvar/sdfr=smu_path v = :voltage
 	g_trace /= (gain * v * g0)
+	setscale d, 0, 0, "G\B0\M", g_trace
+	
 	// get time-resolved force measurement
 	dso#import_data("2", "")
 	duplicate/o root:agilent_dsox2012a_dso:ch2_trace, $qcf_name

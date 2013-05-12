@@ -6,7 +6,7 @@
 function drift_test()
 	dfref pztf = $(data#check_folder("root:piezo_testing"))
 	dfref images = $(data#check_folder("root:piezo_testing:images"))
-	variable n = 12*60
+	variable n = 12*60*6
 	make/o/n=(0) pztf:positions_a, pztf:positions_b, pztf:positions_c
 	wave positions_a = pztf:positions_a
 	wave positions_b = pztf:positions_b
@@ -21,7 +21,7 @@ function drift_test()
 	appendtograph positions_b
 	appendtograph/r positions_c
 	pi_stage#open_comms()
-	variable t_range = 60*60, delay = 60//t_range/n
+	variable t_range = 60*60, delay = 10//t_range/n
 	variable i = 0
 	nvar/sdfr=$(pi_stage#gv_path()) pos_a, pos_b, pos_c
 	do
@@ -67,7 +67,7 @@ end
 
 function stability_test()
 	dfref pztf = $(data#check_folder("root:piezo_testing"))
-	variable i=0, n = 200, j
+	variable i=0, n = 500, j
 	make/o/n=(0) pztf:position_a, pztf:position_b, pztf:position_c
 	wave/sdfr=pztf position_a, position_b, position_c
 	
@@ -77,13 +77,13 @@ function stability_test()
 	appendtograph position_b
 	appendtograph/r position_c
 	
-	make/o/n=(11) pztf:pos_range_a = 10*x, pztf:pos_range_b = 10*x
-	make/o/n=(11) pztf:pos_range_c = x
+	make/o/n=(10) pztf:pos_range_a = 10*x, pztf:pos_range_b = 10*x
+	make/o/n=(10) pztf:pos_range_c = x
 	wave/sdfr=pztf pos_range_a, pos_range_b, pos_range_c
 	
-	make/o/n=(numpnts(pos_range_a, 3) pztf:stability_test_a
-	make/o/n=(numpnts(pos_range_b, 3) pztf:stability_test_b
-	make/o/n=(numpnts(pos_range_c, 3) pztf:stability_test_c
+	make/o/n=(numpnts(pos_range_a), 3) pztf:stability_test_a
+	make/o/n=(numpnts(pos_range_b), 3) pztf:stability_test_b
+	make/o/n=(numpnts(pos_range_c), 3) pztf:stability_test_c
 	wave/sdfr=pztf stability_test_a, stability_test_b, stability_test_c
 	make/o/n=0 pztf:stability_test_results
 	wave/sdfr=pztf stability_test_results
@@ -133,9 +133,9 @@ function stability_test()
 		variable b_avg = V_avg
 		variable b_sdev = 1000*V_sdev
 		variable b_pk = 1000*(V_max-V_min)
-		stability_test_b[j][0] = a_avg
-		stability_test_b[j][1] = a_sdev
-		stability_test_b[j][2] = a_pk
+		stability_test_b[j][0] = b_avg
+		stability_test_b[j][1] = b_sdev
+		stability_test_b[j][2] = b_pk
 		doupdate
 	endfor
 	// test channel c
@@ -154,9 +154,9 @@ function stability_test()
 		variable c_avg = V_avg
 		variable c_sdev = 1000*V_sdev
 		variable c_pk = 1000*(V_max-V_min)
-		stability_test_c[j][0] = a_avg
-		stability_test_c[j][1] = a_sdev
-		stability_test_c[j][2] = a_pk
+		stability_test_c[j][0] = c_avg
+		stability_test_c[j][1] = c_sdev
+		stability_test_c[j][2] = c_pk
 		doupdate
 	endfor
 	pi_stage#close_comms()

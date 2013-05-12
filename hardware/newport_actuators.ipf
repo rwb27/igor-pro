@@ -247,7 +247,7 @@ static function move_left_button(ba) : buttoncontrol
 		case 2:
 			nvar step = $(gv_folder_z + ":step_z")
 			open_comms()
-			move("z", step)
+			move("z", -step)
 			close_comms()
 			break
 		case -1:
@@ -262,7 +262,7 @@ static function move_right_button(ba) : buttoncontrol
 		case 2:
 			nvar step = $(gv_folder_z + ":step_z")
 			open_comms()
-			move("z", -step)
+			move("z", step)
 			close_comms()
 			break
 		case -1:
