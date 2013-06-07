@@ -52,3 +52,31 @@ static function aphs()
 	visa#cmd(hardware_id, "APHS\r")
 	sleep/s 2
 end
+
+static function get_time_constant()
+	variable tc_ref = visa#read(hardware_id, "OFLT?\r")
+	variable time_constant
+	switch(tc_ref)
+		case 4:
+			time_constant = 1e-3
+			break
+		case 5:
+			time_constant = 3e-3
+			break
+		case 6:
+			time_constant = 10e-3
+			break
+		case 7:
+			time_constant = 30e-3
+			break
+		case 8:
+			time_constant = 100e-3
+			break
+		case 9:
+			time_constant = 300e-3
+			break
+		default:
+			time_constant = 0
+	endswitch
+	return time_constant
+end

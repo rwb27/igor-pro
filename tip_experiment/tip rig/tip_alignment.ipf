@@ -56,7 +56,7 @@ function align_tips(scan_size, scan_step)
 	
 	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
-	pi_stage#set_dco_a(1)			// should be on since holding static but tests indicate it may be better off
+	pi_stage#set_dco_a(0)			// should be on since holding static but tests indicate it may be better off
 	pi_stage#set_dco_b(0)
 	pi_stage#set_dco_c(0)
 	sleep/s 1
@@ -124,13 +124,13 @@ function align_tips(scan_size, scan_step)
 		setscale d, 0, 0, "°", theta
 	endif
 	
-	nvar/sdfr=$tek#gv_path() num_points
-	make/o/n=(imax, imax, num_points) $(scan_folder + ":alignment_trace_y_psd")
-	make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
-	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
-	wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
-	setscale/p x, pos_b, scan_step, y_psd, y_psd_trace
-	setscale/p y, pos_c, scan_step, y_psd, y_psd_trace
+	//nvar/sdfr=$tek#gv_path() num_points
+	//make/o/n=(imax, imax, num_points) $(scan_folder + ":alignment_trace_y_psd")
+	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
+	//wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
+	//wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
+	//setscale/p x, pos_b, scan_step, y_psd, y_psd_trace
+	//setscale/p y, pos_c, scan_step, y_psd, y_psd_trace
 	
 	// lock-in 2
 	if (force_alignment)
@@ -149,12 +149,17 @@ function align_tips(scan_size, scan_step)
 	
 	display_scan(scan_folder)			// display scan
 	
-	tek#get_waveform_params("2")			// get oscilloscope waveform scaling parameters
+	//tek#get_waveform_params("2")			// get oscilloscope waveform scaling parameters
+	variable time_constant
 	if (electronic_alignment)
+		lockin#purge()
 		lockin#aphs()				// auto-phase lock-in amplifier
+		time_constant = lockin#get_time_constant()
 	endif
 	if (force_alignment)
+		lockin2#purge()
 		lockin2#aphs()				// auto-phase lock-in amplifier
+		time_constant = lockin2#get_time_constant()
 	endif
 	
 	// MEASUREMENTS
@@ -163,6 +168,7 @@ function align_tips(scan_size, scan_step)
 	pi_stage#move("b", pos_b)
 	pi_stage#move("c", pos_c)
 	sleep/s 2
+	print "time_constant =", time_constant
 	do
 		//pi_stage#move("C", pos_c)
 		//sleep/s 0.25
@@ -170,6 +176,7 @@ function align_tips(scan_size, scan_step)
 			//pi_stage#move("B", pos_b)
 			//sleep/s 0.25
 			// electronic lock-in measurements //
+			sleep/s time_constant*4
 			if (electronic_alignment)
 				data = lockin#measure_xy()
 				x[ib][ic] = real(data)
@@ -188,9 +195,9 @@ function align_tips(scan_size, scan_step)
 				ftheta[ib][ic] = imag(data)
 			endif
 			// oscilloscope force measurement //
-			wave w = tek#import_data_free("2")
-			y_psd_trace[ib][ic][] = w[r]
-			y_psd[ib][ic] = wavemax(w) - wavemin(w)
+			//wave w = tek#import_data_free("2")
+			//y_psd_trace[ib][ic][] = w[r]
+			//y_psd[ib][ic] = wavemax(w) - wavemin(w)
 			
 			doupdate
 			// increment B position //
@@ -246,7 +253,7 @@ function align_tips(scan_size, scan_step)
 		fit_alignment_data($scan_folder, y)
 		fit_alignment_data($scan_folder, scan_r)
 		fit_alignment_data($scan_folder, theta)
-		fit_alignment_data($scan_folder, y_psd)
+		//fit_alignment_data($scan_folder, y_psd)
 	endif
 	
 	// fit force scan
@@ -256,6 +263,7 @@ function align_tips(scan_size, scan_step)
 		fit_alignment_data($scan_folder, fr)
 		fit_alignment_data($scan_folder, ftheta)
 	endif
+	saveexperiment
 end
 
 function fit_alignment_data(scan_folder, data)
@@ -316,6 +324,7 @@ function fit_alignment_data(scan_folder, data)
 	string expr = "(.*)_(.*)", wave_id, rest_of_wavename
 	splitstring/e=(expr) nameofwave(data), rest_of_wavename, wave_id
 	duplicate/o w_coef, scan_folder:$(wave_id + "_w_coef")
+	duplicate/o w_sigma, scan_folder:$(wave_id + "_w_sigma")
 	variable/g scan_folder:$(wave_id + "_x0") = w_coef[2]
 	variable/g scan_folder:$(wave_id + "_y0") = w_coef[4]
 	
@@ -343,7 +352,7 @@ static function display_scan(scan_folder)
 		wave y = $(scan_folder + ":alignment_scan_y")
 		wave r = $(scan_folder + ":alignment_scan_r")
 		wave theta = $(scan_folder + ":alignment_scan_theta")
-		wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
+		//wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
 	endif
 	if (force_alignment)
 		wave fx = $(scan_folder + ":alignment_scan_fx")
@@ -372,14 +381,14 @@ static function display_scan(scan_folder)
 		appendimage/l=ly y
 		appendimage/l=lr r
 		appendimage/l=ltheta theta
-		appendimage y_psd
+		//appendimage y_psd
 		modifyimage ''#0 ctab={*,*,geo,0}
 		modifyimage ''#1 ctab={*,*,geo,0}
 		modifyimage ''#2 ctab={*,*,geo,0}
 		modifyimage ''#3 ctab={*,*,geo,0}
-		modifyimage ''#4 ctab={*,*,geo,0}
+		//modifyimage ''#4 ctab={*,*,geo,0}
 		modifygraph width=80
-		modifygraph height=5*80
+		modifygraph height=4*80
 	endif
 	
 	// force alignment scans
@@ -388,20 +397,20 @@ static function display_scan(scan_folder)
 		appendimage/l=ly/b=b1 fy
 		appendimage/l=lr/b=b1 fr
 		appendimage/l=ltheta/b=b1 ftheta
+		modifyimage ''#4 ctab={*,*,geo,0}
 		modifyimage ''#5 ctab={*,*,geo,0}
 		modifyimage ''#6 ctab={*,*,geo,0}
 		modifyimage ''#7 ctab={*,*,geo,0}
-		modifyimage ''#8 ctab={*,*,geo,0}
 		modifygraph width=2*80
 		modifygraph axisEnab(bottom)={0,0.49}, freePos(bottom)=0
 		modifygraph axisEnab(b1)={0.51,1.0}, freePos(b1)=0
 	endif
 	
-	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
-	modifygraph axisEnab(ly)={0.6,0.79}, freePos(ly)=0
-	modifygraph axisEnab(lr)={0.4,0.59}, freePos(lr)=0
-	modifygraph axisEnab(ltheta)={0.2,0.39}, freePos(ltheta)=0
-	modifygraph axisEnab(left)={0,0.19}, freePos(left)=0
+	modifygraph axisEnab(lx)={0.75,1.0}, freePos(lx)=0
+	modifygraph axisEnab(ly)={0.5,0.74}, freePos(ly)=0
+	modifygraph axisEnab(lr)={0.25,0.49}, freePos(lr)=0
+	modifygraph axisEnab(ltheta)={0.0,0.24}, freePos(ltheta)=0
+	//modifygraph axisEnab(left)={0,0.19}, freePos(left)=0
 	
 	modifygraph lblposmode=4, lblpos=40
 	modifygraph lblpos(bottom)=30

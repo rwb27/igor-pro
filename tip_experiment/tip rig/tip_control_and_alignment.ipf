@@ -118,8 +118,11 @@ static function/c insert_alignment_panel(left, top) : panel
 	setvariable set_freq_inc, pos={left, top}, size={105,15}, bodyWidth=50, title="Freq: Step"
 	setvariable set_freq_inc, value= root:global_variables:tip_alignment:freq_inc
 	top += 20
+	
+	left += 110; top -= 20
 	button res_scan, pos={left, top}, size={70,40}, proc=resonance_scan_button, title="Resonance\rScan"
 	button res_scan, fColor=(65280,65280,0)
+	left -=110; top += 20
 	
 	// buttons
 	button align_tips, pos={left, top}, size={50,40}, proc=align_tips_button, title="Align\rTips"
@@ -149,13 +152,14 @@ static function/c insert_alignment_panel(left, top) : panel
 	setvariable frequency, pos={left, top}, size={105,15}, bodyWidth=50, proc=sig_gen#set_frequency_panel, title="Frequency"
 	setvariable frequency, value= root:global_variables:hp33120a_signal_generator:frequency
 	top += 40
+	top += 20
 	// electronic alignment buttons //
 	button fit_x, pos={left, top}, size={30,20}, proc=fit_alignment_data_x_button, title="Fit X"; left += 30
 	button fit_y, pos={left, top}, size={30,20}, proc=fit_alignment_data_y_button, title="Fit Y"; left += 30
 	button fit_r, pos={left, top}, size={30,20}, proc=fit_alignment_data_r_button, title="Fit R"
 	left -= 30*2; top += 20
 	button fit_theta, pos={left, top}, size={50,20}, proc=fit_alignment_data_theta_button, title="Fit Theta"; left += 50
-	button fit_y_psd, pos={left, top}, size={50,20}, proc=fit_alignment_data_Y_psd_button, title="Fit yPSD"; left += 60
+	//button fit_y_psd, pos={left, top}, size={50,20}, proc=fit_alignment_data_Y_psd_button, title="Fit yPSD"; left += 60
 	left -= 110; top += 20
 	// force alignment buttons //
 	button fit_fx, pos={left, top}, size={35,20}, proc=fit_alignment_data_fx_button, title="Fit FX"; left += 35

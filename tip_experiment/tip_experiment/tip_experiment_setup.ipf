@@ -62,8 +62,8 @@ function setup_pi(rst)
 	pi_stage#set_velocity_a(vel_a)
 	// DCO off for dynamic movement, DCO on for holding static
 	pi_stage#set_dco_a(0)
-	pi_stage#set_dco_b(1)
-	pi_stage#set_dco_c(1)
+	pi_stage#set_dco_b(0)
+	pi_stage#set_dco_c(0)
 	pi_stage#get_pos()
 	pi_stage#close_comms()
 end
