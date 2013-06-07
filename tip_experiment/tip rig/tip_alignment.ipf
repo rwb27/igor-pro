@@ -184,7 +184,7 @@ function align_tips(scan_size, scan_step)
 				fx[ib][ic] = real(data)
 				fy[ib][ic] = imag(data) 
 				data = lockin2#measure_rtheta()
-				fr[ib][ic] = real(data)/gain
+				fr[ib][ic] = real(data)
 				ftheta[ib][ic] = imag(data)
 			endif
 			// oscilloscope force measurement //
