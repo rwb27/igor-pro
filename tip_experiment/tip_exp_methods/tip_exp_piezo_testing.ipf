@@ -2,36 +2,65 @@
 #include "pi_pi733_3cd_stage"
 #include "Infinity v3.0"
 #include "data_handling"
+#include "temperature_sensor"
 
 function drift_test()
+	// Monitor the drift of AFM tips using the camera while monitoring the local environment parameters.
+	//
 	dfref pztf = $(data#check_folder("root:piezo_testing"))
 	dfref images = $(data#check_folder("root:piezo_testing:images"))
-	variable n = 12*60*6
-	make/o/n=(0) pztf:positions_a, pztf:positions_b, pztf:positions_c
+	make/o/n=(0) pztf:positions_a, pztf:positions_b, pztf:positions_c	// pztf: piezo testing folder
 	wave positions_a = pztf:positions_a
 	wave positions_b = pztf:positions_b
 	wave positions_c = pztf:positions_c
 	string time_stamp = time()
-	newimage/f/s=0/n=image  root:Infinity:InfImg
+	
+	// sensor data
+	wave/sdfr=pztf sensor_data
+	if (!waveexists(sensor_data))
+		make/o/n=(0,3) pztf:sensor_data
+		make/d/o/n=0 pztf:sensor_data_time
+		setscale d, 0, 0, "dat", pztf:sensor_data_time
+	endif
+	wave/sdfr=pztf sensor_data_time	
+	sensor#open_comms()
+	wave current_data = sensor#measure_data()
+	
+	// create data graphs and movie frames	
+	newimage/f/s=0/n=mov  root:Infinity:InfImg
 	textbox/c/n=text0/f=0/b=1/a=LT "\\Z11\\K(65535,65535,65535)"+time_stamp
+	string data_str = num2str(current_data[0])+"C, "+num2str(current_data[1])+"% RH"
+	textbox/c/n=text1/f=0/b=1/a=RB "\\Z11\\K(65535,65535,65535)"+data_str
 	newmovie/o as "c:\\users\\hera\\desktop\\piezo_drift"
+	
 	dowindow/k pz_test
 	display/n=pz_test
 	appendtograph positions_a
 	appendtograph positions_b
 	appendtograph/r positions_c
 	pi_stage#open_comms()
-	variable t_range = 60*60, delay = 10//t_range/n
+	variable t_range = 24*60*60, delay = 10	// unit: seconds
 	variable i = 0
 	nvar/sdfr=$(pi_stage#gv_path()) pos_a, pos_b, pos_c
+	variable t, t0 = datetime
 	do
 		if (getkeystate(0) & 32)
 			break
 		endif
+		t = datetime
 		Infinity_Image()
 		time_stamp = time()
-		dowindow/f image
+		wave current_data = sensor#measure_data()
+		data_str = num2str(current_data[0])+"°C, "+num2str(current_data[1])+"% RH"
+		variable si = dimsize(sensor_data, 0), sj = numpnts(current_data)
+		redimension/n=(si+1,sj) sensor_data
+		sensor_data[si][] = current_data[q]
+		redimension/n=(si+1) sensor_data_time
+		sensor_data_time[si] = datetime
+	
+		dowindow/f mov
 		textbox/c/n=text0/f=0/b=1/a=LT "\\Z11\\K(65535,65535,65535)"+time_stamp
+		textbox/c/n=text1/f=0/b=1/a=RB "\\Z11\\K(65535,65535,65535)"+data_str
 		addmovieframe
 		//duplicate/o root:Infinity:InfImg, images:$("img_"+num2str(i))
 		pi_stage#get_pos()
@@ -42,9 +71,11 @@ function drift_test()
 		doupdate
 		i += 1
 		sleep/s delay
-	while (i < n)
+	while (t-t0 <= t_range)
 	closemovie
 	pi_stage#close_comms()
+	sensor#close_comms()
+	
 	make/t/o/n=(13,2) pztf:piezo_test_results
 	wave/t pzt = pztf:piezo_test_results
 	pzt[0][0] = "time stamp"; pzt[0][1] = date() + " " + time()
@@ -66,6 +97,8 @@ function drift_test()
 end
 
 function stability_test()
+	//
+	//
 	dfref pztf = $(data#check_folder("root:piezo_testing"))
 	variable i=0, n = 500, j
 	make/o/n=(0) pztf:position_a, pztf:position_b, pztf:position_c

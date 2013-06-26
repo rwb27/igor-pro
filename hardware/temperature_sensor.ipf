@@ -3,24 +3,24 @@
 
 static function get_sensor(sensor_name)
 	string sensor_name
-	variable com = 7
+	variable com = 28
 	return com
 end
 
 static function sensor_select()
-	VDTOperationsPort2 COM7
+	VDTOperationsPort2 COM28
 end
 
 static function open_comms()
-	VDT2/P=COM7 baud=9600
+	VDT2/P=COM28 baud=9600
 	sensor_select()
-	VDTOpenPort2 COM7
+	VDTOpenPort2 COM28
 	return 0
 end
 
 static function close_comms()
 	VDTOperationsPort2 None
-	VDTClosePort2 COM7
+	VDTClosePort2 COM28
 	return 0
 end
 
@@ -99,15 +99,14 @@ static function/wave measure_data()
 	// read out each line - should all be one line but with some empty characters
 	do
 		VDTGetStatus2 0,0,0
-		//print "num_chars =", V_VDT
 		if (V_VDT == 0)
 			break
 		endif
 		VDTRead2/O=10 temp, hum, dew
 		VDTRead2/O=10/T="\r\n" char
-		//print "char =", char
-		//data_str += char
-		//print temp, hum, dew
+		if (temp == 0)
+			print temp, hum, dew
+		endif
 	while (1)
 	
 	make/free/n=3 data = {temp, hum, dew}
@@ -128,17 +127,20 @@ end
 
 function log_data(s)	
 	struct WMBackgroundStruct &s
+	
 	wave sensor_log
 	if (!waveexists(sensor_log))
 		make/o/n=(0,3) sensor_log
 		make/d/o/n=0 sensor_log_time
 		setscale d, 0, 0, "dat", sensor_log_time
 	endif
-	//make/free/n=3 current_data
+	
 	wave current_data = sensor#measure_data()
 	variable i = dimsize(sensor_log, 0), j = numpnts(current_data)
 	redimension/n=(i+1,j) sensor_log
 	sensor_log[i][] = current_data[q]
+	
+	wave sensor_log_time
 	redimension/n=(i+1) sensor_log_time
 	sensor_log_time[i] = datetime
 	doupdate
@@ -146,14 +148,17 @@ function log_data(s)
 	return 0	// continue background task
 end
 
-function start_data_logging()
-	variable numTicks = 10 * 60		// run every 10 seconds
+function start_data_logging(dt)
+	variable dt	// time interval in seconds
+	sensor#open_comms()
+	variable numTicks = dt * 60		// run every 60 seconds
 	CtrlNamedBackground data_logging, period=numTicks, proc=log_data
 	CtrlNamedBackground data_logging, start
 end
 
 function stop_data_logging()
 	CtrlNamedBackground data_logging, stop
+	sensor#close_comms()
 end
 
 function display_data_logging()
