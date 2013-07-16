@@ -126,7 +126,8 @@ static function/wave import_data(ch, wname)
 	endif
 	// scale waves
 	data = ((data - yo)*ym)+y0
-	setscale/p x, x0, xinc, data
+	setscale d, 0, 0, "V", data
+	setscale/p x, x0, xinc, "s", data
 	// save wave
 	duplicate/o data, $(data_folder + ":" + wname)
 	wave w = $(data_folder + ":" + wname)

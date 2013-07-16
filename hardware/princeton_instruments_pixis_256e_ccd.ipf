@@ -89,6 +89,9 @@ function scale_kinetics()
 	variable shiftrate = 9.2e-6, windowsize = 1
 	variable resolution = (exp_time*1e-6 + shiftrate)/windowsize
 	setscale/P x, 0, resolution, "s", image
+	make/o/n=(dimsize(image, 0)) $(current_folder + ":timing")
+	wave timing = $(current_folder + ":timing")
+	timing = resolution*x
 	if (waveexists($(current_folder + ":wavelength")))
 		wave wavelength = $(current_folder + ":wavelength")
 		setscale/i y, wavelength[0], wavelength[numpnts(wavelength)-2], "m", image

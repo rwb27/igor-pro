@@ -303,7 +303,8 @@ static function/wave import_data(ch, wname)
 	
 	wname = data_folder + ":" + wname
 	make/o/n=(points+10) $wname
-	wave w = $wname
+	make/o/n=(points) $(wname+"_time")
+	wave w = $wname, t = $(wname+"_time")
 	w = 0
 	VISAwrite instr, ":waveform:source channel"+ch
 	VISAwrite instr, ":waveform:format byte"
@@ -323,6 +324,7 @@ static function/wave import_data(ch, wname)
 	w = y_or + (y_inc * (w - y_ref))
 	setscale d, 0, 0, "V", w
 	setscale/p x, x_or, x_inc, "s", w
+	t = x*x_inc + x_or
 	variable/g $(param_dir + ":y_or") = y_or
 	variable/g $(param_dir + ":y_inc") = y_inc
 	variable/g $(param_dir + ":y_ref") = y_ref
