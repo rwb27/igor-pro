@@ -177,11 +177,7 @@ static function display_data(df)
 	wave/sdfr=df2 oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
 	smooth 2, oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
 	
-<<<<<<< HEAD
 	clean_displacement(displacement, (getDataFolder(1, df2)+"displacement_mod")) //clean up displacement trace
-=======
-	// scale displacement
->>>>>>> 21b68a04d1a2b3a70a7115852db1a8627504de46
 	wave/sdfr=df2 displacement_mod
 	variable init = displacement_mod[0]
 	displacement_mod -= init
@@ -240,7 +236,6 @@ static function display_data(df)
 	SetAxis/A=2 r1
 end
 
-<<<<<<< HEAD
 function fit_snap_to_contact(df, contact_points)
 	DFREF df
 	wave contact_points
@@ -267,7 +262,8 @@ function fit_snap_to_contact(df, contact_points)
 	variable ds = W_sigma[1]*1000000
 	printf "AFM sensitivity is %f +/- %f V/m", sensitivity, ds
 	return sensitivity
-=======
+end
+
 static function average_data(df)
 	dfref df
 	dfref df2 = df:analysis
@@ -313,5 +309,4 @@ static function average_data(df)
 	duplicate/o new_afm_amp, afm_amplitude_mod
 	duplicate/o new_afm_phase, afm_phase_mod
 	duplicate/o new_afm_dc,afm_dc_amplitude_mod
->>>>>>> 21b68a04d1a2b3a70a7115852db1a8627504de46
 end
