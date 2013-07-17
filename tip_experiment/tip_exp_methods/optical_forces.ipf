@@ -4,7 +4,7 @@
 #include "pi_pi733_3cd_stage"
 #include "tektronix_tds1001b"
 #include "princeton_instruments_pixis_256e_ccd"
-#include "oo spectrometer v4.2"
+//#include "oo spectrometer v4.2"
 #include "srs_sr830_lockin_amplifier"
 #include "srs_sr830_lockin_amplifier_2"
 
@@ -103,7 +103,7 @@ static function measure()
 		afm_data = lockin2#measure_rtheta()
 		tek#import_data("1", "photodiode")
 		tek#import_data("2", "afm")
-		oo_read()
+		//oo_read()
 		
 		// record measurements
 		i = numpnts(oafm_amplitude)
@@ -136,4 +136,77 @@ static function measure()
 	lockin#close_comms()
 	lockin2#close_comms()
 	tek#close_comms()
+end
+
+static function display_data(df)
+	dfref df
+	// load waves
+	wave/sdfr=df displacement, afm_amplitude, afm_phase, oafm_amplitude, oafm_phase, afm_dc_amplitude
+	wave/sdfr=df wavelength, spec2d, wavelength_t, spec2d_t
+	
+	// smooth waves
+	newdatafolder/o df:analysis
+	dfref df2 = df:analysis
+	duplicate/o oafm_amplitude, df2:oafm_amplitude_mod
+	duplicate/o oafm_phase, df2:oafm_phase_mod
+	duplicate/o afm_amplitude, df2:afm_amplitude_mod
+	duplicate/o afm_phase, df2:afm_phase_mod
+	duplicate/o afm_dc_amplitude, df2:afm_dc_amplitude_mod
+	duplicate/o displacement, df2:displacement_mod
+	wave/sdfr=df2 oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
+	smooth 2, oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
+	
+	wave/sdfr=df2 displacement_mod
+	variable init = displacement_mod[0]
+	displacement_mod -= init
+	duplicate/o displacement_mod, df2:displacement_mod_ax
+	wave/sdfr=df2 displacement_mod_ax
+	variable i = numpnts(displacement_mod_ax)
+	redimension/n=(i+1) displacement_mod_ax
+	displacement_mod_ax[i] = 2*displacement_mod_ax[i-1] - displacement_mod_ax[i-2]
+	
+	duplicate/o spec2d, df2:spec2d_mod
+	duplicate/o spec2d_t, df2:spec2d_t_mod
+	duplicate/o wavelength, df2:wavelength_ax
+	duplicate/o wavelength_t, df2:wavelength_t_ax
+	wave/sdfr=df2 spec2d_mod, spec2d_t_mod, wavelength_ax, wavelength_t_ax
+	matrixtranspose spec2d_mod
+	matrixtranspose spec2d_t_mod
+	i = numpnts(wavelength_ax)
+	redimension/n=(i+1) wavelength_ax
+	wavelength_ax[i] = 2*wavelength_ax[i-1] - wavelength_ax[i-2]
+	i = numpnts(wavelength_t_ax)
+	redimension/n=(i+1) wavelength_t_ax
+	wavelength_t_ax[i] = 2*wavelength_t_ax[i-1] - wavelength_t_ax[i-2]
+	
+	// display data
+	dowindow/k optical_force_data
+	display/n=optical_force_data oafm_amplitude_mod vs displacement_mod
+	appendtograph/r oafm_phase_mod vs displacement_mod
+	appendtograph/l=l1 afm_amplitude_mod vs displacement_mod
+	appendtograph/r=r1 afm_phase_mod vs displacement_mod
+	appendtograph/l=l2 afm_dc_amplitude_mod vs displacement_mod
+	appendimage/l=l3 spec2d_mod vs {displacement_mod_ax,wavelength_ax}
+	appendimage/l=l4 spec2d_t_mod vs {displacement_mod_ax,wavelength_t_ax}
+	// change line colours
+	modifygraph rgb(oafm_amplitude_mod)=(65280,0,0), rgb(oafm_phase_mod)=(0,0,65280)
+	modifygraph rgb(afm_amplitude_mod)=(65280,0,0), rgb(afm_phase_mod)=(0,0,65280)
+	modifygraph axisenab(l2)={0.41,0.6}, axisenab(l1)={0.61,0.8}, axisenab(left)={0.81,1}
+	modifygraph axisenab(r1)={0.61,0.8}, axisenab(right)={0.81,1}
+	modifygraph axisenab(l3)={0.21,0.4}, axisenab(l4)={0,0.2}
+	modifygraph height={aspect, 1}
+	ModifyGraph minor=1,fSize=10,lblPosMode=1,lblPos=48,btLen=4,stLen=2,freePos=0
+	// modify spectra display
+	ModifyImage spec2d_mod ctab= {*,*,Geo,0}
+	ModifyImage spec2d_mod ctabAutoscale=1,lookup= $""
+	ModifyImage spec2d_t_mod ctab= {*,*,Geo,0}
+	ModifyImage spec2d_t_mod ctabAutoscale=1,lookup= $""
+	SetAxis l3 4.5e-07,8.5e-07
+	SetAxis l4 4.5e-07,8.5e-07
+	// autoscale axes
+	SetAxis/A=2 left
+	SetAxis/A=2 l1
+	SetAxis/A=2 l2
+	SetAxis/A=2 right
+	SetAxis/A=2 r1
 end
