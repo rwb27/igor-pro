@@ -161,6 +161,7 @@ end
 
 static function display_data(df)
 	dfref df
+	variable i				// needed lots later on
 	// load waves
 	wave/sdfr=df displacement, afm_amplitude, afm_phase, oafm_amplitude, oafm_phase, afm_dc_amplitude
 	wave/sdfr=df wavelength, spec2d, wavelength_t, spec2d_t
@@ -176,16 +177,23 @@ static function display_data(df)
 	wave/sdfr=df2 oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
 	smooth 2, oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
 	
+<<<<<<< HEAD
 	clean_displacement(displacement, (getDataFolder(1, df2)+"displacement_mod")) //clean up displacement trace
+=======
+	// scale displacement
+>>>>>>> 21b68a04d1a2b3a70a7115852db1a8627504de46
 	wave/sdfr=df2 displacement_mod
 	variable init = displacement_mod[0]
 	displacement_mod -= init
 	duplicate/o displacement_mod, df2:displacement_mod_ax
 	wave/sdfr=df2 displacement_mod_ax
-	variable i = numpnts(displacement_mod_ax)
+	i = numpnts(displacement_mod_ax)
 	redimension/n=(i+1) displacement_mod_ax
 	displacement_mod_ax[i] = 2*displacement_mod_ax[i-1] - displacement_mod_ax[i-2]
 	
+	average_data(df)
+	
+	// modify spectra
 	duplicate/o spec2d, df2:spec2d_mod
 	duplicate/o spec2d_t, df2:spec2d_t_mod
 	duplicate/o wavelength, df2:wavelength_ax
@@ -232,6 +240,7 @@ static function display_data(df)
 	SetAxis/A=2 r1
 end
 
+<<<<<<< HEAD
 function fit_snap_to_contact(df, contact_points)
 	DFREF df
 	wave contact_points
@@ -258,4 +267,51 @@ function fit_snap_to_contact(df, contact_points)
 	variable ds = W_sigma[1]*1000000
 	printf "AFM sensitivity is %f +/- %f V/m", sensitivity, ds
 	return sensitivity
+=======
+static function average_data(df)
+	dfref df
+	dfref df2 = df:analysis
+	wave/sdfr=df2 displacement_mod, oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
+	// average data
+	make/free/n=0 new_displacement, instances
+	make/free/n=0 new_oafm_amp, new_oafm_phase, new_afm_amp, new_afm_phase, new_afm_dc
+	variable i = numpnts(displacement_mod)
+	variable j, k
+	for (i = 0; i < numpnts(displacement_mod); i += 1)
+		// compare value i with elements j in new_displacement
+		for (j = 0; j < numpnts(new_displacement); j += 1)
+			// if wave[i] is found in wave[j] then do no append but increment instance
+			if (displacement_mod[i] == new_displacement[j])
+				instances[j] += 1
+				new_oafm_amp[j] += oafm_amplitude_mod[i]
+				new_oafm_phase[j] += oafm_phase_mod[i]
+				new_afm_amp[j] += afm_amplitude_mod[i]
+				new_afm_phase[j] += afm_phase_mod[i]
+				new_afm_dc[j] += afm_dc_amplitude_mod[i]
+			endif
+		endfor
+		// else if wave[i] is not found in wave[j] append to wave and set instance to 1
+		k = numpnts(new_displacement)
+		redimension/n=(k+1) new_displacement, instances
+		new_displacement[k] = displacement_mod[i]
+		instances[k] = 1
+		redimension/n=(k+1) new_oafm_amp, new_oafm_phase, new_afm_amp, new_afm_phase, new_afm_dc
+		new_oafm_amp[k] = oafm_amplitude_mod[i]
+		new_oafm_phase[k] = oafm_phase_mod[i]
+		new_afm_amp[k] = afm_amplitude_mod[i]
+		new_afm_phase[k] = afm_phase_mod[i]
+		new_afm_dc[k] = afm_dc_amplitude_mod[i]
+	endfor
+	new_oafm_amp /= instances
+	new_oafm_phase /= instances
+	new_afm_amp /= instances
+	new_afm_phase /= instances
+	new_afm_dc /= instances
+	duplicate/o new_displacement, displacement_mod
+	duplicate/o new_oafm_amp, oafm_amplitude_mod
+	duplicate/o new_oafm_phase, oafm_phase_mod
+	duplicate/o new_afm_amp, afm_amplitude_mod
+	duplicate/o new_afm_phase, afm_phase_mod
+	duplicate/o new_afm_dc,afm_dc_amplitude_mod
+>>>>>>> 21b68a04d1a2b3a70a7115852db1a8627504de46
 end
