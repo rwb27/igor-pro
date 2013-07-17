@@ -1,32 +1,30 @@
 #pragma moduleName = centroid
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
-function adjust_data(data)
+function adjust_bkgd(data, axis)
 	wave data
+	string axis
 	variable n = dimsize(data, 0), m = dimsize(data, 1)
-	// normalise data
-	variable wmax = wavemax(data)
-	data /= wmax
-	// invert data if necessary
-	if (data[0][0] > data[n/2][m/2])
-		print "inverting", nameofwave(data)
-		data = 1 - data
-	endif
 	// subtract/adjust background
 	print "getting background"
 	variable a,b,c,d
-	// first row
-	make/free/n=(n) temp = data[0][p]
-	a = wavemax(temp)
-	// last row
-	make/free/n=(n) temp = data[n-1][p]
-	b = wavemax(temp)
-	// first column
-	make/free/n=(m) temp = data[p][0]
-	c = wavemax(temp)
-	// last column
-	make/free/n=(m) temp = data[p][m-1]
-	d = wavemax(temp)
+	if (stringmatch(axis, "y"))
+		// first row
+		make/free/n=(n) temp = data[0][p]
+		a = wavemax(temp)
+		// last row
+		make/free/n=(n) temp = data[n-1][p]
+		b = wavemax(temp)
+		c = -1; d = -1
+	elseif (stringmatch(axis, "x"))
+		a = -1; b = -1
+		// first column
+		make/free/n=(m) temp = data[p][0]
+		c = wavemax(temp)
+		// last column
+		make/free/n=(m) temp = data[p][m-1]
+		d = wavemax(temp)
+	endif
 	make/free/n=4 temp={a,b,c,d}
 	variable bkgd = wavemax(temp)
 	if (bkgd < wavemax(data))
@@ -46,9 +44,35 @@ function adjust_data(data)
 	return 0
 end
 
+function adjust_data(data)
+	wave data
+	variable n = dimsize(data, 0), m = dimsize(data, 1)
+	// normalise data
+	variable wmax = wavemax(data)
+	data /= wmax
+	// invert data if necessary
+	if (mean(get_outer_ring(data)) > data[n/2][m/2])
+		print "inverting", nameofwave(data)
+		data = 1 - data
+	endif
+end
+
+function/wave get_outer_ring(data)
+	wave data
+	variable n = dimsize(data, 0), m = dimsize(data, 1)
+	make/free/n=(n) first_row = data[0][p]
+	make/free/n=(n) last_row = data[n-1][p]
+	make/free/n=(m-2) first_column = data[p+1][0]
+	make/free/n=(m-2) last_column = data[p+1][m-1]
+	make/free/n=0 outer_ring
+	concatenate/np/kill/o {first_row, last_row, first_column, last_column}, outer_ring
+	return outer_ring
+end
+
 function get_centroid(data, ax, axis)
 	wave data, ax
 	string axis
+	adjust_bkgd(data, axis)
 	variable centroid = 0, num = 0, denom = 0
 	variable i, j
 	if (stringmatch(axis, "x"))
@@ -100,11 +124,7 @@ end
 
 function print_centroids()
 	create_gaussian()
-	adjust_data(root:test_gaussian)
-	print get_centroid(root:test_gaussian, root:x_ax, "x")
-	print get_centroid(root:test_gaussian, root:y_ax, "y")
+	print get_centroids(root:test_gaussian, root:x_ax, root:y_ax)
 	create_gaussian2()
-	adjust_data(root:test_gaussian)
-	print get_centroid(root:test_gaussian, root:x_ax, "x")
-	print get_centroid(root:test_gaussian, root:y_ax, "y")
+	print get_centroids(root:test_gaussian, root:x_ax, root:y_ax)
 end
