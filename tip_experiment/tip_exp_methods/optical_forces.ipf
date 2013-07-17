@@ -1,10 +1,12 @@
 #pragma moduleName = optical_forces
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
+#ifdef LAB_MACHINE
+
 #include "pi_pi733_3cd_stage"
 #include "tektronix_tds1001b"
 #include "princeton_instruments_pixis_256e_ccd"
-//#include "oo spectrometer v4.2"
+#include "oo spectrometer v4.2"
 #include "srs_sr830_lockin_amplifier"
 #include "srs_sr830_lockin_amplifier_2"
 
@@ -103,7 +105,7 @@ static function measure()
 		afm_data = lockin2#measure_rtheta()
 		tek#import_data("1", "photodiode")
 		tek#import_data("2", "afm")
-		//oo_read()
+		oo_read()
 		
 		// record measurements
 		i = numpnts(oafm_amplitude)
@@ -137,6 +139,25 @@ static function measure()
 	lockin2#close_comms()
 	tek#close_comms()
 end
+#endif
+
+function clean_displacement(displacement, output_name)
+	wave displacement
+	string output_name
+	duplicate displacement, $output_name
+	wave output = $output_name
+
+	make/free/n=(numpnts(displacement) - 1) dz
+	dz = displacement[p+1] - displacement[p]
+	smooth 5, dz
+	smooth /M=0 21, dz
+	dz = sign(dz) * 10^round( max(-3, log(abs(dz))))
+
+	variable i=0
+	for(i=1; i<numpnts(displacement); i+=1)
+		output[i] = output[i-1] + dz[i-1]
+	endfor
+end
 
 static function display_data(df)
 	dfref df
@@ -152,10 +173,10 @@ static function display_data(df)
 	duplicate/o afm_amplitude, df2:afm_amplitude_mod
 	duplicate/o afm_phase, df2:afm_phase_mod
 	duplicate/o afm_dc_amplitude, df2:afm_dc_amplitude_mod
-	duplicate/o displacement, df2:displacement_mod
 	wave/sdfr=df2 oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
 	smooth 2, oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
 	
+	clean_displacement(displacement, (getDataFolder(1, df2)+"displacement_mod")) //clean up displacement trace
 	wave/sdfr=df2 displacement_mod
 	variable init = displacement_mod[0]
 	displacement_mod -= init
@@ -209,4 +230,32 @@ static function display_data(df)
 	SetAxis/A=2 l2
 	SetAxis/A=2 right
 	SetAxis/A=2 r1
+end
+
+function fit_snap_to_contact(df, contact_points)
+	DFREF df
+	wave contact_points
+	
+	wave afm = df:afm_dc_amplitude_mod, z = df:displacement_mod
+	
+	make/O/N=0 afm_snippets, z_snippets
+	
+	variable i
+	for(i=0; i+1<numpnts(contact_points); i+=2)
+		variable start = contact_points[i]
+		variable stop = contact_points[i+1]
+		variable position = numpnts(afm_snippets)
+		
+		redimension/N=(position + stop - start + 1) afm_snippets, z_snippets
+		
+		afm_snippets[position, position + stop - start] = afm[p - position + start]
+		z_snippets[position, position + stop - start] = z[p - position + start]
+	endfor
+	
+	CurveFit line, afm_snippets /X=z_snippets
+	wave w_coef, w_sigma
+	variable sensitivity = W_coef[1]*1000000
+	variable ds = W_sigma[1]*1000000
+	printf "AFM sensitivity is %f +/- %f V/m", sensitivity, ds
+	return sensitivity
 end
