@@ -263,9 +263,14 @@ static function background_loop(s)
 	//// run feedback
 	dfref df = root:tip_position
 	nvar/sdfr=df set_point, scan_step, scan_size
+	print "aligning tips"
 	align_tips(scan_size, scan_step)
+	doupdate
+	print "moving to centre"
 	move_to_centre()
+	print "adjusting position"
 	adjust_position(set_point)
+	print "updating measurements"
 	//// measure position
 	pi_stage#get_pos()
 	nvar/z/sdfr=df amp
@@ -407,7 +412,7 @@ static function adjust_position(set_point)
 	variable dz = -2*(amp - set_point) + 1e-3
 	dz = 2e-3
 	if (set_point <= amp)				// too far away from sample
-		print amp, set_point
+		print "amp =", amp, "set point =",  set_point
 		print "moving in", 1000*dz
 		pi_stage#move_rel("A", -dz)	// move in 1 nm
 	elseif (set_point > amp)			// too close to sample

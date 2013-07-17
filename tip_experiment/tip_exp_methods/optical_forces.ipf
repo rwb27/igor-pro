@@ -38,6 +38,7 @@ static function measure()
 		wave wl_wave = df:wavelength
 		wl_wave *= 1e-9
 		setscale d, 0, 0, "m", wl_wave
+		make/o/n=(numpnts(wl_wave), 1) df:spec2d
 		// extra spectra data
 		if (numspectrometers == 2)
 			duplicate/o root:oo:data:current:wl_wave_2, df:wavelength_t
@@ -55,11 +56,11 @@ static function measure()
 	
 	// display data
 	dowindow/k optical_force_data
-	display/n=optical_force_data oafm_amplitude vs displacement
-	appendtograph/r oafm_phase vs displacement
-	appendtograph/l=l1 afm_amplitude vs displacement
-	appendtograph/r=r1 afm_phase vs displacement
-	appendtograph/l=l2 afm_dc_amplitude vs displacement
+	display/n=optical_force_data oafm_amplitude
+	appendtograph/r oafm_phase
+	appendtograph/l=l1 afm_amplitude
+	appendtograph/r=r1 afm_phase
+	appendtograph/l=l2 afm_dc_amplitude
 	modifygraph axisenab(l2)={0,0.33}, axisenab(l1)={0.34,0.66}, axisenab(left)={0.67,1}
 	modifygraph axisenab(r1)={0.34,0.66}, axisenab(right)={0.67,1}
 	
@@ -80,12 +81,20 @@ static function measure()
 		keys = getkeystate(0)
 		if (keys & 32)			// manual escape (esc)
 			break
-		elseif (keys & 16)		// shift
+		elseif (keys & 4)		// shift
 			direction *= -1
+			print "direction =", direction
+		elseif (keys & 1)		//control
+			step /= 10
+			print "step = ", step * direction
+		elseif (keys & 2)		//alt
+			step *= 10
+			print "step = ", step * direction
 		endif
 		
 		// move tips
 		pi_stage#move_rel("A", direction*step)
+		sleep/s 0.25
 		
 		// make measurements
 		sleep/s 4*time_constant

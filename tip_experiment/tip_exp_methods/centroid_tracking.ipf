@@ -9,9 +9,11 @@ function adjust_data(data)
 	data /= wmax
 	// invert data if necessary
 	if (data[0][0] > data[n/2][m/2])
+		print "inverting", nameofwave(data)
 		data = 1 - data
 	endif
 	// subtract/adjust background
+	print "getting background"
 	variable a,b,c,d
 	// first row
 	make/free/n=(n) temp = data[0][p]
@@ -26,15 +28,21 @@ function adjust_data(data)
 	make/free/n=(m) temp = data[p][m-1]
 	d = wavemax(temp)
 	make/free/n=4 temp={a,b,c,d}
-	data -= wavemax(temp)
-	variable i, j
-	for (i = 0; i < dimsize(data, 0); i += 1)
-		for (j = 0; j < dimsize(data, 1); j += 1)
-			if (data[i][j] < 0)
-				data[i][j] = 0
-			endif
+	variable bkgd = wavemax(temp)
+	if (bkgd < wavemax(data))
+		print "subtracting background"
+		data -= wavemax(temp)
+		print "adjusting data"
+		variable i, j
+		for (i = 0; i < dimsize(data, 0); i += 1)
+			for (j = 0; j < dimsize(data, 1); j += 1)
+				if (data[i][j] < 0)
+					data[i][j] = 0
+				endif
+			endfor
 		endfor
-	endfor
+		print "background subtracted"
+	endif
 	return 0
 end
 
