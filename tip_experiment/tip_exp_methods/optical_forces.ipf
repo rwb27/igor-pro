@@ -1,6 +1,7 @@
 #pragma moduleName = optical_forces
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
+#include "machine_definitions"
 #ifdef LAB_MACHINE
 
 #include "pi_pi733_3cd_stage"
@@ -144,7 +145,7 @@ end
 function clean_displacement(displacement, output_name)
 	wave displacement
 	string output_name
-	duplicate displacement, $output_name
+	duplicate/o displacement, $output_name
 	wave output = $output_name
 
 	make/free/n=(numpnts(displacement) - 1) dz
@@ -175,7 +176,7 @@ static function display_data(df)
 	duplicate/o afm_phase, df2:afm_phase_mod
 	duplicate/o afm_dc_amplitude, df2:afm_dc_amplitude_mod
 	wave/sdfr=df2 oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
-	smooth 2, oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
+	//smooth 2, oafm_amplitude_mod, oafm_phase_mod, afm_amplitude_mod, afm_phase_mod, afm_dc_amplitude_mod
 	
 	clean_displacement(displacement, (getDataFolder(1, df2)+"displacement_mod")) //clean up displacement trace
 	wave/sdfr=df2 displacement_mod
@@ -187,7 +188,7 @@ static function display_data(df)
 	redimension/n=(i+1) displacement_mod_ax
 	displacement_mod_ax[i] = 2*displacement_mod_ax[i-1] - displacement_mod_ax[i-2]
 	
-	average_data(df)
+	//average_data(df)
 	
 	// modify spectra
 	duplicate/o spec2d, df2:spec2d_mod
@@ -234,6 +235,22 @@ static function display_data(df)
 	SetAxis/A=2 l2
 	SetAxis/A=2 right
 	SetAxis/A=2 r1
+	
+	//add position-binned data
+	bin_data_folder(df2)
+	appendtograph/r df2:oafm_phase_binned vs df2:bin_centres
+	appendtograph/l df2:oafm_amplitude_binned vs df2:bin_centres
+	appendtograph/r=r1 df2:afm_phase_binned vs df2:bin_centres
+	appendtograph/l=l1 df2:afm_amplitude_binned vs df2:bin_centres
+	appendtograph/l=l2 df2:afm_dc_binned vs df2:bin_centres
+	// change line colours
+	modifygraph rgb(oafm_amplitude_binned)=(65280,0,0), rgb(oafm_phase_binned)=(0,0,65280)
+	modifygraph rgb(afm_amplitude_binned)=(65280,0,0), rgb(afm_phase_binned)=(0,0,65280)
+	modifygraph lsize(oafm_amplitude_binned)=3
+	modifygraph lsize(oafm_phase_binned)=3
+	modifygraph lsize(afm_amplitude_binned)=3
+	modifygraph lsize(afm_phase_binned)=3
+	modifygraph lsize(afm_dc_binned)=3
 end
 
 function fit_snap_to_contact(df, contact_points)
@@ -309,4 +326,70 @@ static function average_data(df)
 	duplicate/o new_afm_amp, afm_amplitude_mod
 	duplicate/o new_afm_phase, afm_phase_mod
 	duplicate/o new_afm_dc,afm_dc_amplitude_mod
+	
+end
+
+function bin_in_x(xwave, ywave, bins, output_ywave)
+	//bin the X coordinate, and average the Y coordinate over the bins
+	wave xwave, ywave, bins, output_ywave
+	redimension/N=(numpnts(bins)-1) output_ywave
+	make/free/N=(numpnts(bins)-1) frequency
+	output_ywave=0
+	
+	variable i
+	for(i=0; i<numpnts(xwave); i+=1)
+		findlevel /EDGE=1 /P/Q bins, xwave[i]
+		if(V_flag==0 && V_LevelX<numpnts(frequency))
+			frequency[floor(V_LevelX)]+=1
+			output_ywave[floor(V_LevelX)]+=ywave[i]
+		endif
+	endfor
+	output_ywave /= frequency
+end
+
+function optimise_bins(xwave, bins, bin_centres)
+	wave xwave, bins, bin_centres
+	redimension /N=(numpnts(bins) - 1) bin_centres
+	make /free/N=(numpnts(bins) - 1) frequency
+	bin_centres=0
+	
+	variable i
+	for(i=0; i<numpnts(xwave); i+=1)
+		findlevel /EDGE=1 /P/Q bins, xwave[i]
+		if(V_flag==0 && V_LevelX<numpnts(frequency))
+			frequency[floor(V_LevelX)]+=1
+			bin_centres[floor(V_LevelX)]+=xwave[i]
+		endif
+	endfor
+	bin_centres /= frequency
+	
+	do
+		findvalue /V=0 frequency
+		if(V_value >= 0)
+			//remove empty bins
+			deletepoints V_value, 1, frequency, bin_centres
+			deletepoints min(V_value, 1), 1, bins
+		endif
+	while(V_value >= 0 && numpnts(bin_centres) > 1)
+end
+
+function bin_data_folder(df)
+	DFREF df
+	DFREF currentdf = getdatafolderDFR()
+	SetDataFolder df
+	
+	wave displacement_mod, afm_dc_amplitude_mod, afm_amplitude_mod, afm_phase_mod, oafm_amplitude_mod, oafm_phase_mod
+	
+	make /o /n=(ceil(wavemax(displacement_mod)*1000) - floor(wavemin(displacement_mod) * 1000) + 1) bins
+	bins = wavemin(displacement_mod)  - 0.0005 + p*0.001 //bins are 1nm
+	make /o/n=(numpnts(bins)-1) bin_centres, afm_dc_binned, afm_amplitude_binned, afm_phase_binned, oafm_amplitude_binned, oafm_phase_binned
+	
+	optimise_bins(displacement_mod, bins, bin_centres)
+	bin_in_x(displacement_mod, afm_dc_amplitude_mod, bins, afm_dc_binned)
+	bin_in_x(displacement_mod, afm_amplitude_mod, bins, afm_amplitude_binned)
+	bin_in_x(displacement_mod, afm_phase_mod, bins, afm_phase_binned)
+	bin_in_x(displacement_mod, oafm_amplitude_mod, bins, oafm_amplitude_binned)
+	bin_in_x(displacement_mod, oafm_phase_mod, bins, oafm_phase_binned)
+	
+	SetDataFolder currentdf
 end
