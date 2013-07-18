@@ -10,199 +10,14 @@
 #include "OO spectrometer v4.2"
 #include "centroid_tracking"
 
-function measure_over_time()
-	newdatafolder/o root:measure_time
-	dfref df = root:measure_time
-	
-	pi_stage#open_comms()
-	lockin2#open_comms()
-	lockin2#purge()
-	variable time_constant = lockin2#get_time_constant()
-	
-	dfref spec_path = root:oo:globalvariables
-	nvar/sdfr=spec_path numspectrometers
-	wave/sdfr=df dtime
-	if (!waveexists(dtime))
-		make/d/o/n=0 df:dtime
-		make/o/n=0 df:amplitude, df:phase
-		// spectra data
-		duplicate/o root:oo:data:current:wl_wave, df:wavelength
-		wave wl_wave = df:wavelength
-		wl_wave *= 1e-9
-		setscale d, 0, 0, "m", wl_wave
-		make/o/n=(numpnts(wl_wave), 1) df:spec2d
-		// extra spectra data
-		if (numspectrometers == 2)
-			duplicate/o root:oo:data:current:wl_wave_2, df:wavelength_t
-			wave wl_wave_t = df:wavelength_t
-			wl_wave_t *= 1e-9
-			setscale d, 0, 0, "m", wl_wave_t
-			make/o/n=(numpnts(wl_wave_t), 1) df:spec2d_t
-		endif
-		lockin2#aphs()				// auto-phase lock-in amplifier
-	endif
-	wave/sdfr=df dtime, amplitude, phase, wavelength, wavelength_t, spec2d, spec2d_t
-	setscale d, 0, 0, "dat", dtime
-	setscale d, 0, 0, "V", amplitude
-	setscale d, 0, 0, "°", phase
-	
-	dowindow/k feedback
-	display/n=feedback amplitude vs dtime
-	appendtograph/r phase vs dtime
-	
-	variable i, keys, j=0
-	variable/c data
-	nvar/sdfr=$pi_stage#gv_path() pos_a
-	pi_stage#get_pos()
-	variable pos_a0 = pos_a
-	do
-		keys = getkeystate(0)
-		if (keys & 32)			// manual escape (esc)
-			break
-		endif
-		
-		if (j == 10)
-			print "moving"
-			j = 0
-			pi_stage#move_rel("A", 1)
-			pi_stage#get_pos()
-			print pos_a, 1000*(pos_a-pos_a0)
-		endif
-		j += 1
-		
-		i = numpnts(amplitude)
-		sleep/s time_constant*4
-		data = lockin2#measure_rtheta()
-		redimension/n=(i+1) dtime, amplitude, phase
-		dtime[i] = datetime
-		amplitude[i] = real(data)
-		phase[i] = imag(data)		
-		oo_read()
-		// store spectra
-		wave spec = root:oo:data:current:spectra
-		redimension/n=(dimsize(spec2d, 0), i+1) spec2d
-		spec2d[][i] = spec[p]
-		if (numspectrometers == 2)
-			wave spec = root:oo:data:current:spectra_2
-			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
-			spec2d_t[][i] = spec[p]
-		endif
-		doupdate
-		sleep/s 1
-	while(1)
-	
-	pi_stage#close_comms()
-	lockin2#close_comms()
-end
-
-function measure_amplitude()
-	// open comms
-	pi_stage#open_comms()
-	tek#open_comms(); tek#initialise()
-	lockin#open_comms()
-	lockin#purge()
-	lockin2#open_comms()
-	lockin2#purge()
-	variable time_constant = lockin2#get_time_constant()
-	
-	string pi_path = pi_stage#gv_path()
-	pi_stage#get_pos()					// read dco on position	
-	nvar/sdfr=$pi_path pos_a		// load read piezo positions
-	
-	wave step
-	if (!waveexists(step))
-		make/o/n=0 step, position, amplitude, phase, frequency, current, current_phase
-		lockin#aphs()
-		lockin2#aphs()				// auto-phase lock-in amplifier
-	endif
-	wave step, position, amplitude, phase, frequency, current, current_phase
-	setscale d, 0, 0, "m", step
-	setscale d, 0, 0, "m", position
-	setscale d, 0, 0, "V", amplitude
-	setscale d, 0, 0, "°", phase
-	setscale d, 0, 0, "A", current
-	setscale d, 0, 0, "°", current_phase
-	setscale d, 0, 0, "Hz", frequency
-	
-	variable i, freq, keys
-	variable/c data, current_data
-	dowindow/k feedback
-	display/n=feedback amplitude vs step
-	appendtograph/r phase vs step
-	appendtograph/l=l1 current vs step
-	appendtograph/r=r1 current_phase vs step
-	modifygraph rgb(amplitude)=(0,0,0), rgb(phase)=(60000,0,0)
-	modifygraph rgb(current)=(0,0,0), rgb(current_phase)=(60000,0,0)
-	ModifyGraph axisEnab(l1)={0,0.5}, axisenab(r1)={0,0.5}, axisenab(left)={0.5,1}, axisenab(right)={0.5,1}
-	ModifyGraph freePos=0
-	variable direction = -1
-	do
-		keys = getkeystate(0)
-		if (keys & 32)			// manual escape (esc)
-			break
-		elseif (keys & 4)		// shift
-			direction *= -1
-			print "shift pressed"
-			sleep/s 1
-		endif
-		i = numpnts(step)
-		pi_stage#move_rel("a", direction*1e-3)
-		sleep/s time_constant*4
-		pi_stage#get_pos()
-		current_data = lockin#measure_rtheta()
-		data = lockin2#measure_rtheta()
-		freq = tek#meas("2", "freq")
-		redimension/n=(i+1) step, position, amplitude, phase, frequency, current, current_phase
-		if (i >0)
-			step[i] = step[i-1] + direction*1e-9
-		else
-			step[i] = 0
-		endif
-		position[i] = 1000*pos_a
-		current[i] = real(current_data)/1e8
-		current_phase[i] = imag(current_data)
-		amplitude[i] = real(data)
-		phase[i] = imag(data)
-		frequency[i] = freq
-		doupdate
-	while (1)
-	pi_stage#close_comms()
-	tek#close_comms()
-	lockin#close_comms()
-	lockin2#close_comms()
-end
-
-function display_feedback()
-	wave step, position, amplitude, phase, frequency, current, current_phase
-	setscale d, 0, 0, "m", step
-	setscale d, 0, 0, "m", position
-	setscale d, 0, 0, "V", amplitude
-	setscale d, 0, 0, "°", phase
-	setscale d, 0, 0, "A", current
-	setscale d, 0, 0, "°", current_phase
-	setscale d, 0, 0, "Hz", frequency
-	dowindow/k feedback
-	display/n=feedback amplitude vs position
-	appendtograph/r phase vs position
-	appendtograph/l=l1 current vs position
-	appendtograph/r=r1 current_phase vs position
-	modifygraph rgb(amplitude)=(0,0,0), rgb(phase)=(60000,0,0)
-	modifygraph rgb(current)=(0,0,0), rgb(current_phase)=(60000,0,0)
-	ModifyGraph axisEnab(l1)={0,0.49}, axisenab(r1)={0,0.49}, axisenab(left)={0.51,1}, axisenab(right)={0.51,1}
-	ModifyGraph freePos=0, lblPosMode=2
-	label left "\\s(amplitude)amplitude (\\U)"
-	label right "\\s(phase)phase (\\U)"
-	label l1 "\\s(current)current (\\U)"
-	label r1 "\\s(current_phase)current phase (\\U)"
-	label bottom "step (\\U)"
-end
-
-static function start_hold_position(set_point, voltage, scan_step, scan_size)
+static function start_hold_position(set_point, set_type, voltage, scan_step, scan_size)
 	variable set_point, voltage, scan_step, scan_size
+	string set_type
 	// setup
 	newdatafolder/o root:tip_position
 	dfref df = root:tip_position
 	variable/g df:set_point=set_point, df:voltage=voltage, df:scan_step=scan_step, df:scan_size=scan_size
+	string/g df:set_type=set_type
 	//// open comms
 	sig_gen#open_comms()
 	pi_stage#open_comms()
@@ -224,7 +39,7 @@ static function start_hold_position(set_point, voltage, scan_step, scan_size)
 	wave/sdfr=df x_ax, y_ax
 	setscale d, 0, 0, "V", fr; setscale d, 0, 0, "°", ftheta
 	setscale d, 0, 0, "m", x_ax; setscale d, 0, 0 ,"m", y_ax
-	//// displayn scan window
+	//// display scan window
 	display_scan()
 	//// setup equipment
 	lockin2#purge()
@@ -239,8 +54,8 @@ static function start_hold_position(set_point, voltage, scan_step, scan_size)
 	appendtograph/r position_a vs dtime
 	//appendtograph/r position_b vs dtime
 	//appendtograph/r position_c vs dtime
-	variable/g df:amp = 0
-	CtrlNamedBackground feedback, period=10, proc=tip_feedback#background_loop
+	variable/g df:set_value = 0
+	CtrlNamedBackground feedback, period=60, proc=tip_feedback#background_loop
 	CtrlNamedBackground feedback, start
 end
 
@@ -259,28 +74,31 @@ static function background_loop(s)
 	variable keys = getkeystate(0)
 	if (keys & 32)	
 		abort
+	elseif (keys & 4)
+		return 0
 	endif
 	//// run feedback
 	dfref df = root:tip_position
 	nvar/sdfr=df set_point, scan_step, scan_size
+	svar/sdfr=df set_type
 	print "aligning tips"
 	align_tips(scan_size, scan_step)
 	doupdate
 	print "moving to centre"
 	move_to_centre()
 	print "adjusting position"
-	adjust_position(set_point)
+	adjust_position(set_point, set_type)
 	print "updating measurements"
 	//// measure position
 	pi_stage#get_pos()
-	nvar/z/sdfr=df amp
+	nvar/z/sdfr=df set_value
 	string pi_path = pi_stage#gv_path()	
 	nvar/sdfr=$pi_path pos_a, pos_b, pos_c
 	wave/sdfr=df amplitude, position_a, position_b, position_c, dtime
 	variable i = numpnts(amplitude)
 	redimension/n=(i+1) amplitude, position_a, position_b, position_c, dtime
 	dtime[i] = datetime
-	amplitude[i] = amp
+	amplitude[i] = set_value
 	position_a[i] = pos_a
 	position_b[i] = pos_b
 	position_c[i] = pos_c
@@ -349,8 +167,6 @@ static function align_tips(scan_size, scan_step)
 	// analysis
 	centroid#get_centroids(fr, x_ax, y_ax)
 	centroid#get_centroids(ftheta, x_ax, y_ax)
-	//fit_alignment_data(fr)
-	//fit_alignment_data(ftheta)
 	return 0
 end
 
@@ -376,18 +192,6 @@ end
 
 static function move_to_centre()
 	dfref df = root:tip_position
-	//wave/sdfr=df fr_w_sigma, ftheta_w_sigma
-	//if (fit_error(fr_w_sigma) <= fit_error(ftheta_w_sigma))
-	//	print fit_error(fr_w_sigma), fit_error(ftheta_w_sigma)
-	//	print "using amp"
-	//	nvar x0 = df:fr_x0
-	//	nvar y0 = df:fr_y0
-	//else
-	//	print fit_error(fr_w_sigma), fit_error(ftheta_w_sigma)
-	//	print "using phase"
-	//	nvar x0 = df:ftheta_x0
-	//	nvar y0 = df:ftheta_y0
-	//endif
 	nvar x0 = df:ftheta_x0, y0 = df:ftheta_y0
 	pi_stage#move("B", x0)
 	pi_stage#move("C", y0)
@@ -397,26 +201,26 @@ static function move_to_centre()
 	set_point_b = x0; set_point_c = y0
 end
 
-static function fit_error(sigma)
-	wave sigma
-	variable f = sqrt( (sigma[2])^2 + (sigma[4])^2 )
-	return f
-end
-
-static function adjust_position(set_point)
+static function adjust_position(set_point, set_type)
 	variable set_point
+	string set_type
 	dfref df = root:tip_position
-	wave/sdfr=df fr = alignment_scan_fr
-	nvar/sdfr=df amp
-	amp = real(lockin2#measure_rtheta())
-	variable dz = -2*(amp - set_point) + 1e-3
+	nvar/sdfr=df set_value
+	variable dz
+	if (stringmatch(set_type, "amp"))
+		set_value = real(lockin2#measure_rtheta())
+		dz = -2*(set_value - set_point) + 1e-3
+	elseif (stringmatch(set_type, "phase"))
+		set_value = imag(lockin2#measure_rtheta())
+		dz = -2*(set_value - set_point) + 1e-3
+	endif
 	dz = 2e-3
-	if (set_point <= amp)				// too far away from sample
-		print "amp =", amp, "set point =",  set_point
+	if (set_point <= set_value)				// too far away from sample
+		print "set value =", set_value, "set point =",  set_point
 		print "moving in", 1000*dz
 		pi_stage#move_rel("A", -dz)	// move in 1 nm
-	elseif (set_point > amp)			// too close to sample
-		print amp, set_point
+	elseif (set_point > set_value)			// too close to sample
+		print set_value, set_point
 		print "moving out", 1000*dz
 		pi_stage#move_rel("A", dz)		// move out 1 nm
 	endif
