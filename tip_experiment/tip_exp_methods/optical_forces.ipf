@@ -368,7 +368,7 @@ function optimise_bins(xwave, bins, bin_centres)
 		if(V_value >= 0)
 			//remove empty bins
 			deletepoints V_value, 1, frequency, bin_centres
-			deletepoints min(V_value, 1), 1, bins
+			deletepoints max(V_value + 1, numpnts(bins) - 2), 1, bins
 		endif
 	while(V_value >= 0 && numpnts(bin_centres) > 1)
 end
@@ -392,4 +392,22 @@ function bin_data_folder(df)
 	bin_in_x(displacement_mod, oafm_phase_mod, bins, oafm_phase_binned)
 	
 	SetDataFolder currentdf
+end
+
+function amplitude_vs_frequency(df, wave_name_pattern, frequencies, amplitudes)
+	dfref df
+	string wave_name_pattern //waves we'll compare
+	wave frequencies, amplitudes
+	
+	
+	variable i
+	for(i=0; i<numpnts(frequencies); i+=1)
+		string currentwavename
+		sprintf currentwavename, wave_name_pattern, frequencies[i]
+		wave orig_signal = df:$currentwavename
+		duplicate/free orig_signal signal
+		
+		smooth 5, signal
+		amplitudes[i] = wavemax(signal) - wavemin(signal)
+	endfor
 end
