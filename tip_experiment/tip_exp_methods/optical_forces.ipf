@@ -142,9 +142,14 @@ static function measure()
 end
 #endif
 
-function clean_displacement(displacement, output_name)
+function clean_displacement(displacement, output_name, [stepsize])
 	wave displacement
 	string output_name
+	variable stepsize
+	if(paramisdefault(stepsize)) 
+		stepsize = 1
+	endif
+	
 	duplicate/o displacement, $output_name
 	wave output = $output_name
 
@@ -152,7 +157,7 @@ function clean_displacement(displacement, output_name)
 	dz = displacement[p+1] - displacement[p]
 	smooth 5, dz
 	smooth /M=0 21, dz
-	dz = sign(dz) * 10^round( max(-3, log(abs(dz))))
+	dz = sign(dz) * 10^round( max(-3, log(abs(dz / stepsize)))) * stepsize
 
 	variable i=0
 	for(i=1; i<numpnts(displacement); i+=1)
