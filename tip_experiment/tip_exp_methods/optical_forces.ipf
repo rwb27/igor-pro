@@ -2,7 +2,7 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 #include "machine_definitions"
-#ifdef LAB_MACHINE
+#ifndef LAB_MACHINE
 
 #include "pi_pi733_3cd_stage"
 #include "tektronix_tds1001b"
@@ -16,6 +16,13 @@ static function measure()
 	newdatafolder/o root:optical_forces
 	dfref df = root:optical_forces
 	
+	// save important parameters
+	nvar/sdfr=$alignment#gv_path() amplified_voltage
+	nvar/sdfr=root totalpower
+	variable/g df:amplified_voltage=amplified_voltage
+	variable/g df:fianium_dac=totalpower
+	
+	
 	// open comms
 	pi_stage#open_comms()
 	tek#open_comms()
@@ -23,6 +30,7 @@ static function measure()
 	lockin#purge()
 	lockin2#open_comms()
 	lockin2#purge()
+	sig_gen#open_comms()
 	
 	// make waves for measurements
 	dfref spec_path = root:oo:globalvariables
@@ -30,10 +38,10 @@ static function measure()
 	wave/sdfr=df displacement
 	if (!waveexists(displacement))
 		// make measurement waves
-		make/o/n=0 df:displacement, df:afm_amplitude, df:afm_phase, df:oafm_amplitude, df:oafm_phase, df:afm_dc_amplitude
+		make/o/n=0 df:displacement, df:afm_amplitude, df:afm_phase, df:oafm_amplitude, df:oafm_phase, df:oafm_undithered_amp, df:oafm_undithered_phase, df:afm_dc_amplitude
 		setscale d, 0, 0, "m", df:displacement
-		setscale d, 0, 0, "V", df:afm_amplitude, df:oafm_amplitude, df:afm_dc_amplitude
-		setscale d, 0, 0, "°", df:afm_phase, df:oafm_phase
+		setscale d, 0, 0, "V", df:afm_amplitude, df:oafm_amplitude, df:afm_dc_amplitude, df:oafm_undithered_amp
+		setscale d, 0, 0, "°", df:afm_phase, df:oafm_phase, df:oafm_undithered_phase
 		lockin#aphs()
 		lockin2#aphs()
 		// make spectra waves
@@ -54,18 +62,21 @@ static function measure()
 	waveclear displacement
 	
 	// load waves
-	wave/sdfr=df displacement, afm_amplitude, afm_phase, oafm_amplitude, oafm_phase, afm_dc_amplitude
+	wave/sdfr=df displacement, afm_amplitude, afm_phase, oafm_amplitude, oafm_phase, oafm_undithered_amp, oafm_undithered_phase, afm_dc_amplitude
 	wave/sdfr=df wavelength, spec2d, wavelength_t, spec2d_t
 	
 	// display data
 	dowindow/k optical_force_data
-	display/n=optical_force_data oafm_amplitude
+	display/n=optical_force_data/k=1 oafm_amplitude
 	appendtograph/r oafm_phase
+//	appendtograph/l oafm_undithered_amp
+//	appendtograph/r oafm_undithered_phase
 	appendtograph/l=l1 afm_amplitude
 	appendtograph/r=r1 afm_phase
 	appendtograph/l=l2 afm_dc_amplitude
 	modifygraph axisenab(l2)={0,0.33}, axisenab(l1)={0.34,0.66}, axisenab(left)={0.67,1}
 	modifygraph axisenab(r1)={0.34,0.66}, axisenab(right)={0.67,1}
+	modifygraph rgb(oafm_phase)=(0,0,65280),  rgb(afm_phase)=(0,0,65280)//,  rgb(oafm_undithered_phase)=(0,0,65280)
 	
 	// setup measurements
 	tek#get_waveform_params("1")
@@ -75,8 +86,8 @@ static function measure()
 	nvar/sdfr=$pi_stage#gv_path() pos_a
 	pi_stage#get_pos()
 	variable pos_a0 = pos_a
-	variable direction = -1, step = 1e-3
-	variable time_constant = lockin2#get_time_constant()
+	variable direction = -1, step = 0.5e-3
+	variable time_constant = max(lockin#get_time_constant(), lockin2#get_time_constant())
 	
 	// take measurements
 	do
@@ -105,12 +116,12 @@ static function measure()
 		oafm_data = lockin#measure_rtheta()
 		afm_data = lockin2#measure_rtheta()
 		tek#import_data("1", "photodiode")
-		tek#import_data("2", "afm")
+		tek#import_data("2", "afm")		
 		oo_read()
 		
 		// record measurements
 		i = numpnts(oafm_amplitude)
-		redimension/n=(i+1) displacement, afm_amplitude, afm_phase, oafm_amplitude, oafm_phase, afm_dc_amplitude
+		redimension/n=(i+1) displacement, afm_amplitude, afm_phase, oafm_amplitude, oafm_phase, afm_dc_amplitude, oafm_undithered_amp, oafm_undithered_phase, afm_dc_amplitude
 		//// store static measurements
 		displacement[i] = pos_a
 		oafm_amplitude[i] = real(oafm_data)
@@ -129,6 +140,17 @@ static function measure()
 			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
 			spec2d_t[][i] = spec[p]
 		endif
+		
+		//acquire and store optical lock-in signal without electrical dithering
+//		sig_gen#output_dc() //turn off electrical modulation (goes before oo_read so it's definitely off when we re-measure oafm)
+//		sig_gen#set_offset(amplified_voltage/80)
+//		sleep/s 4*time_constant + 1
+//		oafm_data = lockin#measure_rtheta()
+//		oafm_undithered_amp[i] = real(oafm_data)
+//		oafm_undithered_phase[i] = imag(oafm_data)
+//		sig_gen#set_offset(0)
+//		sig_gen#output_sine() //re-enable electrical modulation
+//		sleep/s 0.5
 		
 		// end sequence procedures
 		doupdate

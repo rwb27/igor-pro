@@ -50,6 +50,13 @@ static function set_offset(offset)
 	variable/g $(gv_folder + ":offset") = offset
 end
 
+static function output_dc()
+	visa#cmd(hardware_id,"function:shape dc")
+end
+static function output_sine()
+	visa#cmd(hardware_id,"function:shape sinusoid")
+end
+
 // Panel Controls
 
 static function set_frequency_button(ba) : buttoncontrol

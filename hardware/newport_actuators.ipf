@@ -3,9 +3,9 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
 #include "visa_comms"
-static strconstant hardware_id_x = "newport_actuators_x"
-static strconstant hardware_id_y = "newport_actuators_y"
-static strconstant hardware_id_z = "newport_actuators_z"
+static strconstant hardware_id_x = "newport_actuators_x"		// LTA-HL
+static strconstant hardware_id_y = "newport_actuators_y"		// nanoPZ
+static strconstant hardware_id_z = "newport_actuators_z"		// nanoPZ
 static strconstant resourceName_x = "ASRL10"
 static strconstant resourceName_y = "ASRL8"
 static strconstant resourceName_z = "ASRL9"
