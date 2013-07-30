@@ -24,11 +24,37 @@ static function open_comms()
 	return status
 end
 
+static function open_comms_ch(ch)
+	string ch
+	variable status
+	if (stringmatch(ch, "x"))
+		status = visa#open_comms(hardware_id_x, resourceName_x)
+	elseif (stringmatch(ch, "y"))
+		status = visa#open_comms(hardware_id_y, resourceName_y)
+	elseif (stringmatch(ch, "z"))
+		status = visa#open_comms(hardware_id_z, resourceName_z)
+	endif
+	return status
+end
+
 static function close_comms()
 	variable status
 	status = visa#close_comms(hardware_id_x)
 	status = visa#close_comms(hardware_id_y)
 	status = visa#close_comms(hardware_id_z)
+	return status
+end
+
+static function close_comms_ch(ch)
+	string ch
+	variable status
+	if (stringmatch(ch, "x"))
+		status = visa#close_comms(hardware_id_x)
+	elseif (stringmatch(ch, "y"))
+		status = visa#close_comms(hardware_id_y)
+	elseif (stringmatch(ch, "z"))
+		status = visa#close_comms(hardware_id_z)
+	endif
 	return status
 end
 
@@ -216,9 +242,9 @@ static function move_up_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			nvar step = $(gv_folder_x + ":step_x")
-			open_comms()
+			open_comms_ch("x")
 			move("x", step)
-			close_comms()
+			close_comms_ch("x")
 			break
 		case -1:
 			break
@@ -231,9 +257,9 @@ static function move_down_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			nvar step = $(gv_folder_x + ":step_x")
-			open_comms()
+			open_comms_ch("x")
 			move("x", -step)
-			close_comms()
+			close_comms_ch("x")
 			break
 		case -1:
 			break
@@ -246,9 +272,9 @@ static function move_left_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			nvar step = $(gv_folder_z + ":step_z")
-			open_comms()
+			open_comms_ch("z")
 			move("z", -step)
-			close_comms()
+			close_comms_ch("z")
 			break
 		case -1:
 			break
@@ -261,9 +287,9 @@ static function move_right_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			nvar step = $(gv_folder_z + ":step_z")
-			open_comms()
+			open_comms_ch("z")
 			move("z", step)
-			close_comms()
+			close_comms_ch("z")
 			break
 		case -1:
 			break
@@ -276,9 +302,9 @@ static function move_focusdown_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			nvar step = $(gv_folder_y + ":step_y")
-			open_comms()
+			open_comms_ch("y")
 			move("y", step)
-			close_comms()
+			close_comms_ch("y")
 			break
 		case -1:
 			break
@@ -291,9 +317,9 @@ static function move_focusup_button(ba) : buttoncontrol
 	switch (ba.eventcode)
 		case 2:
 			nvar step = $(gv_folder_y + ":step_y")
-			open_comms()
+			open_comms_ch("y")
 			move("y", -step)
-			close_comms()
+			close_comms_ch("y")
 			break
 		case -1:
 			break
