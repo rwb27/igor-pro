@@ -2,26 +2,29 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 #include "machine_definitions"
-#ifndef LAB_MACHINE
+#ifdef LAB_MACHINE
 
+#include "hp33120a_sig_gen"
 #include "pi_pi733_3cd_stage"
 #include "tektronix_tds1001b"
 #include "princeton_instruments_pixis_256e_ccd"
 #include "oo spectrometer v4.2"
 #include "srs_sr830_lockin_amplifier"
 #include "srs_sr830_lockin_amplifier_2"
+#include <NIDAQmxWaveScanProcs>
 
 static function measure()
 	// create data folder for storage
 	newdatafolder/o root:optical_forces
 	dfref df = root:optical_forces
+	newdatafolder/o df:daq_data
+	dfref daq_df = df:daq_data
 	
 	// save important parameters
-	nvar/sdfr=$alignment#gv_path() amplified_voltage
+	nvar/sdfr=$sig_gen#gv_path() voltage
 	nvar/sdfr=root totalpower
-	variable/g df:amplified_voltage=amplified_voltage
+	variable/g df:amplified_voltage=20*voltage
 	variable/g df:fianium_dac=totalpower
-	
 	
 	// open comms
 	pi_stage#open_comms()
@@ -58,6 +61,11 @@ static function measure()
 			setscale d, 0, 0, "m", wl_wave_t
 			make/o/n=(numpnts(wl_wave_t), 1) df:spec2d_t
 		endif
+		// make DAQ waves
+		variable scan_rate = 1.0 / 50e3
+		make/o/n=50000 df:force_y, df:force_x, df:ac_current, df:reference, df:photodiode
+		wave/sdfr=df force_y, force_x, ac_current, reference, photodiode
+		setscale/p x, 0, scan_rate, "s", force_y, force_x, ac_current, reference, photodiode
 	endif
 	waveclear displacement
 	
@@ -88,6 +96,7 @@ static function measure()
 	variable pos_a0 = pos_a
 	variable direction = -1, step = 0.5e-3
 	variable time_constant = max(lockin#get_time_constant(), lockin2#get_time_constant())
+	string wave_params
 	
 	// take measurements
 	do
@@ -116,8 +125,16 @@ static function measure()
 		oafm_data = lockin#measure_rtheta()
 		afm_data = lockin2#measure_rtheta()
 		tek#import_data("1", "photodiode")
-		tek#import_data("2", "afm")		
+		tek#import_data("2", "afm")	
 		oo_read()
+		wave_params = ""
+		wave_params += "force_y, 1/diff -10, 10;"
+		wave_params += "force_x, 1/diff -10, 10;"
+		wave_params += "ac_current, 1/diff -10, 10;"
+		wave_params += "reference, 1/diff -10, 10;"
+		wave_params += "photodiode, 1/diff -10, 10;"
+		//DAQmx_Scan/dev="dev1" WAVES="force_y, 1/diff; force_x, 2/diff; ac_current, 3/diff; reference, 4/diff; photodiode, 5/diff;"
+		DAQmx_Scan/dev="dev1" WAVES=wave_params
 		
 		// record measurements
 		i = numpnts(oafm_amplitude)
@@ -140,6 +157,12 @@ static function measure()
 			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
 			spec2d_t[][i] = spec[p]
 		endif
+		//// store daq
+		duplicate/o force_y, daq_df:$("force_y_"+num2str(i))
+		duplicate/o force_x, daq_df:$("force_x_"+num2str(i))
+		duplicate/o ac_current, daq_df:$("ac_current_"+num2str(i))
+		duplicate/o reference, daq_df:$("reference_"+num2str(i))
+		duplicate/o photodiode, daq_df:$("photodiode_"+num2str(i))
 		
 		//acquire and store optical lock-in signal without electrical dithering
 //		sig_gen#output_dc() //turn off electrical modulation (goes before oo_read so it's definitely off when we re-measure oafm)
