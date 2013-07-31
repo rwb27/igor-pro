@@ -416,3 +416,27 @@ function amplitude_vs_frequency(df, wave_name_pattern, frequencies, amplitudes)
 		amplitudes[i] = wavemax(signal) - wavemin(signal)
 	endfor
 end
+
+function/wave extract_drift_from_spikes(data, drift)
+	wave data
+	wave drift
+	make/free/n=(numpnts(data)-1) differentialVariance
+	differentialVariance = (data[p+1] - data[p])
+	smooth /b=2 5, differentialVariance              //remove noise
+	differentialVariance = differentialVariance^2
+	smooth /b=2 10, differentialVariance             //average differential variance
+	variable threshold = statsMedian(differentialVariance) * 2 //at a guess, this is a sensible measure of whether or not a given point is a spike...
+	redimension/n=(numpnts(data)) drift
+	drift = differentialVariance[min(p, numpnts(differentialVariance)-1)] < threshold ? data[p] : NaN
+	smooth /b=2 5, drift
+	return drift
+end
+
+function calculate_pos(afm, z, pos, sensitivity)
+	wave afm, z, pos
+	variable sensitivity
+	
+	pos = z - afm/sensitivity
+end
+	
+	
