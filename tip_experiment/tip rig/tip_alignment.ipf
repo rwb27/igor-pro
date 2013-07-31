@@ -582,7 +582,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	endif
 	sleep/s 1
 	do
-		sig_gen#set_frequency(freq); sleep/s 0.5
+		sig_gen#set_frequency(freq); sleep/s 0.1
 		redimension/n=(i+1) frequency
 		frequency[i] = freq
 		

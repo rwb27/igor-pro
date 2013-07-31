@@ -54,8 +54,8 @@ static function start_hold_position(set_point, set_type, voltage, scan_step, sca
 	appendtograph/r position_a vs dtime
 	//appendtograph/r position_b vs dtime
 	//appendtograph/r position_c vs dtime
-	variable/g df:set_value = 0
-	CtrlNamedBackground feedback, period=60, proc=tip_feedback#background_loop
+	variable/g df:set_value = 0, df:scan_valid = 0
+	CtrlNamedBackground feedback, period=60*60, proc=tip_feedback#background_loop
 	CtrlNamedBackground feedback, start
 end
 
@@ -205,7 +205,10 @@ static function adjust_position(set_point, set_type)
 	variable set_point
 	string set_type
 	dfref df = root:tip_position
-	nvar/sdfr=df set_value
+	nvar/sdfr=df set_value, scan_valid
+	if (!scan_valid)
+		return 0
+	endif
 	variable dz
 	if (stringmatch(set_type, "amp"))
 		set_value = real(lockin2#measure_rtheta())
@@ -214,7 +217,7 @@ static function adjust_position(set_point, set_type)
 		set_value = imag(lockin2#measure_rtheta())
 		dz = -2*(set_value - set_point) + 1e-3
 	endif
-	dz = 2e-3
+	dz = 1e-3
 	if (set_point <= set_value)				// too far away from sample
 		print "set value =", set_value, "set point =",  set_point
 		print "moving in", 1000*dz
@@ -224,6 +227,7 @@ static function adjust_position(set_point, set_type)
 		print "moving out", 1000*dz
 		pi_stage#move_rel("A", dz)		// move out 1 nm
 	endif
+	return 0
 end
 
 // Gaussian Fitting Algorithms //

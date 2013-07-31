@@ -47,7 +47,10 @@ function get_centroid(data, ax, axis)
 	make/free/n=(dimsize(data,0), dimsize(data,1)) temp_data
 	temp_data = data
 	waveclear data
-	adjust_bkgd(temp_data, axis)
+	variable bkgd_point = adjust_bkgd(temp_data, axis)
+	if (bkgd_point != 0)
+		return bkgd_point
+	endif
 	variable centroid = 0, num = 0, denom = 0
 	variable i, j
 	if (stringmatch(axis, "x"))
@@ -80,6 +83,7 @@ function adjust_bkgd(data, axis)
 		wave boundaries = get_horizontal_boundaries(data)
 	endif
 	variable bkgd = wavemax(boundaries)
+	variable bkgd_point
 	if (bkgd < wavemax(data))
 		data -= bkgd
 		variable i, j
@@ -90,7 +94,16 @@ function adjust_bkgd(data, axis)
 				endif
 			endfor
 		endfor
+		bkgd_point = 0
+	elseif (bkgd == wavemax(data))
+		imagestats/q data
+		if (stringmatch(axis,"x"))
+			bkgd_point = V_maxRowLoc
+		elseif (stringmatch(axis,"y"))
+			bkgd_point = V_maxColLoc
+		endif
 	endif
+	return bkgd_point
 end
 
 function/wave get_vertical_boundaries(data)
@@ -141,7 +154,7 @@ function create_gaussian2()
 	test_gaussian[][] = gauss2d(w_coef, x_ax[p], y_ax[q]) + enoise(2e-3)
 end
 
-function test()
+static function test()
 	create_gaussian()
 	print get_centroids(root:test_gaussian, root:x_ax, root:y_ax)
 	create_gaussian2()
