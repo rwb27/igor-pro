@@ -6,9 +6,9 @@
 #include "pi_pi733_3cd_stage"
 #include "keithley_2635a_smu"
 #include "agilent_dsox2000_series_dso"
-#include "tektronix_tds1001b"
 #include "princeton_instruments_pixis_256e_ccd"
 #include "oo spectrometer v4.2"
+#include <NIDAQmxWaveScanProcs>
 
 #include "tip_experiment_init"
 #include "tip_experiment_display"
@@ -47,6 +47,7 @@ function tip_scan()			// tip experiment master function
 	// display experiment
 	tip_exp_display#display_scan(scan_folder)
 	
+	wave/sdfr=root force_x, force_y
 	// prepare data storage
 	wave/sdfr=scan_folder steps
 	wave/sdfr=scan_folder displacement
@@ -69,7 +70,6 @@ function tip_scan()			// tip experiment master function
 	// open communications and initialise instruments
 	smu#open_comms()
 	dso#open_comms()
-	tek#open_comms()
 	pi_stage#open_comms()
 	
 	// do experiment
@@ -77,7 +77,7 @@ function tip_scan()			// tip experiment master function
 	variable set_point_reached = 0
 	variable keys
 	// initialise data
-	variable/c smu_data, force_x, force_y
+	variable/c smu_data
 	variable i_range, current_pos
 	
 	// experiment loop
@@ -112,11 +112,13 @@ function tip_scan()			// tip experiment master function
 		i_range = smu#check_current_range()
 		
 		// take measurements
+		DAQmx_Scan/dev="dev1"/bkg WAVES="force_y, 1/diff; force_x, 2/diff;"
 		current_pos = pi_stage#get_pos_ch("a")
 		smu_data = smu#measure_iv()
 		force_x = tek#wave_stats("1")
 		force_y = tek#wave_stats("2")
 		oo_read()
+		fDAQmx_ScanWait("dev1")
 		
 		// STORAGE PHASE
 		// store pz measurements
@@ -131,10 +133,10 @@ function tip_scan()			// tip experiment master function
 		current_range[i] = i_range
 		// store force measurements
 		redimension/n=(i+1) psd_x, psd_y, psd_x_stdev, psd_y_stdev
-		psd_x[i] = real(force_x)
-		psd_x_stdev[i] = imag(force_x)
-		psd_y[i] = real(force_y)
-		psd_y_stdev[i] = imag(force_y)
+		psd_x[i] = mean(force_x)
+		psd_x_stdev[i] = sqrt(variance(force_x))
+		psd_y[i] = mean(force_y)
+		psd_y_stdev[i] = sqrt(variance(force_y))
 		// store spectra
 		duplicate/o root:oo:data:current:spectra, $(scan_folder_str + "spectra:spec_" + num2str(i))
 		wave/sdfr=scan_folder spec = $(":spectra:spec_" + num2str(i))
@@ -176,7 +178,6 @@ function tip_scan()			// tip experiment master function
 	// close communications
 	smu#close_comms()
 	dso#close_comms()
-	tek#close_comms()
 	pi_stage#close_comms()
 	
 	// ANALYSIS

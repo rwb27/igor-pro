@@ -1,11 +1,9 @@
 #pragma modulename = tip_exp_setup
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
-#include "data_handling"
 #include "pi_pi733_3cd_stage"
 #include "keithley_2635a_smu"
 #include "agilent_dsox2000_series_dso"
-#include "tektronix_tds1001b"
 #include "princeton_instruments_pixis_256e_ccd"
 
 static constant g0 = 7.7480917e-5
@@ -17,13 +15,13 @@ static function setup(rst)
 	setup_exp(rst)
 	setup_pi(rst)
 	setup_smu(rst)
-	setup_tek(rst)
 	setup_dso(rst)
 	setup_pixis(rst)
+	setup_daq()
 	setup_spec()
 end
 
-function setup_exp(rst)
+static function setup_exp(rst)
 	variable rst
 	dfref exp_path = $gv_folder
 	nvar/sdfr=exp_path scan_direction, vis_g0, trig_g0, dual_pol_meas
@@ -49,14 +47,13 @@ function setup_exp(rst)
 	endif
 end
 
-function setup_pi(rst)
+static function setup_pi(rst)
 	variable rst
 	dfref pi_path = $pi_stage#gv_path()
-	nvar/sdfr=pi_path vel_a, dco_a
+	nvar/sdfr=pi_path vel_a
 	// reset to defaults
 	if (rst == 1)
 		vel_a = 10
-		dco_a = 0
 	endif
 	pi_stage#open_comms()
 	pi_stage#set_velocity_a(vel_a)
@@ -64,11 +61,10 @@ function setup_pi(rst)
 	pi_stage#set_dco_a(0)
 	pi_stage#set_dco_b(0)
 	pi_stage#set_dco_c(0)
-	pi_stage#get_pos()
 	pi_stage#close_comms()
 end
 
-function setup_smu(rst)
+static function setup_smu(rst)
 	variable rst
 	dfref exp_path = $gv_folder
 	nvar/sdfr=exp_path scan_direction
@@ -90,14 +86,6 @@ function setup_smu(rst)
 	smu#set_current_range(i_range)
 	smu#output(1)
 	smu#close_comms()
-end
-
-function setup_tek(rst)
-	variable rst
-	tek#open_comms()
-	tek#get_waveform_params("1")
-	tek#get_waveform_params("2")
-	tek#close_comms()
 end
 
 function setup_dso(rst)
@@ -152,6 +140,14 @@ function setup_pixis(rst)
 	variable shiftrate = 9.2
 	exp_time = (us_range / 256) - shiftrate
 	pixis#ready(exp_time)
+end
+
+function setup_daq()
+	// make DAQ waves
+	variable scan_time = 1.0/100e3, sample_time = 0.1 * (1.0/scan_time)	// 100 kHz for 0.1 s
+	make/o/n=(sample_time) root:force_y, root:force_x
+	wave/sdfr=root force_y, force_x
+	setscale/p x, 0, scan_rate, "s", force_y, force_x, ac_current, reference, photodiode
 end
 
 function setup_spec()

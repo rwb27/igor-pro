@@ -5,7 +5,6 @@
 #include "pi_pi733_3cd_stage"
 #include "keithley_2635a_smu"
 #include "agilent_dsox2000_series_dso"
-#include "tektronix_tds1001b"
 #include "princeton_instruments_pixis_256e_ccd"
 
 static constant g0 = 7.7480917e-5
@@ -28,7 +27,7 @@ static function init_experiment()
 	variable/g $(gv_folder + ":current_set_point")
 	variable/g $(gv_folder + ":trig_g0")
 	variable/g $(gv_folder + ":vis_g0")
-	variable/g $(gv_folder + ":dual_pol_meas") 
+	variable/g $(gv_folder + ":dual_pol_meas")
 	// amplifier parameters
 	gv_path = "root:global_variables:amplifiers"
 	data#check_gvpath(gv_path)
@@ -72,28 +71,23 @@ end
 static function/df init_scan_folder()
 	nvar/sdfr=$gv_folder append_mode, current_step
 	svar/sdfr=$gv_folder prev_scan_folder = root:data:current_scan_folder
-	string scan_folder, data_folder
-	if (append_mode)													// if appending use previous scan
-		if (stringmatch(prev_scan_folder, ""))							// if appending to nothing go to default response
-			append_mode = 0; current_step = 0
-			scan_folder = data#new_data_folder(data_folder + ":tip_exp_")
-			data#check_folder(scan_folder + ":spectra")
-			data#check_folder(scan_folder + ":time_resolved_data")
-			string/g root:data:current_scan_folder = scan_folder
-			prev_scan_folder = scan_folder
-		endif
-		scan_folder = prev_scan_folder
-		print "appending to", scan_folder, "at point", current_step
-	else																// default non-appending response
+	dfref scan_folder, data_folder
+	if (append_mode && !stringmatch(prev_scan_folder, ""))		// if appending use previous scan
+		scan_folder = $prev_scan_folder
+		print "appending to", getdatafolder(0, scan_folder), "at point", current_step
+	else														// default non-appending response
 		// creation of tip experiment folder structure
 		current_step = 0
-		data_folder = data#check_data_folder()
-		scan_folder = data#new_data_folder(data_folder + ":tip_exp_")
-		data#check_folder(scan_folder + ":spectra")
-		data#check_folder(scan_folder + ":time_resolved_data")
-		string/g root:data:current_scan_folder = scan_folder
+		data_folder = $data#check_data_folder()
+		setdatafolder data_folder
+		scan_folder = data_folder:$uniquename("tip_exp_", 11, 1)
+		setdatafolder root:
+		newdatafolder/o scan_folder
+		newdatafolder/o scan_folder:spectra
+		newdatafolder/o scan_folder:time_resolved_data
+		string/g root:data:current_scan_folder = getdatafolder(0, scan_folder)
 	endif
-	return $scan_folder
+	return scan_folder
 end
 
 static function init_scan_waves(scan_folder)
