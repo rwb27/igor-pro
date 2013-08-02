@@ -483,5 +483,108 @@ function calculate_pos(afm, z, pos, sensitivity)
 	
 	pos = z - afm/sensitivity
 end
+
+function find_periodic_part(y, dest, hpf, fidelity)
+	wave y, dest
+	variable hpf, fidelity
+	make/O/C/N=(numpnts(y)) transformed
+	fft /DEST=transformed y
+	if(hpf>0)
+		transformed[0, x2pnt(transformed, hpf)] = 0
+	endif
 	
+	make/free/N=(numpnts(transformed)) psd
+	psd=magsqr(transformed[p])
+	variable total_power = sum(psd)
+	variable i=0, accumulated_power=0
+	sort/R psd, psd //sort PSD in decreasing order
+	do
+		accumulated_power += psd[i]
+		i+=1
+	while(accumulated_power < total_power * fidelity && i<numpnts(psd))
+	//so, we need to take the i biggest components to encompass the specified amount of power in the signal
+	variable threshold = psd[i-1] //the smallest component we're going to take
 	
+	for(i=0; i<numpnts(transformed); i+=1)
+		if(magsqr(transformed[i]) < threshold)
+			transformed[i]=0
+		endif
+	endfor
+	ifft /DEST=dest transformed
+end
+
+function x_modulo_one_period(y, xdest)
+	wave y, xdest
+	xdest = NaN
+	
+	make/free/n=(numpnts(y)-1) dy
+	dy = y[p+1] - y[p]
+	
+	variable start = 0, stop = -1
+	
+	findlevel /edge=2/P/Q/R=[0, numpnts(dy)-1] dy, 0
+	start = V_levelX
+	do
+		findlevel /edge=2/P/Q/R=[ceil(start+1), numpnts(dy)-1] dy, 0
+		stop = V_levelX
+	
+		if(V_flag == 1)
+			stop = numpnts(y) - 1.6
+		endif
+		
+		xdest[ceil(start+0.5), ceil(stop+0.5)] = leftx(y) + deltax(y) * ( p - (start + 0.5 ))
+		
+		start = stop
+	while(start < numpnts(y) - 2)
+end
+
+function bin_waveform(ywave, xwave, dx, binned_y)
+	wave ywave
+	wave xwave
+	wave binned_y
+	variable dx
+	variable startx = wavemin(xwave)
+	variable n = ceil((wavemax(xwave) - startx)/dx)
+	redimension/n=(n) binned_y
+	setscale /P x, startx, dx, binned_y
+	
+	duplicate/free binned_y, count
+	binned_y=0
+	count=0
+	
+	variable i, j
+	for(i=0; i<numpnts(ywave); i+=1)
+		j = x2pnt(binned_y, xwave[i])
+		if(j<numpnts(binned_y) && j>=0)
+			binned_y[j] += ywave[i]
+			count[j] += 1
+		endif
+	endfor
+	binned_y = binned_y/count
+end
+
+function extractwaveform(y, hpf, fidelity, dx)
+	wave y
+	variable hpf, fidelity, dx
+	
+	duplicate/o y waveform
+	duplicate/o y waveform_s
+	make/o/n=(numpnts(y)) px
+	make/o waveform_binned
+	
+	find_periodic_part(y, waveform_s, hpf, fidelity)
+	x_modulo_one_period(waveform_s, px)
+	//find_periodic_part(y, waveform_s, hpf, fidelity)
+	find_periodic_part(y, waveform, hpf, 1)
+	bin_waveform(waveform, px, dx, waveform_binned)
+end
+
+function run_through_traces(first, last, increment)
+	variable first, last, increment
+	variable i=0
+	for(i=first; i<last; i+=increment)
+		extractwaveform($("root:daq_data:force_y_"+num2str(i)), 10, 0.6, 2e-5)
+		doupdate
+		sleep/s 0.5
+	endfor
+end
