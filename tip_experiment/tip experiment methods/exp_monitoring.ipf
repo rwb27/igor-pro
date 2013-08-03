@@ -29,8 +29,9 @@ function start_monitoring(delay, overwrite)
 	wave/sdfr=monitor_df positions_b
 	wave/sdfr=monitor_df positions_c
 	
+	//sensor#open_comms()
 	wave current_data = sensor#measure_data()
-	variable temp_i = current_data[0], hum_i = current_data[1]
+	variable temp_i = current_data[1], hum_i = current_data[2]
 	nvar/sdfr=$(pi_stage#gv_path()) pos_a, pos_b, pos_c
 	
 	// create data graphs and movie frames
@@ -69,7 +70,7 @@ function start_monitoring(delay, overwrite)
 	dowindow/f mov
 	newmovie/o/f=60 as "c:\\users\\hera\\desktop\\exp_monitor"
 	
-	sensor#open_comms()
+	//sensor#open_comms()
 	pi_stage#open_comms()
 	variable numTicks = delay * 60		// run every <delay> seconds
 	CtrlNamedBackground exp_monitor, period=numTicks, proc=monitor_exp
@@ -96,7 +97,7 @@ function monitor_exp(s)
 	Infinity_Image()
 	time_stamp = time()
 	wave current_data = sensor#measure_data()
-	variable temp_i = current_data[0], hum_i = current_data[1]
+	variable temp_i = current_data[1], hum_i = current_data[2]
 	string data_str = num2str(temp_i)+"°C, "+num2str(hum_i)+"% RH"
 	pi_stage#get_pos()
 	nvar/sdfr=$(pi_stage#gv_path()) pos_a, pos_b, pos_c

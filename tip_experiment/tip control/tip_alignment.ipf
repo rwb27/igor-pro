@@ -176,7 +176,7 @@ function align_tips(scan_size, scan_step)
 			//pi_stage#move("B", pos_b)
 			//sleep/s 0.25
 			// electronic lock-in measurements //
-			sleep/s time_constant*4
+			sleep/s time_constant*3
 			if (electronic_alignment)
 				data = lockin#measure_xy()
 				x[ib][ic] = real(data)
@@ -657,6 +657,33 @@ function resonance_scan_button(ba) : buttoncontrol
 			nvar freq_start = $(gv_folder + ":freq_start"), freq_stop = $(gv_folder + ":freq_stop")
 			nvar freq_inc = $(gv_folder + ":freq_inc")
 			resonance_scan(freq_start, freq_stop, freq_inc)
+			break
+		case -1:
+			break
+	endswitch
+	return 0
+end
+
+function output_sine_button(ba) : buttoncontrol
+	struct wmbuttonaction &ba
+	
+	dfref df = $(sig_gen#gv_path())
+	nvar/z/sdfr=df sig_gen_mode
+	if (!nvar_exists(sig_gen_mode))
+		variable/g df:sig_gen_mode = 1
+	endif
+	
+	switch (ba.eventcode)
+		case 2:
+			sig_gen#open_comms()
+			if (sig_gen_mode == 1)
+				sig_gen#output_dc()
+				sig_gen_mode = 0
+			elseif (sig_gen_mode == 0)
+				sig_gen#output_sine()
+				sig_gen_mode = 1
+			endif
+			sig_gen#close_comms()
 			break
 		case -1:
 			break

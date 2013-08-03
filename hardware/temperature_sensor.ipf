@@ -15,6 +15,7 @@ static function open_comms()
 	VDT2/P=COM28 baud=9600
 	sensor_select()
 	VDTOpenPort2 COM28
+	VDTWrite2 "R\n"
 	return 0
 end
 
@@ -82,9 +83,9 @@ end
 
 static function/wave measure_data()
 	string data_str="", char
-	variable temp, hum, dew
+	variable secs, temp, hum, dew
 	sensor_select()
-	VDTWrite2 "data?\n"
+	VDTWrite2 "measure\n"
 	
 	// temperature sensor has a 5 second delay between measurements
 	// wait at least 5 seconds for command to be accepted
@@ -102,14 +103,14 @@ static function/wave measure_data()
 		if (V_VDT == 0)
 			break
 		endif
-		VDTRead2/O=10 temp, hum, dew
+		VDTRead2/O=10 secs, temp, hum
 		VDTRead2/O=10/T="\r\n" char
 		if (temp == 0)
-			print temp, hum, dew
+			print secs, temp, hum
 		endif
 	while (1)
 	
-	make/free/n=3 data = {temp, hum, dew}
+	make/free/n=3 data = {secs, temp, hum}
 	return data
 end
 

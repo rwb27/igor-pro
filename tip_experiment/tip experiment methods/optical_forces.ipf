@@ -2,6 +2,7 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 #include "machine_definitions"
+#define LAB_MACHINE
 #ifdef LAB_MACHINE
 
 #include "hp33120a_sig_gen"
@@ -21,9 +22,9 @@ static function measure()
 	dfref daq_df = df:daq_data
 	
 	// save important parameters
-	nvar/sdfr=$sig_gen#gv_path() voltage
-	nvar/sdfr=root totalpower
-	variable/g df:amplified_voltage=20*voltage
+	nvar/sdfr=$sig_gen#gv_path() amplitude
+	nvar totalpower
+	variable/g df:amplified_voltage=20*amplitude
 	variable/g df:fianium_dac=totalpower
 	
 	// open comms
@@ -63,15 +64,17 @@ static function measure()
 		endif
 		// make DAQ waves
 		variable scan_rate = 1.0 / 50e3
-		make/o/n=50000 df:force_y, df:force_x, df:ac_current, df:reference, df:photodiode
-		wave/sdfr=df force_y, force_x, ac_current, reference, photodiode
+		make/o/n=10000 root:force_y, root:force_x, root:ac_current, root:reference, root:photodiode
+		wave/sdfr=root force_y, force_x, ac_current, reference, photodiode
 		setscale/p x, 0, scan_rate, "s", force_y, force_x, ac_current, reference, photodiode
+		waveclear force_y, force_x, ac_current, reference, photodiode
 	endif
 	waveclear displacement
 	
 	// load waves
 	wave/sdfr=df displacement, afm_amplitude, afm_phase, oafm_amplitude, oafm_phase, oafm_undithered_amp, oafm_undithered_phase, afm_dc_amplitude
 	wave/sdfr=df wavelength, spec2d, wavelength_t, spec2d_t
+	wave/sdfr=root force_y, force_x, ac_current, reference, photodiode
 	
 	// display data
 	dowindow/k optical_force_data
@@ -94,7 +97,7 @@ static function measure()
 	nvar/sdfr=$pi_stage#gv_path() pos_a
 	pi_stage#get_pos()
 	variable pos_a0 = pos_a
-	variable direction = -1, step = 0.5e-3
+	variable direction = -1, step = 0.3e-3
 	variable time_constant = max(lockin#get_time_constant(), lockin2#get_time_constant())
 	string wave_params
 	
@@ -117,24 +120,24 @@ static function measure()
 		
 		// move tips
 		pi_stage#move_rel("A", direction*step)
-		sleep/s 0.25
+		sleep/s 0.1
 		
 		// make measurements
-		sleep/s 4*time_constant
+		sleep/s 3*time_constant
 		pi_stage#get_pos()
 		oafm_data = lockin#measure_rtheta()
 		afm_data = lockin2#measure_rtheta()
-		tek#import_data("1", "photodiode")
-		tek#import_data("2", "afm")	
+//		tek#import_data("1", "photodiode")
+//		tek#import_data("2", "afm")	
 		oo_read()
-		wave_params = ""
-		wave_params += "force_y, 1/diff -10, 10;"
-		wave_params += "force_x, 1/diff -10, 10;"
-		wave_params += "ac_current, 1/diff -10, 10;"
-		wave_params += "reference, 1/diff -10, 10;"
-		wave_params += "photodiode, 1/diff -10, 10;"
-		//DAQmx_Scan/dev="dev1" WAVES="force_y, 1/diff; force_x, 2/diff; ac_current, 3/diff; reference, 4/diff; photodiode, 5/diff;"
-		DAQmx_Scan/dev="dev1" WAVES=wave_params
+//		wave_params = ""
+//		wave_params += "force_y, 1/diff -10, 10;"
+//		wave_params += "force_x, 1/diff -10, 10;"
+//		wave_params += "ac_current, 1/diff -10, 10;"
+//		wave_params += "reference, 1/diff -10, 10;"
+//		wave_params += "photodiode, 1/diff -10, 10;"
+		DAQmx_Scan/dev="dev1" WAVES="force_y, 1/diff, -1, 1; force_x, 2/diff, -1, 1; ac_current, 3/diff, -1, 1; reference, 4/diff, -1, 1; photodiode, 5/diff, -1, 1;"
+		//DAQmx_Scan/dev="dev1" WAVES=wave_params
 		
 		// record measurements
 		i = numpnts(oafm_amplitude)
@@ -146,8 +149,8 @@ static function measure()
 		afm_amplitude[i] = real(afm_data)
 		afm_phase[i] = imag(afm_data)
 		//// store waveform analysis
-		wave/sdfr=root:tektronix_tds1001b_dso afm
-		afm_dc_amplitude[i] = mean(afm)
+//		wave/sdfr=root:tektronix_tds1001b_dso afm
+//		afm_dc_amplitude[i] = mean(afm)
 		//// store spectra
 		wave spec = root:oo:data:current:spectra
 		redimension/n=(dimsize(spec2d, 0), i+1) spec2d
@@ -163,6 +166,8 @@ static function measure()
 		duplicate/o ac_current, daq_df:$("ac_current_"+num2str(i))
 		duplicate/o reference, daq_df:$("reference_"+num2str(i))
 		duplicate/o photodiode, daq_df:$("photodiode_"+num2str(i))
+		
+		afm_dc_amplitude[i] = mean(force_y)
 		
 		//acquire and store optical lock-in signal without electrical dithering
 //		sig_gen#output_dc() //turn off electrical modulation (goes before oo_read so it's definitely off when we re-measure oafm)
