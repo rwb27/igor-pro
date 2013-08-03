@@ -7,7 +7,6 @@
 #include "hp33120a_sig_gen"
 #include "srs_sr830_lockin_amplifier"
 #include "srs_sr830_lockin_amplifier_2"
-#include "tektronix_tds1001b"
 #include "fit_functions"
 
 static strconstant gv_folder = "root:global_variables:tip_alignment"
@@ -41,7 +40,6 @@ function align_tips(scan_size, scan_step)
 	// open comms
 	pi_stage#open_comms()
 	lockin#open_comms(); lockin2#open_comms()
-	tek#open_comms(); tek#initialise()
 	sig_gen#open_comms()
 	
 	// load signal information
@@ -82,66 +80,51 @@ function align_tips(scan_size, scan_step)
 	pos_b = init_b - scan_size/2
 	pos_c = init_c - scan_size/2
 	
-	// initialise dso parameters
-	dfref tek_path = $tek#gv_path()
-	variable/g tek_path:num_points = 2500
-	
 	// store the current scan
 	string scan_folder = data#check_data_folder()
 	scan_folder = data#check_folder(scan_folder + ":alignment_scans")
 	scan_folder = data#new_data_folder(scan_folder + ":scan_")
 	string/g $(gv_folder + ":current_scan_folder") = scan_folder
+	dfref sf = $scan_folder
 	
 	// store scan parameters
-	variable/g $(scan_folder + ":scan_size") = scan_size
-	variable/g $(scan_folder + ":scan_step") = scan_step
-	variable/g $(scan_folder + ":frequency") = frequency
-	variable/g $(scan_folder + ":voltage") = amplified_voltage
-	variable/g $(scan_folder + ":offset") = amplified_offset
-	variable/g $(scan_folder + ":init_pos_a") = init_a
-	variable/g $(scan_folder + ":init_pos_b") = init_b
-	variable/g $(scan_folder + ":init_pos_c") = init_c
-	variable/g $(scan_folder + ":alignment_set") = set
-	variable/g $(scan_folder + ":electronic_alignment") = electronic_alignment
-	variable/g $(scan_folder + ":force_alignment") = force_alignment
-	string/g $(scan_folder + ":time_stamp") = time() + " " + date()
+	variable/g sf:scan_size = scan_size
+	variable/g sf:scan_step = scan_step
+	variable/g sf:frequency = frequency
+	variable/g sf:voltage = amplified_voltage
+	variable/g sf:offset = amplified_offset
+	variable/g sf:init_pos_a = init_a
+	variable/g sf:init_pos_b = init_b
+	variable/g sf:init_pos_c = init_c
+	variable/g sf:alignment_set = set
+	variable/g sf:electronic_alignment = electronic_alignment
+	variable/g sf:force_alignment = force_alignment
+	string/g sf:time_stamp = time() + " " + date()
 	
 	// make alignment data waves
 	variable imax = scan_size/scan_step
+	make/o/n=(imax) sf:position_x, sf:position_y
+	wave/sdfr=sf position_x, position_y
+	position_x = pos_b + scan_step*x
+	position_y = pos_c + scan_step*x
 	
 	// lock-in 1
 	if (electronic_alignment)
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_x")
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y")
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_r")
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_theta")
-		wave/sdfr=$scan_folder x = alignment_scan_x
-		wave/sdfr=$scan_folder y = alignment_scan_y
-		wave/sdfr=$scan_folder scan_r = alignment_scan_r
-		wave/sdfr=$scan_folder theta = alignment_scan_theta
+		make/o/n=(imax, imax) sf:alignment_scan_x, sf:alignment_scan_y
+		make/o/n=(imax, imax) sf:alignment_scan_r, sf:alignment_scan_theta
+		wave/sdfr=sf x = alignment_scan_x, y = alignment_scan_y
+		wave/sdfr=sf scan_r = alignment_scan_r, theta = alignment_scan_theta
 		setscale/p x, pos_b, scan_step, x, y, scan_r, theta
 		setscale/p y, pos_c, scan_step, x, y, scan_r, theta
 		setscale d, 0, 0, "°", theta
 	endif
 	
-	//nvar/sdfr=$tek#gv_path() num_points
-	//make/o/n=(imax, imax, num_points) $(scan_folder + ":alignment_trace_y_psd")
-	//make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_y_psd")
-	//wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
-	//wave y_psd_trace = $(scan_folder + ":alignment_trace_y_psd")
-	//setscale/p x, pos_b, scan_step, y_psd, y_psd_trace
-	//setscale/p y, pos_c, scan_step, y_psd, y_psd_trace
-	
 	// lock-in 2
 	if (force_alignment)
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fx")
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fy")
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_fr")
-		make/o/n=(imax, imax) $(scan_folder + ":alignment_scan_ftheta")
-		wave/sdfr=$scan_folder fx = alignment_scan_fx
-		wave/sdfr=$scan_folder fy = alignment_scan_fy
-		wave/sdfr=$scan_folder fr = alignment_scan_fr
-		wave/sdfr=$scan_folder ftheta = alignment_scan_ftheta
+		make/o/n=(imax, imax) sf:alignment_scan_fx, sf:alignment_scan_fy
+		make/o/n=(imax, imax) sf:alignment_scan_fr, sf:alignment_scan_ftheta
+		wave/sdfr=sf fx = alignment_scan_fx, fy = alignment_scan_fy
+		wave/sdfr=sf fr = alignment_scan_fr, ftheta = alignment_scan_ftheta
 		setscale/p x, pos_b, scan_step, fx, fy, fr, ftheta
 		setscale/p y, pos_c, scan_step, fx, fy, fr, ftheta
 		setscale d, 0, 0, "°", ftheta 
@@ -149,7 +132,6 @@ function align_tips(scan_size, scan_step)
 	
 	display_scan(scan_folder)			// display scan
 	
-	//tek#get_waveform_params("2")			// get oscilloscope waveform scaling parameters
 	variable time_constant
 	if (electronic_alignment)
 		lockin#purge()
@@ -194,10 +176,6 @@ function align_tips(scan_size, scan_step)
 				fr[ib][ic] = real(data)
 				ftheta[ib][ic] = imag(data)
 			endif
-			// oscilloscope force measurement //
-			//wave w = tek#import_data_free("2")
-			//y_psd_trace[ib][ic][] = w[r]
-			//y_psd[ib][ic] = wavemax(w) - wavemin(w)
 			
 			doupdate
 			// increment B position //
@@ -221,15 +199,6 @@ function align_tips(scan_size, scan_step)
 	while (ic < imax)
 
 	// move to initial positions with the dco in the same confiuration as the experiment was taken
-	
-	//pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco off
-	//print "scan ending at", init_b, init_c, "(", pos_b0, pos_c0, ")"
-	
-	// dco possibly causes some deviation from the correct alignment position
-	//pi_stage#set_dco(1)	// set dco on
-	//sleep/s 2
-	//pi_stage#get_pos()
-	//print "(dco=0) ending at", init_b, init_c, "(", pos_b0, pos_c0, ")"
 	pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco on
 	sleep/s 1
 	pi_stage#get_pos()
@@ -237,7 +206,6 @@ function align_tips(scan_size, scan_step)
 	
 	// close comms
 	pi_stage#close_comms()
-	tek#close_comms()
 	if (electronic_alignment)
 		lockin#close_comms()
 	endif
@@ -249,19 +217,18 @@ function align_tips(scan_size, scan_step)
 	// ANALYSIS
 	// fit electronic scan
 	if (electronic_alignment)
-		fit_alignment_data($scan_folder, x)
-		fit_alignment_data($scan_folder, y)
-		fit_alignment_data($scan_folder, scan_r)
-		fit_alignment_data($scan_folder, theta)
-		//fit_alignment_data($scan_folder, y_psd)
+		fit_alignment_data(sf, x)
+		fit_alignment_data(sf, y)
+		fit_alignment_data(sf, scan_r)
+		fit_alignment_data(sf, theta)
 	endif
 	
 	// fit force scan
 	if (force_alignment)
-		fit_alignment_data($scan_folder, fx)
-		fit_alignment_data($scan_folder, fy)
-		fit_alignment_data($scan_folder, fr)
-		fit_alignment_data($scan_folder, ftheta)
+		fit_alignment_data(sf, fx)
+		fit_alignment_data(sf, fy)
+		fit_alignment_data(sf, fr)
+		fit_alignment_data(sf, ftheta)
 	endif
 	saveexperiment
 end
