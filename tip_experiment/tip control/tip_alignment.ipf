@@ -62,13 +62,9 @@ function align_tips(scan_size, scan_step)
 	// initialise piezo positions
 	string pi_path = pi_stage#gv_path()
 	pi_stage#get_pos()					// read dco on position	
-	nvar/sdfr=$pi_path pos_a0 = pos_a		// load read piezo positions
-	nvar/sdfr=$pi_path pos_b0 = pos_b
-	nvar/sdfr=$pi_path pos_c0 = pos_c
-	nvar/sdfr=$gv_folder set_point_a, set_point_b, set_point_c
-	variable init_a = set_point_a //pos_a0 //pi_stage#get_pos_ch("a")	// set initial piezo position
-	variable init_b = set_point_b //pos_b0 //pi_stage#get_pos_ch("b")
-	variable init_c =set_point_c //pos_c0 //pi_stage#get_pos_ch("c")
+	nvar/sdfr=$pi_path pos_a0 = pos_a, pos_b0 = pos_b, pos_c0 = pos_c // load read piezo positions
+	nvar/sdfr=$gv_folder set_point_b, set_point_c
+	variable init_a = pos_a0, init_b = set_point_b, init_c = set_point_c // set initial piezo position
 	variable pos_a = init_a, pos_b = init_b, pos_c = init_c	// set variable to change as initial position
 	
 	print "\rTips initially at:", init_b, init_c, "(", pos_b0, pos_c0, ")"	// quote initial positions with dco on
@@ -388,57 +384,7 @@ static function display_scan(scan_folder)
 	modifygraph mirror=1, fSize=10, standoff=0, axOffset=-1, axOffset(bottom)=0
 end
 
-static function display_scan2(scan_folder)
-	string scan_folder
-	wave x = $(scan_folder + ":alignment_scan_x")
-	wave y = $(scan_folder + ":alignment_scan_y")
-	wave r = $(scan_folder + ":alignment_scan_r")
-	wave theta = $(scan_folder + ":alignment_scan_theta")
-	wave y_psd = $(scan_folder + ":alignment_scan_y_psd")
-	nvar/sdfr=$scan_folder voltage, init_pos_a
-	
-	dowindow/k tip_alignment
-	display/n=tip_alignment
-	modifygraph width=125
-	modifygraph height=89*5 + 10
-	textbox/c/n=params/f=0/a=mt/y=1 "\\f02V\\f00 = \\{" + num2str(voltage) + "} V, \\f02a\\f00 = \\{" + num2str(init_pos_a) + "} \F'Symbol'm\F'Arial'm"
-	textbox/c/n=textx/f=0/a=LT/x=10/y=3 "\\f02x"
-	textbox/c/n=texty/f=0/a=LT/x=10/y=22 "\\f02y"
-	textbox/c/n=textr/f=0/a=LT/x=10/y=40 "\\f02r"
-	textbox/c/n=texttheta/f=0/a=LT/x=10/y=58 "\\f02\\F'Symbol'q"
-	textbox/c/n=textypsd/f=0/a=LT/x=1/y=75 "\\f02psd_y"
-	
-	display/host=#/w=(0,0.02,1,1)
-	appendimage/l=lx x
-	appendimage/l=ly y
-	appendimage/l=lr r
-	appendimage/l=ltheta theta
-	appendimage y_psd
-	modifyimage ''#0 ctab={*,*,geo,0}
-	modifyimage ''#1 ctab={*,*,geo,0}
-	modifyimage ''#2 ctab={*,*,geo,0}
-	modifyimage ''#3 ctab={*,*,geo,0}
-	modifyimage ''#4 ctab={*,*,geo,0}
-	modifygraph width=80
-	modifygraph height={aspect, 5}
-	label lr "tip focus (\\F'Symbol'm\\F'Arial'm)"
-	label bottom "tip height (\\F'Symbol'm\\F'Arial'm)"
-	modifygraph tick=0, minor=1, btLen=4, stLen=2
-	modifygraph mirror=1, fSize=10, standoff=0, axOffset=-1, axOffset(bottom)=0
-	modifygraph axisEnab(lx)={0.8,1.0}, freePos(lx)=0
-	modifygraph axisEnab(ly)={0.6,0.79}, freePos(ly)=0
-	modifygraph axisEnab(lr)={0.4,0.59}, freePos(lr)=0
-	modifygraph axisEnab(ltheta)={0.2,0.39}, freePos(ltheta)=0
-	modifygraph axisEnab(left)={0,0.19}, freePos(left)=0
-	modifygraph lblposmode=4, lblpos=40
-	modifygraph lblpos(bottom)=30
-	setactivesubwindow ##
-end
-
 function move_to_centre()
-	//string scan_folder
-	//nvar x0 = $(scan_folder + ":x0")
-	//nvar y0 = $(scan_folder + ":y0")
 	nvar x0 = $(gv_folder + ":x0")
 	nvar y0 = $(gv_folder + ":y0")
 	pi_stage#move("B", x0)
@@ -455,6 +401,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	
 	// store the current scan
 	string scan_folder = data#check_data_folder()
+	dfref sf = $scan_folder
 	scan_folder = data#check_folder(scan_folder + ":resonance_scans")
 	scan_folder = data#new_data_folder(scan_folder + ":scan_")
 	
@@ -462,7 +409,6 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	pi_stage#open_comms()
 	sig_gen#open_comms()
 	lockin#open_comms(); lockin2#open_comms()
-	tek#open_comms(); tek#initialise()
 	
 	// load scan parameters
 	nvar/sdfr=$gv_folder set = alignment_set
@@ -513,10 +459,9 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	
 	dowindow/k tip_resonance
 	display/n=tip_resonance
-	appendtograph res_scan_y_psd vs frequency
 	if (force_alignment)
-		appendtograph/l=force_mag res_scan_fr vs frequency
-		appendtograph/r=force_phase res_scan_ftheta vs frequency
+		appendtograph/l res_scan_fr vs frequency
+		appendtograph/r res_scan_ftheta vs frequency
 	endif
 	if (electronic_alignment)
 		appendtograph/l=lr res_scan_r vs frequency
@@ -527,12 +472,9 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	modifygraph mirror=0,tick=2,standoff=0
 	modifygraph mode=0,rgb(''#1)=(0,15872,65280)
 	modifygraph cmplxMode(''#1)=1, cmplxMode(''#0)=2
-	modifygraph axisEnab(left)={0.5, 0.74}, axisEnab(lr)={0.25,0.49}, axisEnab(lt)={0, 0.24}
-	
-	modifygraph axisEnab(force_mag)={0.75, 1.0}, axisEnab(force_phase)={0.75, 1.0}
-	modifygraph freePos(force_mag)=0, freepos(force_mag)=0, lblpos(force_phase)=0, lblpos(force_phase)=0
-	
-	modifygraph freePos(lt)=0, freepos(lr)=0, lblpos(lt)=0, lblpos(lr)=0
+	modifygraph freepos=0, lblpos=0
+	modifygraph axisEnab(lr)={0.33, 0.66}, axisEnab(lt)={0,0.32}
+	modifygraph axisEnab(left)={0.67, 1.0}, axisEnab(right)={0.67, 1.0}
 	modifygraph width=200, height={aspect, 2}
 	modifygraph muloffset(''#1)={0,10000}
 	showinfo
@@ -540,7 +482,6 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	variable freq = freq_start
 	variable/c data
 	variable i = 0
-	tek#get_waveform_params("2")
 	if (electronic_alignment)
 		lockin#aphs()
 	endif
@@ -567,10 +508,6 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 			res_scan_fr[i] = real(data); res_scan_ftheta[i] = imag(data)
 		endif
 		
-		wave w = tek#import_data_free("2")
-		redimension/n=(i+1) res_scan_y_psd
-		res_scan_y_psd[i] = wavemax(w) - wavemin(w)
-		
 		doupdate
 		i += 1
 		freq += freq_inc
@@ -585,7 +522,6 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	if (force_alignment)
 		lockin2#close_comms()
 	endif
-	tek#close_comms()
 end
 
 // Panel Controls
