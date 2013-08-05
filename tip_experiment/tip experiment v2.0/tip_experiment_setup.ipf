@@ -147,7 +147,7 @@ function setup_daq()
 	variable scan_time = 1.0/100e3, sample_time = 0.1 * (1.0/scan_time)	// 100 kHz for 0.1 s
 	make/o/n=(sample_time) root:force_y, root:force_x
 	wave/sdfr=root force_y, force_x
-	setscale/p x, 0, scan_rate, "s", force_y, force_x, ac_current, reference, photodiode
+	setscale/p x, 0, scan_time, "s", force_y, force_x
 end
 
 function setup_spec()
