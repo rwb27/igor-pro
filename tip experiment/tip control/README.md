@@ -1,3 +1,6 @@
+# Tip Control #
+## Features ##
+The tip control procedures are required for positioning of tips, both coarse and fine alignment using the built-in AFM. The directory also contains the procedure necessary for recreating the tip experiment in a new Igor experiment file.
 
 ## Tip Alignment ##
 
