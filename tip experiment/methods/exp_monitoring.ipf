@@ -128,3 +128,20 @@ function monitor_exp(s)
 	doupdate
 	return 0
 end
+
+function monitor_sep()
+	make/o/n=0 sep_test
+	wave sep_test
+	lockin2#open_comms()
+	variable/c data
+	variable t, i, t0 = datetime
+	do
+		t = datetime
+		data = lockin2#measure_rtheta()
+		i = numpnts(sep_test)
+		redimension/n=(i+1) sep_test
+		sep_test[i] = real(data)
+		sleep/s 0.2
+	while (t-t0 < 300)
+	lockin2#close_comms()
+end

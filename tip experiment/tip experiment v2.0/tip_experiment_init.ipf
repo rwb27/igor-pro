@@ -62,7 +62,6 @@ end
 static function init_equipment()
 	smu#open_comms(); smu#initialise(); smu#close_comms()				// smu
 	dso#open_comms(); dso#initialise(); dso#close_comms()					// dso
-	tek#open_comms(); tek#initialise(); tek#close_comms()					// tek
 	pi_stage#open_comms(); pi_stage#initialise(); pi_stage#close_comms()		// pi
 	pixis#initialise()														// pixis
 	// spectrometer
@@ -80,12 +79,13 @@ static function/df init_scan_folder()
 		current_step = 0
 		data_folder = $data#check_data_folder()
 		setdatafolder data_folder
-		scan_folder = data_folder:$uniquename("tip_exp_", 11, 1)
-		setdatafolder root:
-		newdatafolder/o scan_folder
+		string sname = uniquename("tip_exp_", 11, 1)
+		newdatafolder/o data_folder:$sname
+		scan_folder = data_folder:$sname
 		newdatafolder/o scan_folder:spectra
 		newdatafolder/o scan_folder:time_resolved_data
-		string/g root:data:current_scan_folder = getdatafolder(0, scan_folder)
+		setdatafolder root:
+		string/g root:data:current_scan_folder = getdatafolder(1, scan_folder)
 	endif
 	return scan_folder
 end

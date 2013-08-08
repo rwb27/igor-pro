@@ -8,6 +8,8 @@
 #include "infinity v3.0"
 // tip experiment
 #include "tip_experiment"
+// extra methods
+#include "exp_monitoring"
 
 menu "Tip Experiment"
 	"Tip Control and Alignment", tip_control_and_alignment()

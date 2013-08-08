@@ -10,6 +10,8 @@
 #include "oo spectrometer v4.2"
 #include <NIDAQmxWaveScanProcs>
 
+#include "key_control"
+
 #include "tip_experiment_init"
 #include "tip_experiment_display"
 #include "tip_experiment_logging"
@@ -19,6 +21,10 @@
 
 static constant g0 = 7.7480917e-5
 static strconstant gv_folder = "root:global_variables:tip_experiment"
+
+static function/df gv_path()
+	return $gv_folder
+end
 
 function tip_scan()			// tip experiment master function	
 	// initialise scan
@@ -34,8 +40,9 @@ function tip_scan()			// tip experiment master function
 	dfref exp_path = $gv_folder
 	nvar/sdfr=exp_path append_mode
 	nvar/sdfr=exp_path i = :current_step
-	nvar/sdfr=exp_path scan_step, scan_size, scan_direction, current_set_point
-	variable scan_step_d = scan_direction * scan_step
+	nvar/sdfr=exp_path scan_step, scan_direction, current_set_point
+	variable/g exp_path:set_point_reached = 0
+	nvar/sdfr=exp_path set_point_reached
 	// spectrometer
 	dfref spec_path = root:oo:globalvariables
 	nvar/sdfr=spec_path numspectrometers
@@ -74,7 +81,6 @@ function tip_scan()			// tip experiment master function
 	
 	// do experiment
 	variable condition = 1
-	variable set_point_reached = 0
 	variable keys
 	// initialise data
 	variable/c smu_data
@@ -84,25 +90,16 @@ function tip_scan()			// tip experiment master function
 	do
 		// check for experiment breaks
 		keys = getkeystate(0)
-		if (scan_step * i > scan_size)		// end at scan limit
-			break
-		elseif (keys & 32)			// manual escape (esc)
+		if (keys & 32)			// manual escape (esc)
 			print "scan aborted at step " + num2str(i)
 			break
-		elseif (keys & 1)			// ctrl key
-			print "set point reached"
-			set_point_reached = 1
-		//elseif (keys & 2)			// alt key
-			// do power experiment
-		elseif (keys & 4)			// shift key
-			print "set point disabled"
-			set_point_reached = 0
 		endif
+		key_control#check_keys_tips()
 		
 		// MOVEMENT PHASE
 		// move to position
 		if (!set_point_reached)
-			pi_stage#move_rel("a", scan_step_d)
+			pi_stage#move_rel("a", scan_direction * scan_step)
 		//elseif (set_point_reached)
 			//force feedback experiments
 		endif
@@ -115,8 +112,6 @@ function tip_scan()			// tip experiment master function
 		DAQmx_Scan/dev="dev1"/bkg WAVES="force_y, 1/diff; force_x, 2/diff;"
 		current_pos = pi_stage#get_pos_ch("a")
 		smu_data = smu#measure_iv()
-		force_x = tek#wave_stats("1")
-		force_y = tek#wave_stats("2")
 		oo_read()
 		fDAQmx_ScanWait("dev1")
 		
