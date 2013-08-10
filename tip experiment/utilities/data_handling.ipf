@@ -3,12 +3,12 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
 // These are only needed in some cases
-#include "tip_alignment"
+#include "centroid_fitting"
 
 static strconstant gv_folder = "root:global_variables:data_handling"
 // These folders must exist
 strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
-strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - experiment:data:raw data"
+strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - PhD:0 - experiment:data:raw data"
 
 // This must be run first
 function define_paths(pc)
@@ -384,7 +384,7 @@ function update_experiment(data_folder)
 			// alignment scans
 			if (stringmatch(wname, "*alignment_scan*"))
 				string df = getdatafolder(1, data_folder_path)
-				alignment#fit_alignment_data(data_folder_path, w)
+				centroid_fitting#fit_alignment_data(data_folder_path, w)
 				nvar/z/sdfr=data_folder_path alignment_set
 				if (!nvar_exists(alignment_set))
 					variable/g data_folder_path:alignment_set = 0
