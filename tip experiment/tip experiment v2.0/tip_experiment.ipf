@@ -109,7 +109,7 @@ function tip_scan()			// tip experiment master function
 		i_range = smu#check_current_range()
 		
 		// take measurements
-		DAQmx_Scan/dev="dev1"/bkg WAVES="force_y, 1/diff; force_x, 2/diff;"
+		DAQmx_Scan/dev="dev1"/bkg WAVES="force_y, 1/diff, -1, 1; force_x, 2/diff, -1, 1;"
 		current_pos = pi_stage#get_pos_ch("a")
 		smu_data = smu#measure_iv()
 		oo_read()
