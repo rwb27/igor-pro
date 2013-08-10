@@ -7,7 +7,8 @@
 #include "hp33120a_sig_gen"
 #include "srs_sr830_lockin_amplifier"
 #include "srs_sr830_lockin_amplifier_2"
-#include "fit_functions"
+#include "software_lockin"
+#include "centroid_fitting"
 #include "infinity v3.0"
 #include <NIDAQmxWaveScanProcs>
 
@@ -42,7 +43,6 @@ static function align_tips(scan_size, scan_step)
 	// open comms
 	pi_stage#open_comms()
 	lockin#open_comms(); lockin2#open_comms()
-	sig_gen#open_comms()
 	
 	// load signal information
 	string sig_gen_path = sig_gen#gv_path()
@@ -52,7 +52,6 @@ static function align_tips(scan_size, scan_step)
 	nvar/sdfr=$gv_folder set = alignment_set
 	nvar/sdfr=$gv_folder electronic_alignment
 	nvar/sdfr=$gv_folder force_alignment
-	variable gain = 1e8				// 100 MV/A transimpedance amplifier
 	
 	// turn dco off before you have recorded the initial position to keep things consistent with end set
 	// DCO off for dynamic movement, DCO on for holding static
@@ -140,8 +139,7 @@ static function align_tips(scan_size, scan_step)
 	variable/c data
 	pi_stage#move("b", pos_b)
 	pi_stage#move("c", pos_c)
-	sleep/s 2
-	print "time_constant =", time_constant
+	sleep/s 1
 	
 	// take alignment image
 	Infinity_Image()
@@ -172,7 +170,7 @@ static function align_tips(scan_size, scan_step)
 			endif
 			
 			fDAQmx_ScanWait("dev1")
-			data = soft_lockin_2(force_y, ref, harmonic=2)
+			data = soft_lock#measure(force_y, ref, harmonic=2)
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data)
 			data = r2polar(data)
@@ -207,22 +205,16 @@ static function align_tips(scan_size, scan_step)
 	
 	// close comms
 	pi_stage#close_comms()
-	if (electronic_alignment)
-		lockin#close_comms()
-	endif
 	if (force_alignment)
 		lockin2#close_comms()
 	endif
-	sig_gen#close_comms()
 
 	// ANALYSIS
 	// fit electronic scan
-	if (electronic_alignment)
-		fit_alignment_data(sf, x)
-		fit_alignment_data(sf, y)
-		fit_alignment_data(sf, scan_r)
-		fit_alignment_data(sf, theta)
-	endif
+	fit_alignment_data(sf, x)
+	fit_alignment_data(sf, y)
+	fit_alignment_data(sf, scan_r)
+	fit_alignment_data(sf, theta)
 	
 	// fit force scan
 	if (force_alignment)
@@ -232,82 +224,6 @@ static function align_tips(scan_size, scan_step)
 		fit_alignment_data(sf, ftheta)
 	endif
 	saveexperiment
-end
-
-static function fit_alignment_data(scan_folder, data)
-	dfref scan_folder
-	wave data
-	
-	dowindow/f tip_alignment
-	setdatafolder scan_folder
-	
-	variable z0, a0, x0, sigx, y0, sigy, corr
-	imagestats data
-	
-	variable ix = dimsize(data, 0)-1, iy = dimsize(data, 1)-1
-	z0 = 0.25 * (data[0][0] + data[ix][0] + data[0][iy] + data[ix][iy])		// background
-	a0 = data[ix/2][iy/2] - z0										// amplitude
-	x0 = dimoffset(data, 0) + ix/2 * dimdelta(data, 0)					// x centre
-	sigx = 0.25													// x width
-	y0 = dimoffset(data, 1) + iy/2 * dimdelta(data, 1)					// y centre
-	sigy = 0.25													// y width
-	corr = 0														// correlation
-	
-	// constraints on fit
-	// note: {K0,K1,K2,K3,K4,K5,K6} = {z0, a0, x0, sigx, y0, sigy, corr}
-	make/o/t/n=0 scan_folder:t_constraints
-	wave/t/sdfr=scan_folder t_constraints
-	variable q = 0		// Constraint counter
-	
-	// Constraint -- x0 and y0 must lie within the scan area
-	redimension/n=(q+2) t_constraints
-	t_constraints[q] = "K2 > " + num2str(dimOffset(data,0)) ; q = q+1
-	t_constraints[q] = "K2 < " + num2str(dimOffset(data,0)+dimsize(data,0)*dimDelta(data,0)); q = q+1
-	redimension/n=(q+2) t_constraints
-	t_constraints[q] = "K4 > " + num2str(dimOffset(data,1)); q = q+1
-	t_constraints[q] = "K4 < " + num2str(dimOffset(data,1)+dimsize(data,1)*dimDelta(data,1)); q = q+1
-	
-	// Constraint -- sigx and sigy must be between 50nm and 1um
-	redimension/n=(q+2) t_constraints
-	t_constraints[q] = "K3 > 0.05"; q = q+1
-	t_constraints[q] = "K3 < 1"; q = q+1
-	redimension/n=(q+2) t_constraints
-	t_constraints[q] = "K5 > 0.05"; q = q+1
-	t_constraints[q] = "K5 < 1"; q = q+1
-	
-	// Constraint -- corr must be between -1 and 1
-	redimension/n=(q+2) t_constraints
-	t_constraints[q] = "K6 > -1"; q = q+1
-	t_constraints[q] = "K6 < 1"; q = q+1
-	
-	make/d/n=7/o scan_folder:w_coef
-	wave/sdfr=scan_folder w_coef
-	w_coef[0] = {z0, a0, x0, sigx, y0, sigy, corr}
-	funcfitmd/nthr=0/q gauss2d_elliptic w_coef  data /d/c=t_constraints
-	//curvefit/x=1/nthr=0/q gauss2d, kwcwave=w_coef, data /d/c=t_constraints
-	modifycontour/w=tip_alignment $("fit_" + nameofwave(data)) labels=0//, ctabLines={*,*,Geo,0}
-	wave w_sigma
-	setdatafolder root:
-	
-	string expr = "(.*)_(.*)", wave_id, rest_of_wavename
-	splitstring/e=(expr) nameofwave(data), rest_of_wavename, wave_id
-	duplicate/o w_coef, scan_folder:$(wave_id + "_w_coef")
-	duplicate/o w_sigma, scan_folder:$(wave_id + "_w_sigma")
-	variable/g scan_folder:$(wave_id + "_x0") = w_coef[2]
-	variable/g scan_folder:$(wave_id + "_y0") = w_coef[4]
-	
-	//variable/g scan_folder:x0 = w_coef[2]
-	//variable/g scan_folder:y0 = w_coef[4]
-	
-	//data#check_gvpath(gv_folder)
-	//variable/g $(gv_folder):x0 = w_coef[2]
-	//variable/g $(gv_folder):y0 = w_coef[4]
-end
-
-static function gauss2d_elliptic(w, x, y) : fitfunc
-	wave w
-	variable x, y
-	return w[0]+w[1]*exp(-1/2/(1-w[6]^2)*((x-w[2])^2/w[3]^2+(y-w[4])^2/w[5]^2)-2*w[6]*(x-w[2])*(y-w[4])/w[3]/w[5])
 end
 
 static function display_scan(scan_folder)
