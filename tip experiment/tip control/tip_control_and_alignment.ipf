@@ -122,6 +122,11 @@ static function/c insert_alignment_panel(left, top) : panel
 	left += 110; top -= 20
 	button res_scan, pos={left, top}, size={70,40}, proc=resonance_scan_button, title="Resonance\rScan"
 	button res_scan, fColor=(65280,65280,0)
+	// this will need to be moved in the future - start
+	left += 70
+	button sine_button, pos={left, top}, size={40,20}, proc=output_sine_button, title="Sine"
+	left -= 70
+	// end
 	left -=110; top += 20
 	
 	// buttons

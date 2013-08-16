@@ -2,6 +2,7 @@
 
 // tip control procedures and panels
 #include "tip_alignment"
+#include "tip_alignment_daq"
 #include "tip_control_and_alignment"
 // regularly used procedures
 #include "fianium v3.0_1"
