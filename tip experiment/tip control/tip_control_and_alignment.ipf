@@ -164,8 +164,7 @@ static function/c insert_alignment_panel(left, top) : panel
 	button fit_r, pos={left, top}, size={30,20}, proc=fit_alignment_data_r_button, title="Fit R"
 	left -= 30*2; top += 20
 	button fit_theta, pos={left, top}, size={50,20}, proc=fit_alignment_data_theta_button, title="Fit Theta"; left += 50
-	//button fit_y_psd, pos={left, top}, size={50,20}, proc=fit_alignment_data_Y_psd_button, title="Fit yPSD"; left += 60
-	left -= 110; top += 20
+	left -= 50; top += 20
 	// force alignment buttons //
 	button fit_fx, pos={left, top}, size={35,20}, proc=fit_alignment_data_fx_button, title="Fit FX"; left += 35
 	button fit_fy, pos={left, top}, size={35,20}, proc=fit_alignment_data_fy_button, title="Fit FY"

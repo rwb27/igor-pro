@@ -114,6 +114,7 @@ static function init_scan_waves(scan_folder)
 		wl_wave *= 1e-9
 		setscale d, 0, 0, "m", wl_wave
 		make/o/n=(numpnts(wl_wave), 1) scan_folder:spec2d
+		make/o/n=(numpnts(wl_wave), 1) scan_folder:spec2d_raw
 		// extra spectra data
 		if (numspectrometers == 2)
 			duplicate/o root:oo:data:current:wl_wave_2, scan_folder:wavelength_t
@@ -121,12 +122,14 @@ static function init_scan_waves(scan_folder)
 			wl_wave_t *= 1e-9
 			setscale d, 0, 0, "m", wl_wave_t
 			make/o/n=(numpnts(wl_wave_t), 1) scan_folder:spec2d_t
+			make/o/n=(numpnts(wl_wave_t), 1) scan_folder:spec2d_t_raw
 		elseif  (numspectrometers == 1 && dual_pol_meas == 1)
 			duplicate/o root:oo:data:current:wl_wave, scan_folder:wavelength_t
 			wave wl_wave_t = scan_folder:wavelength_t
 			wl_wave_t *= 1e-9
 			setscale d, 0, 0, "m", wl_wave_t
 			make/o/n=(numpnts(wl_wave_t), 1) scan_folder:spec2d_t
+			make/o/n=(numpnts(wl_wave_t), 1) scan_folder:spec2d_t_raw
 		endif
 		
 		// scaling

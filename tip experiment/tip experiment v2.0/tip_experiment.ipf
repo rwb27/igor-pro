@@ -68,8 +68,10 @@ function tip_scan()			// tip experiment master function
 	wave/sdfr=scan_folder psd_y_stdev
 	wave/sdfr=scan_folder timestamp
 	wave/sdfr=scan_folder spec2d
+	wave/sdfr=scan_folder spec2d_raw
 	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
 		wave/sdfr=scan_folder spec2d_t
+		wave/sdfr=scan_folder spec2d_t_raw
 	endif
 
 	// EXPERIMENT
@@ -134,21 +136,30 @@ function tip_scan()			// tip experiment master function
 		psd_y_stdev[i] = sqrt(variance(force_y))
 		// store spectra
 		duplicate/o root:oo:data:current:spectra, $(scan_folder_str + "spectra:spec_" + num2str(i))
+		duplicate/o root:oo:data:current:spectra_raw, $(scan_folder_str + "spectra:raw_spec_" + num2str(i))
 		wave/sdfr=scan_folder spec = $(":spectra:spec_" + num2str(i))
-		redimension/n=(dimsize(spec2d, 0), i+1) spec2d
+		wave/sdfr=scan_folder spec_raw = $(":spectra:raw_spec_" + num2str(i))
+		redimension/n=(dimsize(spec2d, 0), i+1) spec2d, spec2d_raw
 		spec2d[][i] = spec[p]
+		spec2d_raw[][i] = spec_raw[p]
 		if (numspectrometers == 2)
 			duplicate/o root:oo:data:current:spectra_2, $(scan_folder_str + "spectra:spec_t_" + num2str(i))
+			duplicate/o root:oo:data:current:spectra_2_raw, $(scan_folder_str + "spectra:raw_spec_t_" + num2str(i))
 			wave/sdfr=scan_folder spec = $(":spectra:spec_t_" + num2str(i))
-			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
+			wave/sdfr=scan_folder spec_raw = $(":spectra:raw_spec_t_" + num2str(i))
+			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t, spec2d_t_raw
 			spec2d_t[][i] = spec[p]
+			spec2d_t_raw[][i] = spec_raw[p]
 		elseif (numspectrometers == 1 && dual_pol_meas == 1)
 			// flip shutters
 			oo_read()
 			duplicate/o root:oo:data:current:spectra, $(scan_folder_str + "spectra:spec_t_" + num2str(i))
+			duplicate/o root:oo:data:current:spectra_2_raw, $(scan_folder_str + "spectra:raw_spec_t_" + num2str(i))
 			wave/sdfr=scan_folder spec = $(":spectra:spec_t_" + num2str(i))
-			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
+			wave/sdfr=scan_folder spec_raw = $(":spectra:raw_spec_t_" + num2str(i))
+			redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t, spec2d_t_raw
 			spec2d_t[][i] = spec[p]
+			spec2d_t_raw[][i] = spec_raw[p]
 			// flip shutters
 		endif
 		
