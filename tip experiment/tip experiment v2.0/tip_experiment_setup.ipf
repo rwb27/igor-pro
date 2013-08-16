@@ -152,5 +152,6 @@ end
 
 function setup_spec()
 	svar current_data_folder = root:data:current_scan_folder
-	duplicatedatafolder root:oo:data:current, current_data_folder
+	dfref scan_folder = $current_data_folder
+	duplicatedatafolder root:oo:data:current, scan_folder:spec_parameters
 end
