@@ -219,18 +219,18 @@ function align_tips(scan_size, scan_step)
 	// ANALYSIS
 	// fit electronic scan
 	if (electronic_alignment)
-		fit_alignment_data(sf, x)
-		fit_alignment_data(sf, y)
-		fit_alignment_data(sf, scan_r)
-		fit_alignment_data(sf, theta)
+		fit_alignment_scan(sf, x)
+		fit_alignment_scan(sf, y)
+		fit_alignment_scan(sf, scan_r)
+		fit_alignment_scan(sf, theta)
 	endif
 	
 	// fit force scan
 	if (force_alignment)
-		fit_alignment_data(sf, fx)
-		fit_alignment_data(sf, fy)
-		fit_alignment_data(sf, fr)
-		fit_alignment_data(sf, ftheta)
+		fit_alignment_scan(sf, fx)
+		fit_alignment_scan(sf, fy)
+		fit_alignment_scan(sf, fr)
+		fit_alignment_scan(sf, ftheta)
 	endif
 	saveexperiment
 end
@@ -530,9 +530,10 @@ function fit_alignment_data_x_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "x"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -547,9 +548,10 @@ function fit_alignment_data_y_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "y"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -564,9 +566,10 @@ function fit_alignment_data_r_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "r"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -581,9 +584,10 @@ function fit_alignment_data_theta_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "theta"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -598,9 +602,10 @@ function fit_alignment_data_y_psd_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "y_psd"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $"psd_x0", y0 = $"psd_y0"
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -616,9 +621,10 @@ function fit_alignment_data_fx_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "fx"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -633,9 +639,10 @@ function fit_alignment_data_fy_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "fy"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -650,9 +657,10 @@ function fit_alignment_data_fr_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "fr"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:
@@ -667,9 +675,10 @@ function fit_alignment_data_fthet_button(ba) : buttoncontrol
 		case 2:
 			svar scan_folder = $(gv_folder + ":current_scan_folder")
 			string var = "ftheta"
-			wave wdata = $(scan_folder + ":alignment_scan_" + var)
-			fit_alignment_data($scan_folder, wdata)
-			nvar/sdfr=$scan_folder x0 = $(var + "_x0"), y0 = $(var + "_y0")
+			dfref sf = $scan_folder
+			wave/sdfr=sf wdata = $("alignment_scan_" + var)
+			fit_alignment_scan(sf, wdata)
+			nvar/sdfr=sf x0 = $(var + "_x0"), y0 = $(var + "_y0")
 			set_centroid(x0, y0)
 			break
 		case -1:

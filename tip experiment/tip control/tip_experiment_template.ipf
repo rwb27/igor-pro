@@ -11,6 +11,7 @@
 #include "tip_experiment"
 // extra methods
 #include "exp_monitoring"
+#include "hyperspectral_imaging"
 
 menu "Tip Experiment"
 	"Tip Control and Alignment", tip_control_and_alignment()

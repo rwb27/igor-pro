@@ -43,6 +43,7 @@ static function/df init_scan_folder()
 	setdatafolder root:
 	newdatafolder/o df:$sname
 	dfref scan_folder = df:$sname
+	string/g $(gv_folder + ":current_scan_folder") = getdatafolder(1, scan_folder)
 	return scan_folder
 end
 
@@ -128,6 +129,7 @@ static function align_tips(scan_size, scan_step)
 	duplicate/o root:infinity:infimg, sf:image
 	
 	daq#create_daq_waves(5, 50e3, 0.1)
+	wave/sdfr=root: force_x = daq_0, force_y = daq_1, current = daq_3, ref = daq_4
 	
 	do
 		//pi_stage#move("C", pos_c)
@@ -136,7 +138,7 @@ static function align_tips(scan_size, scan_step)
 			//pi_stage#move("B", pos_b)
 			//sleep/s 0.25
 			
-			DAQmx_Scan/dev="dev1" WAVES="force_y, 1/diff, -10, 10; ref, 4/diff, -1, 1;"			
+			DAQmx_Scan/dev="dev1" WAVES="daq_1, 1/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
 			data = daq#lockin(force_y, ref, harmonic=2)
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data)
@@ -175,14 +177,14 @@ static function align_tips(scan_size, scan_step)
 
 	// ANALYSIS
 	// fit electronic scan
-	fit_alignment_data(sf, x)
+	fit_alignment_scan(sf, x)
 	print get_centroids(x, position_x, position_y)
-	fit_alignment_data(sf, y)
-	print get_centroids(x, position_x, position_y)
-	fit_alignment_data(sf, scan_r)
-	print get_centroids(x, position_x, position_y)
-	fit_alignment_data(sf, theta)
-	print get_centroids(x, position_x, position_y)
+	fit_alignment_scan(sf, y)
+	print get_centroids(y, position_x, position_y)
+	fit_alignment_scan(sf, scan_r)
+	print get_centroids(scan_r, position_x, position_y)
+	fit_alignment_scan(sf, theta)
+	print get_centroids(theta, position_x, position_y)
 	saveexperiment
 end
 

@@ -10,7 +10,7 @@ function create_daq_waves(num_ch, scan_rate, sample_time)
 	variable i
 	for (i = 0; i < num_ch; i += 1)
 		make/o/n=(sample_num) $("root:daq_"+num2str(i))
-		wave/sdfr=root ch = $("daq_"+num2str(i))
+		wave/sdfr=root: ch = $("daq_"+num2str(i))
 		setscale/p x, 0, dt, "s", ch
 	endfor
 end
@@ -22,7 +22,7 @@ function measure_over_time()
 	dfref df = root:daq
 	make/o/n=0 df:measurements
 	wave/sdfr=df measurements
-	wave/sdfr=root daq_1, daq_2, daq_3, daq_4, daq_5
+	wave/sdfr=root: daq_1, daq_2, daq_3, daq_4, daq_5
 	do
 		DAQmx_Scan/dev="dev1" WAVES="daq_1, 1/diff; daq_2, 2/diff; daq_3, 3/diff; daq_4, 4/diff; daq_5, 5/diff;"
 		i = numpnts(measurements)

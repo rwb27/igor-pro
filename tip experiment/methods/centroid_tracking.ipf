@@ -3,12 +3,13 @@
 
 function/c get_centroids(data, x_ax, y_ax)
 	wave data, x_ax, y_ax
-	adjust_data(data)
+	duplicate/free data, temp_data
+	adjust_data(temp_data)
 	dfref df = getwavesdatafolderdfr(data)
 	string expr = "(.*)_(.*)", wave_id, rest_of_wavename
 	splitstring/e=(expr) nameofwave(data), rest_of_wavename, wave_id
-	variable x0 = get_centroid(data, x_ax, "x")
-	variable y0 = get_centroid(data, y_ax, "y")
+	variable x0 = get_centroid(temp_data, x_ax, "x")
+	variable y0 = get_centroid(temp_data, y_ax, "y")
 	variable/c centroids = cmplx(x0, y0)
 	variable/g df:$(wave_id + "_x0") = x0
 	variable/g df:$(wave_id + "_y0") = y0

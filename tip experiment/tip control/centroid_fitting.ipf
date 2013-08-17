@@ -2,7 +2,7 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 #include "fit_functions"
 
-function fit_alignment_data(scan_folder, data)
+function fit_alignment_scan(scan_folder, data)
 	dfref scan_folder
 	wave data
 	
@@ -72,7 +72,7 @@ function fit_alignment_data(scan_folder, data)
 	//variable/g $(gv_folder):y0 = w_coef[4]
 end
 
-static function gauss2d_elliptic(w, x, y) : fitfunc
+function gauss2d_elliptic(w, x, y) : fitfunc
 	wave w
 	variable x, y
 	return w[0]+w[1]*exp(-1/2/(1-w[6]^2)*((x-w[2])^2/w[3]^2+(y-w[4])^2/w[5]^2)-2*w[6]*(x-w[2])*(y-w[4])/w[3]/w[5])

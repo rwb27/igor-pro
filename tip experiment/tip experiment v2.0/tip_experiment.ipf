@@ -54,7 +54,7 @@ function tip_scan()			// tip experiment master function
 	// display experiment
 	tip_exp_display#display_scan(scan_folder)
 	
-	wave/sdfr=root force_x, force_y
+	wave force_x, force_y
 	// prepare data storage
 	wave/sdfr=scan_folder steps
 	wave/sdfr=scan_folder displacement
