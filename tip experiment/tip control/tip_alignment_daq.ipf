@@ -5,7 +5,6 @@
 #include "pi_pi733_3cd_stage"
 #include "hp33120a_sig_gen"
 #include "daq_methods"
-#include "software_lockin"
 #include "centroid_fitting"
 #include "centroid_tracking"
 #include "infinity v3.0"
@@ -115,6 +114,14 @@ static function align_tips(scan_size, scan_step)
 	setscale/p y, pos_c, scan_step, x, y, scan_r, theta
 	setscale d, 0, 0, "°", theta
 	
+	make/o/n=(imax, imax) sf:alignment_scan_x, sf:alignment_scan_y
+	make/o/n=(imax, imax) sf:alignment_scan_r, sf:alignment_scan_theta
+	wave/sdfr=sf current_x = current_scan_x, current_y = current_scan_y
+	wave/sdfr=sf current_r = current_scan_r, current_theta = current_scan_theta
+	setscale/p x, pos_b, scan_step, x, y, scan_r, theta
+	setscale/p y, pos_c, scan_step, x, y, scan_r, theta
+	setscale d, 0, 0, "°", theta
+	
 	display_scan(sf)			// display scan
 	
 	// MEASUREMENTS
@@ -138,13 +145,19 @@ static function align_tips(scan_size, scan_step)
 			//pi_stage#move("B", pos_b)
 			//sleep/s 0.25
 			
-			DAQmx_Scan/dev="dev1" WAVES="daq_1, 1/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
+			DAQmx_Scan/dev="dev1" WAVES="daq_0, 0/diff, -10, 10; daq_1, 1/diff, -10, 10; daq_2, 2/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
 			data = daq#lockin(force_y, ref, harmonic=2)
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data)
 			data = r2polar(data)
 			scan_r[ib][ic] = real(data)
 			theta[ib][ic] = imag(data)
+			data = daq#lockin(current, ref, harmonic=3)
+			current_x[ib][ic] = real(data)
+			current_y[ib][ic] = imag(data)
+			data = r2polar(data)
+			current_r[ib][ic] = real(data)
+			current_theta[ib][ic] = imag(data)
 				
 			doupdate
 			// increment B position //
