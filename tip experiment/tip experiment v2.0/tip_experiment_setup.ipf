@@ -144,7 +144,8 @@ end
 
 function setup_daq()
 	// make DAQ waves
-	variable scan_time = 1.0/100e3, sample_time = 0.1 * (1.0/scan_time)	// 100 kHz for 0.1 s
+	variable scan_time = 1.0/100e3
+	variable sample_time = 0.1 * (1.0/scan_time)	// 100 kHz for 0.1 s
 	make/o/n=(sample_time) root:force_y, root:force_x
 	wave force_y, force_x
 	setscale/p x, 0, scan_time, "s", force_y, force_x
@@ -153,5 +154,15 @@ end
 function setup_spec()
 	svar current_data_folder = root:data:current_scan_folder
 	dfref scan_folder = $current_data_folder
-	duplicatedatafolder root:oo:data:current, scan_folder:spec_parameters
+	duplicatedatafolder root:oo:data:current, scan_folder:spectra_parameters
+end
+
+function setup_triggering()
+	nvar/sdfr=exp_path scan_direction, vis_g0, trig_g0
+	if (scan_direction == -1)
+		trig_g0 = 1
+	elseif (scan_direction == 1)
+		trig_g0 = 15
+	endif
+	setup_dso(0)
 end

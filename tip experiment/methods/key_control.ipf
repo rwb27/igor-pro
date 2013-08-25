@@ -34,6 +34,7 @@ static function check_keys_tips()
 		dfref exp_path = tip_exp#gv_path()
 		nvar/sdfr=exp_path scan_direction
 		scan_direction *= -1
+		tip_exp_setup#setup_triggering()
 		print "scan direction =", scan_direction
 		sleep/s 0.2
 		return 0
