@@ -4,6 +4,7 @@
 
 #include "pi_pi733_3cd_stage"
 #include "hp33120a_sig_gen"
+#include "grid_scanning"
 #include "daq_methods"
 #include "centroid_fitting"
 #include "centroid_tracking"
@@ -31,6 +32,8 @@ static function initialise()
 	variable/g $(gv_folder + ":alignment_set")
 	variable/g $(gv_folder + ":set_point_b")
 	variable/g $(gv_folder + ":set_point_c")
+	dfref gs_folder = grid_scan#gv_path()
+	variable/g gs_folder:set_point_b	, gs_folder:set_point_c
 end
 
 static function/df init_scan_folder()
@@ -46,13 +49,31 @@ static function/df init_scan_folder()
 	return scan_folder
 end
 
+static function scan_function(i,j)
+	variable i, j
+	wave x, y, scan_r, theta
+	wave current_x, current_y, current_r, current_theta
+	wave/sdfr=root: force_x = daq_0, force_y = daq_1, current = daq_3, ref = daq_4
+	DAQmx_Scan/dev="dev1" WAVES="daq_0, 0/diff, -10, 10; daq_1, 1/diff, -10, 10; daq_2, 2/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
+	variable/c data
+	data = daq#lockin(force_y, ref, harmonic=2)
+	x[i][j] = real(data)
+	y[i][j] = imag(data)
+	data = r2polar(data)
+	scan_r[i][j] = real(data)
+	theta[i][j] = imag(data)
+	data = daq#lockin(current, ref, harmonic=3)
+	current_x[i][j] = real(data)
+	current_y[i][j] = imag(data)
+	data = r2polar(data)
+	current_r[i][j] = real(data)
+	current_theta[i][j] = imag(data)
+end
+
 static function align_tips(scan_size, scan_step)
 	variable scan_size, scan_step
 	
-	// SETUP
-	// open comms
-	pi_stage#open_comms()
-	
+	// SETUP	
 	// load signal information
 	string sig_gen_path = sig_gen#gv_path()
 	nvar frequency = $(sig_gen_path + ":frequency")
@@ -60,32 +81,17 @@ static function align_tips(scan_size, scan_step)
 	nvar amplified_offset = $(gv_folder + ":amplified_offset")
 	nvar/sdfr=$gv_folder set = alignment_set
 	
-	// turn dco off before you have recorded the initial position to keep things consistent with end set
-	// DCO off for dynamic movement, DCO on for holding static
-	pi_stage#set_dco_a(0)
-	pi_stage#set_dco_b(0)
-	pi_stage#set_dco_c(0)
-	sleep/s 1
-	
-	// initialise piezo positions
-	string pi_path = pi_stage#gv_path()
-	pi_stage#get_pos()					// read dco on position	
-	nvar/sdfr=$pi_path pos_a0 = pos_a, pos_b0 = pos_b, pos_c0 = pos_c // load read piezo positions
-	nvar/sdfr=$gv_folder set_point_b, set_point_c
-	variable init_a = pos_a0, init_b = set_point_b, init_c = set_point_c // set initial piezo position
-	variable pos_a = init_a, pos_b = init_b, pos_c = init_c	// set variable to change as initial position
-	
-	print "\rTips initially at:", init_b, init_c, "(", pos_b0, pos_c0, ")"	// quote initial positions with dco on
-	pi_stage#move("b", init_b); pi_stage#move("c", init_c)	// move stage to position with dco on
-	sleep/s 1
-	print "Starting scan at:", pos_b, pos_c, "(", pos_b0, pos_c0, ")"	// quote initial positions with dco on
-	
-	// get starting positions
-	pos_b = init_b - scan_size/2
-	pos_c = init_c - scan_size/2
-	
 	// store the current scan
 	dfref sf = init_scan_folder()
+	
+	// pi stuff
+	pi_stage#open_comms()
+	pi_stage#get_pos()
+	pi_stage#close_comms()
+	string pi_path = pi_stage#gv_path()
+	nvar/sdfr=$pi_path pos_a0 = pos_a
+	nvar/sdfr=$gv_folder set_point_b, set_point_c
+	variable init_a = pos_a0, init_b = set_point_b, init_c = set_point_c
 	
 	// store scan parameters
 	variable/g sf:scan_size = scan_size
@@ -103,90 +109,33 @@ static function align_tips(scan_size, scan_step)
 	variable imax = scan_size/scan_step
 	make/o/n=(imax) sf:position_x, sf:position_y
 	wave/sdfr=sf position_x, position_y
-	position_x = pos_b + scan_step*x
-	position_y = pos_c + scan_step*x
+	position_x = init_b  - scan_size/2 + scan_step*x
+	position_y = init_c  - scan_size/2 + scan_step*x
 
 	make/o/n=(imax, imax) sf:alignment_scan_x, sf:alignment_scan_y
 	make/o/n=(imax, imax) sf:alignment_scan_r, sf:alignment_scan_theta
 	wave/sdfr=sf x = alignment_scan_x, y = alignment_scan_y
 	wave/sdfr=sf scan_r = alignment_scan_r, theta = alignment_scan_theta
-	setscale/p x, pos_b, scan_step, x, y, scan_r, theta
-	setscale/p y, pos_c, scan_step, x, y, scan_r, theta
+	setscale/p x, init_b  - scan_size/2, scan_step, x, y, scan_r, theta
+	setscale/p y, init_c  - scan_size/2, scan_step, x, y, scan_r, theta
 	setscale d, 0, 0, "°", theta
 	
 	make/o/n=(imax, imax) sf:current_scan_x, sf:current_scan_y
 	make/o/n=(imax, imax) sf:current_scan_r, sf:current_scan_theta
 	wave/sdfr=sf current_x = current_scan_x, current_y = current_scan_y
 	wave/sdfr=sf current_r = current_scan_r, current_theta = current_scan_theta
-	setscale/p x, pos_b, scan_step, current_x, current_y, current_r, current_theta
-	setscale/p y, pos_c, scan_step, current_x, current_y, current_r, current_theta
+	setscale/p x, init_b  - scan_size/2, scan_step, current_x, current_y, current_r, current_theta
+	setscale/p y, init_c  - scan_size/2, scan_step, current_x, current_y, current_r, current_theta
 	setscale d, 0, 0, "°", current_theta
 	
 	display_scan(sf)			// display scan
-	
-	// MEASUREMENTS
-	variable ib = 0, ic = 0, inc=1
-	variable/c data
-	pi_stage#move("b", pos_b)
-	pi_stage#move("c", pos_c)
-	sleep/s 1
 	
 	// take alignment image
 	Infinity_Image()
 	duplicate/o root:infinity:infimg, sf:image
 	
-	daq#create_daq_waves(5, 50e3, 0.1)
-	wave/sdfr=root: force_x = daq_2, force_y = daq_1, current = daq_3, ref = daq_4
-	
-	do
-		//pi_stage#move("C", pos_c)
-		//sleep/s 0.25
-		do
-			//pi_stage#move("B", pos_b)
-			//sleep/s 0.25
-			
-			DAQmx_Scan/dev="dev1" WAVES="daq_1, 1/diff, -10, 10; daq_2, 2/diff, -10, 10; daq_3, 3/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
-			data = daq#lockin(force_y, ref, harmonic=2)
-			x[ib][ic] = real(data)
-			y[ib][ic] = imag(data)
-			data = r2polar(data)
-			scan_r[ib][ic] = real(data)
-			theta[ib][ic] = imag(data)
-			data = daq#lockin(current, ref, harmonic=3)
-			current_x[ib][ic] = real(data)
-			current_y[ib][ic] = imag(data)
-			data = r2polar(data)
-			current_r[ib][ic] = real(data)
-			current_theta[ib][ic] = imag(data)
-				
-			doupdate
-			// increment B position //
-			pos_b += scan_step
-			ib += 1
-			// move to new position //
-			pi_stage#move("b", pos_b)
-		while (ib < imax)
-		// move back to initial B position //
-		pos_b = init_b - scan_size/2
-		pi_stage#move("b", pos_b)
-		ib = 0
-		
-		// increment C position //
-		pos_c += scan_step
-		ic += 1
-		// move to new position //
-		pi_stage#move("c", pos_c)
-		//sleep/s 0.5
-	while (ic < imax)
-
-	// move to initial positions with the dco in the same confiuration as the experiment was taken
-	pi_stage#move("b", init_b); pi_stage#move("c", init_c)		// move back to initial position with dco on
-	sleep/s 1
-	pi_stage#get_pos()
-	print "Ending scan at:", init_b, init_c, "(", pos_b0, pos_c0, ")"
-	
-	// close comms
-	pi_stage#close_comms()
+	daq#create_daq_waves(5, 50e3, 0.1)	
+	grid_scan#scan_grid(scan_size, scan_step, scan_function)
 
 	// ANALYSIS
 	// fit electronic scan

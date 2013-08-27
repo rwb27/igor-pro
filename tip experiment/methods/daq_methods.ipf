@@ -36,9 +36,7 @@ end
 function/c lockin(y, ref, [harmonic])
 	wave y, ref
 	variable harmonic
-	if (paramIsDefault(harmonic))
-		harmonic = 1
-	endif
+	harmonic = paramIsDefault(harmonic) ? 1 : harmonic
 	
 	duplicate/free ref, smooth_ref
 	smooth /b=2 2, smooth_ref //TODO: pick smoothing values nicely!
