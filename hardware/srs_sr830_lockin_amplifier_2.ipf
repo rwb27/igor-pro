@@ -7,6 +7,16 @@ static strconstant hardware_id = "srs_sr830_lockin_amplifier_2"
 static strconstant resourceName = "GPIB0::6::INSTR"
 static strconstant gv_folder = "root:global_variables:srs_sr830_lockin_amplifier_2"
 
+static function/df gv_path()
+	return $gv_folder
+end
+
+static function initialise()
+	newdatafolder/o root:global_variables
+	newdatafolder/o $gv_folder
+	variable/g ($gv_folder):time_constant
+end
+
 static function open_comms()
 	variable status
 	status = visa#open_comms(hardware_id, resourceName)
@@ -78,5 +88,6 @@ static function get_time_constant()
 		default:
 			time_constant = 0
 	endswitch
+	variable/g ($gv_folder):time_constant = time_constant
 	return time_constant
 end

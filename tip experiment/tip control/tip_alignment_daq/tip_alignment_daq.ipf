@@ -13,7 +13,7 @@
 // sub-modules
 #include "resonance_scan_daq"
 #include "centroid_fitting"
-#include "tip_alignment_panel"
+#include "tip_alignment_panel_daq"
 
 static strconstant gv_folder = "root:global_variables:tip_alignment"
 
