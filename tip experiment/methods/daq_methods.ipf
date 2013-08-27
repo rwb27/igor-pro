@@ -8,7 +8,7 @@ function create_daq_waves(num_ch, scan_rate, sample_time)
 	variable dt = 1 / scan_rate
 	variable sample_num = sample_time * scan_rate
 	variable i
-	for (i = 0; i < num_ch; i += 1)
+	for (i = 1; i <= num_ch; i += 1)
 		make/o/n=(sample_num) $("root:daq_"+num2str(i))
 		wave/sdfr=root: ch = $("daq_"+num2str(i))
 		setscale/p x, 0, dt, "s", ch
@@ -36,7 +36,9 @@ end
 function/c lockin(y, ref, [harmonic])
 	wave y, ref
 	variable harmonic
-	paramIsDefault(harmonic) ? 1 : harmonic
+	if (paramIsDefault(harmonic))
+		harmonic = 1
+	endif
 	
 	duplicate/free ref, smooth_ref
 	smooth /b=2 2, smooth_ref //TODO: pick smoothing values nicely!

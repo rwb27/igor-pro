@@ -388,7 +388,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	wave res_scan_y_psd = $(scan_folder + ":resonance_scan_y_psd")
 	
 	dowindow/k tip_resonance
-	display/n=tip_resonance
+	display/k=1/n=tip_resonance
 	if (force_alignment)
 		appendtograph/l res_scan_fr vs frequency
 		appendtograph/r res_scan_ftheta vs frequency
@@ -412,10 +412,13 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	variable freq = freq_start
 	variable/c data
 	variable i = 0
+	variable time_constant
 	if (electronic_alignment)
+		time_constant = lockin#get_time_constant()
 		lockin#aphs()
 	endif
 	if (force_alignment)
+		time_constant = lockin#get_time_constant()
 		lockin2#aphs()
 	endif
 	sleep/s 1
@@ -423,6 +426,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 		sig_gen#set_frequency(freq); sleep/s 0.1
 		redimension/n=(i+1) frequency
 		frequency[i] = freq
+		sleep/s 3*time_constant
 		
 		// electronic alignment
 		if (electronic_alignment)

@@ -114,13 +114,13 @@ static function align_tips(scan_size, scan_step)
 	setscale/p y, pos_c, scan_step, x, y, scan_r, theta
 	setscale d, 0, 0, "°", theta
 	
-	make/o/n=(imax, imax) sf:alignment_scan_x, sf:alignment_scan_y
-	make/o/n=(imax, imax) sf:alignment_scan_r, sf:alignment_scan_theta
+	make/o/n=(imax, imax) sf:current_scan_x, sf:current_scan_y
+	make/o/n=(imax, imax) sf:current_scan_r, sf:current_scan_theta
 	wave/sdfr=sf current_x = current_scan_x, current_y = current_scan_y
 	wave/sdfr=sf current_r = current_scan_r, current_theta = current_scan_theta
-	setscale/p x, pos_b, scan_step, x, y, scan_r, theta
-	setscale/p y, pos_c, scan_step, x, y, scan_r, theta
-	setscale d, 0, 0, "°", theta
+	setscale/p x, pos_b, scan_step, current_x, current_y, current_r, current_theta
+	setscale/p y, pos_c, scan_step, current_x, current_y, current_r, current_theta
+	setscale d, 0, 0, "°", current_theta
 	
 	display_scan(sf)			// display scan
 	
@@ -136,7 +136,7 @@ static function align_tips(scan_size, scan_step)
 	duplicate/o root:infinity:infimg, sf:image
 	
 	daq#create_daq_waves(5, 50e3, 0.1)
-	wave/sdfr=root: force_x = daq_0, force_y = daq_1, current = daq_3, ref = daq_4
+	wave/sdfr=root: force_x = daq_2, force_y = daq_1, current = daq_3, ref = daq_4
 	
 	do
 		//pi_stage#move("C", pos_c)
@@ -145,7 +145,7 @@ static function align_tips(scan_size, scan_step)
 			//pi_stage#move("B", pos_b)
 			//sleep/s 0.25
 			
-			DAQmx_Scan/dev="dev1" WAVES="daq_0, 0/diff, -10, 10; daq_1, 1/diff, -10, 10; daq_2, 2/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
+			DAQmx_Scan/dev="dev1" WAVES="daq_1, 1/diff, -10, 10; daq_2, 2/diff, -10, 10; daq_3, 3/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
 			data = daq#lockin(force_y, ref, harmonic=2)
 			x[ib][ic] = real(data)
 			y[ib][ic] = imag(data)

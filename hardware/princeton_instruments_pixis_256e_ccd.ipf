@@ -48,7 +48,7 @@ end
 function ready(exp_time)
 	variable exp_time
 	variable/g root:pixis_256e:current:exp_time = exp_time
-	executescripttext/B/W=0.01/Z kinetics + " -t " + num2str(exp_time)
+	executescripttext/B/W=0.01/Z kinetics + " -t " + num2istr(exp_time)
 end
 
 function read()
