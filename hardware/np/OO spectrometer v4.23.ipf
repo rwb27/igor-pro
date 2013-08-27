@@ -1,5 +1,16 @@
 #pragma rtGlobals=1		// Use modern global access method.
 
+//v4.23  Gen (gk298) (9/8/2013)
+//Added capability to perform additional tasks during kinetic measurement.
+//The task can be passed to the kinetic routine using function reference.
+//For example, if you call
+//OO_kinetics_button(task2=SaveExperit)
+//from the command line, the experiment will be automaticaly saved in the igor pro folder as "OO_Kietic_autoSave.pxp"
+//after every kinetic reading. Long time interval is necesary in order to keep acurate timing.
+// v4.22 Gen (gk298) (2013)
+//Kinetic measurement evaluates ellapsed time more acurately than before
+// v4.21. Gen (gk298) (24/5/2013)
+//Bug in ExportTxt fixed.
 // v4.2 Jan Mertens (jm806) (20Nov2012)
 // added ability to swap between different reference spectra - requires user to save reference spectra with button "save spectra". Different reference spectra can be choosen by setting the Ref Index to the scan index
 // and pressing button "Set Ref 1"
@@ -656,36 +667,82 @@ Function OO_SaveSpectra()
 End
 
 
-//////Kinetic measurements///////////////////// 
+//////Kinetic measurements/////////////////////
+//Additional tasks can be passed from v4.23
 //reads and saves "Number of Spectra" spectra at delay intervals of "delay time"
-Function OO_kinetics_button()
+Function OO_kinetics_button([task1,task2])
+	funcref template task1, task2
 			    Nvar ScanTime=root:OO:GlobalVariables:ScanTime
 			    Nvar NumSpectra=root:OO:GlobalVariables:NumSpectra
 			    Nvar IntT=root:OO:GlobalVariables:IntT
-			    variable i
+			    variable i = 0
 			    string scan_num
 			   	 if (IntT>ScanTime*1000) //check integration time is lower than delay time
 			   	 print "Integration time larger than delay"
 			   	 else
-			   		 do	 
-			    			    OO_Read()
-			    			    OO_SaveSpectra()
-			    			    DoUpdate // added to make spectra update 
-			    			    i=i+1
-			    			    scan_num="spectrum"+num2istr(i)+" recorded"
-			    			    Print scan_num
-			    			    //Print "scan"$i 
-			    			    pauseupdate; sleep/S ScanTime 
+			   	 	variable start = datetime
+			   		 do
+						if(datetime - start >= i*scantime)
+			    				task1()
+			    				OO_kinetics_read(i)
+			    				task2()
+//			    				print datetime - start	//for testing accuracy of interval
+			   			endif
 			   		while (i<NumSpectra)
+					variable finish = datetime
 			   		print "kinetic measurement finished"
+					print "Total execution time =", finish - start
 			   	Endif
  End
+ 
+ function template()
+ end
+ 
+function SaveExperi()
+	saveExperiment/p=igor as "OO_Kietic_autoSave.pxp"
+end
+ 
+ function OO_kinetics_read(i)
+ 	variable &i
+	OO_Read()
+	OO_SaveSpectra()
+	DoUpdate // added to make spectra update 
+	i=i+1
+	Print "spectrum"+num2istr(i)+" recorded"
+end
+
+//_____________Old Kinetics routine______________________________________________
+//////Kinetic measurements/////////////////////
+//reads and saves "Number of Spectra" spectra at delay intervals of "delay time"
+//Function OO_kinetics_button()
+//			    Nvar ScanTime=root:OO:GlobalVariables:ScanTime
+//			    Nvar NumSpectra=root:OO:GlobalVariables:NumSpectra
+//			    Nvar IntT=root:OO:GlobalVariables:IntT
+//			    variable i
+//			    string scan_num
+//			   	 if (IntT>ScanTime*1000) //check integration time is lower than delay time
+//			   	 print "Integration time larger than delay"
+//			   	 else
+//			   		 do	 
+//			    			    OO_Read()
+//			    			    OO_SaveSpectra()
+//			    			    DoUpdate // added to make spectra update 
+//			    			    i=i+1
+//			    			    scan_num="spectrum"+num2istr(i)+" recorded"
+//			    			    Print scan_num
+//			    			    //Print "scan"$i 
+//			    			    pauseupdate; sleep/S ScanTime 
+//			   		while (i<NumSpectra)
+//			   		print "kinetic measurement finished"
+//			   	Endif
+// End
+//___________________________________________________________________________
 
 Window OO_LiveSpectraGraph() : Graph
 	PauseUpdate; Silent 1		// building window...
 	String fldrSav0= GetDataFolder(1)
 	SetDataFolder root:OO:Data:Current:
-	Display /W=(204,61.25,717.75,425) Spectra vs wl_wave
+	Display /W=(258,80,771.75,443.75) Spectra vs wl_wave
 	SetDataFolder fldrSav0
 	ModifyGraph cbRGB=(48896,59904,65280)
 	ModifyGraph mirror=2
@@ -693,7 +750,7 @@ Window OO_LiveSpectraGraph() : Graph
 	ModifyGraph lblLatPos(left)=-1
 	Label left "Intensity"
 	Label bottom "Wavelength (nm)"
-	SetAxis left -5.875,614.27490234375
+	SetAxis left -4.47509765625,727.47509765625
 	SetAxis bottom 450,700
 	Cursor/P A Spectra 435
 	ShowInfo
@@ -734,7 +791,7 @@ Window OO_LiveSpectraGraph() : Graph
 	CheckBox AutoscaleXButton,value= 1
 	Button Save_data_folders,pos={285,106},size={73,20},proc=OO_ButtonProc,title="Save folders"
 	Button Save_data_folders,labelBack=(65280,0,0),fColor=(65280,21760,0)
-	PopupMenu Multiple_Spectrometers_popup,pos={26,3},size={116,21},proc=OO_PopMenuProc,title="Spectrometers"
+	PopupMenu Multiple_Spectrometers_popup,pos={26,3},size={106,21},proc=OO_PopMenuProc,title="Spectrometers"
 	PopupMenu Multiple_Spectrometers_popup,mode=1,popvalue="1",value= #"\"1\""
 	Button Init_spectrometer_Button_2,pos={181,77},size={50,20},disable=1,proc=OO_ButtonProc,title="Init #2"
 	SetVariable Int__SetVariable_2,pos={47,83},size={104,16},bodyWidth=50,disable=1,proc=OO_SetVarProc,title="Int #2 (ms)"
@@ -1591,7 +1648,7 @@ End
 Function ExportTxt()
 	Variable numDF=CountObjects("root:OO:Data", 4 ) -1	//number of scans
 	variable ii,jj,items
-	String CurrDF,list,Namepth,Name,ScnDF,fPth,sPth
+	String list,Namepth,Name,ScnDF,fPth,sPth
 	Nvar NumSpectrometers=root:OO:GlobalVariables:NumSpectrometers
 	if 	(NumSpectrometers==1)
 		list = "wl_wave;Spectra"	//list of waves you want to export
@@ -1613,7 +1670,7 @@ Function ExportTxt()
 			Name = Stringfromlist(jj,list)
 			Namepth = Name + ".txt"
 			Print Namepth
-			Save/O/J/P=Path $(CurrDF+":"+Name) as Namepth
+			Save/O/J/P=Path $(ScnDF+":"+Name) as Namepth
 		Endfor
 		KillPath Path
 	Endfor

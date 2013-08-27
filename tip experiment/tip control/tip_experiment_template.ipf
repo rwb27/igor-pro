@@ -1,7 +1,7 @@
 #pragma rtGlobals=3		// Use modern global access method.
 
 // tip control procedures and panels
-#include "tip_alignment"
+//#include "tip_alignment"
 #include "tip_alignment_daq"
 #include "tip_control_and_alignment"
 // regularly used procedures

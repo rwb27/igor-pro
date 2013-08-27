@@ -3,6 +3,8 @@
 #include "Infinity v3.0"
 #include "data_handling"
 #include "temperature_sensor"
+#include "srs_sr830_lockin_amplifier"
+#include "srs_sr830_lockin_amplifier_2"
 
 function start_monitoring(delay, overwrite)
 	variable delay, overwrite	// interval in seconds

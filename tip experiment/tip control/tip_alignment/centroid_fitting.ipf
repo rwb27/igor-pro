@@ -63,13 +63,6 @@ function fit_alignment_scan(scan_folder, data)
 	duplicate/o w_sigma, scan_folder:$(wave_id + "_w_sigma")
 	variable/g scan_folder:$(wave_id + "_x0") = w_coef[2]
 	variable/g scan_folder:$(wave_id + "_y0") = w_coef[4]
-	
-	//variable/g scan_folder:x0 = w_coef[2]
-	//variable/g scan_folder:y0 = w_coef[4]
-	
-	//data#check_gvpath(gv_folder)
-	//variable/g $(gv_folder):x0 = w_coef[2]
-	//variable/g $(gv_folder):y0 = w_coef[4]
 end
 
 function gauss2d_elliptic(w, x, y) : fitfunc

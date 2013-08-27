@@ -1,4 +1,4 @@
-#pragma ModuleName = alignment_daq
+#pragma ModuleName = tip_alignment
 #pragma version = 6.32
 #pragma rtGlobals=1		// Use modern global access method.
 
@@ -6,11 +6,14 @@
 #include "hp33120a_sig_gen"
 #include "grid_scanning"
 #include "daq_methods"
-#include "centroid_fitting"
 #include "centroid_tracking"
 #include "infinity v3.0"
 #include <NIDAQmxWaveScanProcs>
 #include "data_handling"
+// sub-modules
+#include "resonance_scan_daq"
+#include "centroid_fitting"
+#include "tip_alignment_panel"
 
 static strconstant gv_folder = "root:global_variables:tip_alignment"
 
@@ -32,6 +35,7 @@ static function initialise()
 	variable/g $(gv_folder + ":alignment_set")
 	variable/g $(gv_folder + ":set_point_b")
 	variable/g $(gv_folder + ":set_point_c")
+	grid_scan#initialise()
 	dfref gs_folder = grid_scan#gv_path()
 	variable/g gs_folder:set_point_b	, gs_folder:set_point_c
 end
@@ -51,10 +55,14 @@ end
 
 static function scan_function(i,j)
 	variable i, j
-	wave x, y, scan_r, theta
-	wave current_x, current_y, current_r, current_theta
-	wave/sdfr=root: force_x = daq_0, force_y = daq_1, current = daq_3, ref = daq_4
-	DAQmx_Scan/dev="dev1" WAVES="daq_0, 0/diff, -10, 10; daq_1, 1/diff, -10, 10; daq_2, 2/diff, -10, 10; daq_4, 4/diff, -1, 1;"			
+	svar scan_folder = $(gv_folder + ":current_scan_folder")
+	dfref sf = $scan_folder
+	wave/sdfr=sf x = force_scan_x, y = force_scan_y
+	wave/sdfr=sf scan_r = force_scan_r, theta = force_scan_theta
+	wave/sdfr=sf current_x = current_scan_x, current_y = current_scan_y
+	wave/sdfr=sf current_r = current_scan_r, current_theta = current_scan_theta
+	wave/sdfr=root: force_y = daq_1, force_x = daq_2, current = daq_3, ref = daq_4
+	DAQmx_Scan/dev="dev1" WAVES="daq_1, 1/diff, -10, 10; daq_3, 3/diff, -10, 10; daq_4, 4/diff, -1, 1;"
 	variable/c data
 	data = daq#lockin(force_y, ref, harmonic=2)
 	x[i][j] = real(data)
@@ -112,10 +120,10 @@ static function align_tips(scan_size, scan_step)
 	position_x = init_b  - scan_size/2 + scan_step*x
 	position_y = init_c  - scan_size/2 + scan_step*x
 
-	make/o/n=(imax, imax) sf:alignment_scan_x, sf:alignment_scan_y
-	make/o/n=(imax, imax) sf:alignment_scan_r, sf:alignment_scan_theta
-	wave/sdfr=sf x = alignment_scan_x, y = alignment_scan_y
-	wave/sdfr=sf scan_r = alignment_scan_r, theta = alignment_scan_theta
+	make/o/n=(imax, imax) sf:force_scan_x, sf:force_scan_y
+	make/o/n=(imax, imax) sf:force_scan_r, sf:force_scan_theta
+	wave/sdfr=sf x = force_scan_x, y = force_scan_y
+	wave/sdfr=sf scan_r = force_scan_r, theta = force_scan_theta
 	setscale/p x, init_b  - scan_size/2, scan_step, x, y, scan_r, theta
 	setscale/p y, init_c  - scan_size/2, scan_step, x, y, scan_r, theta
 	setscale d, 0, 0, "°", theta
@@ -134,26 +142,25 @@ static function align_tips(scan_size, scan_step)
 	Infinity_Image()
 	duplicate/o root:infinity:infimg, sf:image
 	
-	daq#create_daq_waves(5, 50e3, 0.1)	
-	grid_scan#scan_grid(scan_size, scan_step, scan_function)
+	daq#create_daq_waves(5, 250e3/3, 0.1)	
+	grid_scan#scan_grid("b", "c", scan_size, scan_step, scan_function)
 
 	// ANALYSIS
 	// fit electronic scan
-	fit_alignment_scan(sf, x)
-	print get_centroids(x, position_x, position_y)
-	fit_alignment_scan(sf, y)
-	print get_centroids(y, position_x, position_y)
-	fit_alignment_scan(sf, scan_r)
-	print get_centroids(scan_r, position_x, position_y)
-	fit_alignment_scan(sf, theta)
-	print get_centroids(theta, position_x, position_y)
-	saveexperiment
+	centroid_fitting#fit_alignment_scan(sf, x)
+	print centroid#get_centroids(x, position_x, position_y)
+	centroid_fitting#fit_alignment_scan(sf, y)
+	print centroid#get_centroids(y, position_x, position_y)
+	centroid_fitting#fit_alignment_scan(sf, scan_r)
+	print centroid#get_centroids(scan_r, position_x, position_y)
+	centroid_fitting#fit_alignment_scan(sf, theta)
+	print centroid#get_centroids(theta, position_x, position_y)
 end
 
 static function display_scan(sf)
 	dfref sf
-	wave/sdfr=sf x = alignment_scan_x, y = alignment_scan_y
-	wave/sdfr=sf r = alignment_scan_r, theta = alignment_scan_theta
+	wave/sdfr=sf x = force_scan_x, y = force_scan_y
+	wave/sdfr=sf r = force_scan_r, theta = force_scan_theta
 	dowindow/k tip_alignment
 	display/n=tip_alignment/k=1
 	appendimage/l=lx x
@@ -172,6 +179,23 @@ static function display_scan(sf)
 	label bottom "tip height (\\F'Symbol'm\\F'Arial'm)"
 	modifygraph tick=0, minor=1, btLen=4, stLen=2
 	modifygraph mirror=1, fSize=10, standoff=0, axOffset=-1, axOffset(bottom)=0
+end
+
+static function set_centroid(x0, y0)
+	variable x0, y0
+	svar/sdfr=$gv_folder current_scan_folder
+	dfref df = $current_scan_folder
+	variable/g df:x0 = x0
+	variable/g df:y0 = y0
+	dfref gvf = $data#check_gvpath(gv_folder)
+	variable/g gvf:x0 = x0
+	variable/g gvf:y0 = y0
+	variable/g gvf:set_point_b = x0
+	variable/g gvf:set_point_c = y0
+	dfref gvf = grid_scan#gv_path()
+	variable/g gvf:set_point_b = x0
+	variable/g gvf:set_point_c = y0
+	print "Tips centred at:", x0, y0
 end
 
 static function move_to_centre()

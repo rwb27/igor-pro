@@ -6,7 +6,8 @@
 #include "pi_pi733_3cd_stage"
 #include "newport_actuators"
 #include "hp33120a_sig_gen"
-#include "tip_alignment"
+//#include "tip_alignment"
+#include "tip_alignment_daq"
 
 menu "Panels"
 	"Tip Control and Alignment", dowindow/f tip_control
@@ -49,8 +50,12 @@ function set_set_points_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch (ba.eventcode)
 		case 2:
-			nvar/sdfr=$(alignment#gv_path()) set_point_a, set_point_b, set_point_c
 			nvar/sdfr=$(pi_stage#gv_path()) pos_a, pos_b, pos_c
+			nvar/sdfr=$(tip_alignment#gv_path()) set_point_a, set_point_b, set_point_c
+			set_point_a = pos_a
+			set_point_b = pos_b
+			set_point_c = pos_c
+			nvar/sdfr=grid_scan#gv_path() set_point_a, set_point_b, set_point_c
 			set_point_a = pos_a
 			set_point_b = pos_b
 			set_point_c = pos_c
@@ -71,7 +76,7 @@ static function/c insert_alignment_panel(left, top) : panel
 	sig_gen#open_comms()
 	sig_gen#initialise()
 	sig_gen#close_comms()
-	alignment#initialise()
+	tip_alignment#initialise()
 	
 	// alignment controls
 	variable l_size = 340, t_size = 180
@@ -139,7 +144,7 @@ static function/c insert_alignment_panel(left, top) : panel
 	button set_set_points, pos={left, top}, size={100,20}, proc=set_set_points_button, title="Set Set Points"
 	button set_set_points, fColor=(32768,65280,0)
 	top += 20
-	string align_path = alignment#gv_path()
+	string align_path = tip_alignment#gv_path()
 	valdisplay cent_b, pos={left, top}, size={100,20}, title="cent. ht. (b)"
 	string b = align_path + ":x0"
 	valdisplay cent_b, value= #b; top += 20

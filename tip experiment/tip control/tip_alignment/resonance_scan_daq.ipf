@@ -1,0 +1,111 @@
+#pragma moduleName = tip_res
+#pragma rtGlobals=3		// Use modern global access method and strict wave access.
+
+static strconstant gv_folder = "root:global_variables:tip_alignment"
+
+static function/df init_scan_folder()
+	dfref df = $data#check_data_folder()
+	newdatafolder/o df:resonance_scans
+	df = df:resonance_scans
+	setdatafolder df
+	string sname = uniquename("scan_", 11, 1)
+	setdatafolder root:
+	newdatafolder/o df:$sname
+	dfref scan_folder = df:$sname
+	string/g $(gv_folder + ":current_scan_folder") = getdatafolder(1, scan_folder)
+	return scan_folder
+end
+
+function resonance_scan(freq_start, freq_stop, freq_inc)
+	variable freq_start, freq_stop, freq_inc
+	// error checks
+	if (freq_start == 0 || freq_stop == 0 || freq_inc == 0)
+		abort "enter frequency ranges"
+	endif
+	
+	dfref sf = init_scan_folder()
+	
+	// open communications
+	sig_gen#open_comms()
+	
+	// store scan parameters
+	nvar amplified_voltage = $(gv_folder + ":amplified_voltage")
+	nvar amplified_offset = $(gv_folder + ":amplified_offset")
+	nvar/sdfr=$gv_folder set = alignment_set
+	variable/g sf:freq_start = freq_start
+	variable/g sf:freq_stop = freq_stop
+	variable/g sf:freq_inc = freq_inc
+	variable/g sf:voltage = amplified_voltage
+	variable/g sf:offset = amplified_offset
+	variable/g sf:alignment_set = set
+	string/g sf:time_stamp = time() + " " + date()
+	
+	// make alignment data waves
+	make/o/n=0 sf:frequency
+	wave/sdfr=sf frequency
+	
+	make/o/n=0 sf:alignment_scan_x, sf:alignment_scan_y
+	make/o/n=0 sf:alignment_scan_r, sf:alignment_scan_theta
+	wave/sdfr=sf x = alignment_scan_x, y = alignment_scan_y
+	wave/sdfr=sf scan_r = alignment_scan_r, theta = alignment_scan_theta
+	setscale d, 0 ,0, "V", scan_r
+	setscale d, 0, 0, "°", theta
+	
+		make/o/n=0 sf:current_scan_x, sf:current_scan_y
+		make/o/n=0 sf:current_scan_r, sf:current_scan_theta
+		wave/sdfr=sf current_x = current_scan_x, current_y = current_scan_y
+		wave/sdfr=sf current_r = current_scan_r, current_theta = current_scan_theta
+		setscale d, 0, 0, "V", current_r
+		setscale d, 0, 0, "°", current_theta
+	
+	dowindow/k tip_resonance
+	display/k=1/n=tip_resonance
+	appendtograph/l scan_r vs frequency
+	appendtograph/r theta vs frequency
+		appendtograph/l=lr current_r vs frequency
+		appendtograph/l=lt current_theta vs frequency
+	
+	label left "force"; label lr "3w current (pA)"; label lt "phase (deg)"; label bottom "frequency (Hz)"
+	modifygraph mirror=0,tick=2,standoff=0
+	modifygraph mode=0,rgb(''#1)=(0,15872,65280)
+	modifygraph cmplxMode(''#1)=1, cmplxMode(''#0)=2
+	modifygraph freepos=0, lblpos=0
+	modifygraph axisEnab(lr)={0.33, 0.66}, axisEnab(lt)={0,0.32}
+	modifygraph axisEnab(left)={0.67, 1.0}, axisEnab(right)={0.67, 1.0}
+	modifygraph width=200, height={aspect, 2}
+	modifygraph muloffset(''#1)={0,10000}
+	showinfo
+	
+	variable freq = freq_start
+	variable/c data
+	variable i = 0
+	daq#create_daq_waves(5, 250e3/3, 0.1)
+	wave/sdfr=root: force_y = daq_1, force_x = daq_2, current = daq_3, ref = daq_4
+	do
+		sig_gen#set_frequency(freq); sleep/s 0.1
+		redimension/n=(i+1) frequency
+		frequency[i] = freq
+		DAQmx_Scan/dev="dev1" WAVES="daq_1, 1/diff, -10, 10; daq_3, 3/diff, -10, 10; daq_4, 4/diff, -1, 1;"
+		
+		// electronic alignment
+			data = daq#lockin(current, ref, harmonic=3)
+			data = r2polar(data)
+			redimension/n=(i+1) current_r, current_theta
+			current_r[i] = real(data)
+			current_theta[i] = imag(data)
+		
+		// force alignment
+		data = daq#lockin(force_y, ref, harmonic=2)
+		data = r2polar(data)
+		redimension/n=(i+1) scan_r, theta
+		scan_r[i] = real(data)
+		theta[i] = imag(data)
+		
+		doupdate
+		i += 1
+		freq += freq_inc
+	while (freq <= freq_stop)
+	
+	// close communications
+	sig_gen#close_comms()
+end

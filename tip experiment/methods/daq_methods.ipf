@@ -49,6 +49,12 @@ function/c lockin(y, ref, [harmonic])
 		smooth_ref -= mr
 	endif
 	
+	if(harmonic==3)
+		smooth_ref = 3*smooth_ref - 4*(smooth_ref * smooth_ref * smooth_ref)
+		mr = mean(smooth_ref)
+		smooth_ref -= mr
+	endif
+	
 	duplicate/free smooth_ref, dr		//take first derivative to get quadrature
 	dr[0,numpnts(dr)-2] = smooth_ref[p+1] - smooth_ref[p]
 	dr[numpnts(dr)-1] = dr[p-1]

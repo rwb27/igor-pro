@@ -5,7 +5,7 @@
 #include "data_handling"
 #include "pi_pi733_3cd_stage"
 #include "analysis_tools"
-#include "OO spectrometer v4.2"
+#include "OO spectrometer v4.23"
 #include "newport_actuators"
 
 static strconstant gv_folder = "root:global_variables:hyperspectral_imaging"

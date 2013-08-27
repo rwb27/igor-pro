@@ -7,7 +7,7 @@
 #include "keithley_2635a_smu"
 #include "agilent_dsox2000_series_dso"
 #include "princeton_instruments_pixis_256e_ccd"
-#include "oo spectrometer v4.2"
+#include "oo spectrometer v4.23"
 #include <NIDAQmxWaveScanProcs>
 
 #include "key_control"
