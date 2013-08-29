@@ -27,11 +27,9 @@ static function display_scan(scan_folder)
 	wave/sdfr=scan_folder steps
 	wave/sdfr=scan_folder displacement
 	wave/sdfr=scan_folder current
-	//wave/sdfr=scan_folder voltage
+	wave/sdfr=scan_folder conductance
 	wave/sdfr=scan_folder psd_x
 	wave/sdfr=scan_folder psd_y
-	//wave/sdfr=scan_folder psd_x_stdev
-	//wave/sdfr=scan_folder psd_y_stdev
 	wave/sdfr=scan_folder spec2d
 	wave/sdfr=scan_folder wavelength
 	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
@@ -92,16 +90,19 @@ static function display_scan(scan_folder)
 	appendtograph/l=force_l psd_y
 	appendtograph/r=force_r psd_x
 	appendtograph/l=smu current
+	appendtograph/r=smu_g conductance
 	modifygraph rgb(displacement)=(0,0,0)
+	modifygraph mode(conductance)=3, marker(conductance)=8, msize(conductance)=1.2, rgb(conductance)=(0,0,0)
 	modifygraph mode(current)=3, marker(current)=8, msize(current)=1.2, rgb(current)=(0,0,0)
 	modifygraph mode(psd_x)=3, marker(psd_x)=8, msize(psd_x)=1.2, rgb(psd_x)=(0,0,65280)
 	modifygraph mode(psd_y)=3, marker(psd_y)=8, msize(psd_y)=1.2, rgb(psd_y)=(65280,0,0)
 	label bottom "step"; label disp "displacement (\\u)"
 	label force_l "\s(psd_y) y_psd (\\u)"; label force_r "\s(psd_x) x_psd (\\u)"; label smu "current (\\u)"
+	label smug_g "conductance (\\u)"
 	modifygraph freepos=0, lblposmode=2
 	modifygraph mirror=1, mirror(force_l)=0, mirror(force_r)=0
 	modifygraph minor=1, fsize=9, btlen=4, stlen=2
-	modifygraph axisenab(disp)={0.8, 1.0}, axisenab(smu)={0.0, 0.4}
+	modifygraph axisenab(disp)={0.8, 1.0}, axisenab(smu)={0.0, 0.4}, axisenab(smu_g)={0.0, 0.4}
 	modifygraph axisenab(force_l)={0.4, 0.8}, axisenab(force_r)={0.4, 0.8}
 	setaxis/a
 	modifygraph swapxy=1

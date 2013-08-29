@@ -129,16 +129,15 @@ end
 
 function check_current_range()
 	variable i_range = get_current_range()
-	variable/c data = measure_iv()
+	variable current = measure_current()
 	do
-		if (imag(data) < 1e12)
+		if (current < 1e12)
 			break
 		endif
 		i_range *= 10
 		set_current_range(i_range)
-		sleep/s 0.2
-		data = measure_iv()
-		sleep/s 0.2
+		sleep/s 0.25
+		current = measure_current()
 	while (1)
 	return i_range
 end
