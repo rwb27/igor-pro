@@ -72,7 +72,7 @@ static function scan_function(i,j)
 	data = lockin#measure_xy()
 	current_x[i][j] = real(data)
 	current_y[i][j] = imag(data)
-	data = lockin#meaure_rtheta()
+	data = lockin#measure_rtheta()
 	current_r[i][j] = real(data)
 	current_theta[i][j] = imag(data)
 end
@@ -86,10 +86,13 @@ static function align_tips(scan_size, scan_step)
 	nvar frequency = $(sig_gen_path + ":frequency")
 	nvar amplified_voltage = $(gv_folder + ":amplified_voltage")
 	nvar amplified_offset = $(gv_folder + ":amplified_offset")
-	nvar/sdfr=$gv_folder set = alignment_set
+	nvar/sdfr=$gv_folder set = alignment_set, electronic_alignment, force_alignment
 	
 	// store the current scan
 	dfref sf = init_scan_folder()
+	
+	lockin#open_comms()
+	lockin2#open_comms()
 	
 	// pi stuff
 	pi_stage#open_comms()
@@ -154,6 +157,9 @@ static function align_tips(scan_size, scan_step)
 	endif
 	
 	grid_scan#scan_grid("b", "c", scan_size, scan_step, scan_function)
+	
+	lockin#close_comms()
+	lockin2#close_comms()
 
 	// ANALYSIS
 	// fit electronic scan

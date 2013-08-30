@@ -14,7 +14,7 @@ end
 static function initialise()
 	newdatafolder/o root:global_variables
 	newdatafolder/o $gv_folder
-	variable/g ($gv_folder):time_constant
+	variable/g $(gv_folder+":time_constant")
 end
 
 static function open_comms()
@@ -88,6 +88,6 @@ static function get_time_constant()
 		default:
 			time_constant = 0
 	endswitch
-	variable/g ($gv_folder):time_constant = time_constant
+	variable/g $(gv_folder+":time_constant") = time_constant
 	return time_constant
 end

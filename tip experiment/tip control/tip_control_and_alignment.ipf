@@ -6,8 +6,7 @@
 #include "pi_pi733_3cd_stage"
 #include "newport_actuators"
 #include "hp33120a_sig_gen"
-//#include "tip_alignment"
-#include "tip_alignment_daq"
+#include "tip_alignment_lockin"
 
 menu "Panels"
 	"Tip Control and Alignment", dowindow/f tip_control

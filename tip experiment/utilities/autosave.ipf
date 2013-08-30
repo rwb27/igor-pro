@@ -46,6 +46,7 @@ function save_data(df)
 	// split root off front and current data folder off back
 	string current_df = parsefilepath(1, getdatafolder(1), ":", 1, 0)[5,strlen(getdatafolder(1))]
 	check_path(original_path+current_df, "data")
+	print "saving to", original_path+current_df
 	savedata/d/o /p=data/r/t ":"
 	savedata/o /p=data/r/t getdatafolder(0)+".pxp"
 	setdatafolder root:

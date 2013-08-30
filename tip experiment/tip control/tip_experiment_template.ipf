@@ -1,8 +1,7 @@
 #pragma rtGlobals=3		// Use modern global access method.
 
 // tip control procedures and panels
-//#include "tip_alignment"
-#include "tip_alignment_daq"
+#include "tip_alignment_lockin"
 #include "tip_control_and_alignment"
 // regularly used procedures
 #include "fianium v3.0_1"
@@ -12,6 +11,7 @@
 // extra methods
 #include "exp_monitoring"
 #include "hyperspectral_imaging"
+#include "autosave"
 
 menu "Tip Experiment"
 	"Tip Control and Alignment", tip_control_and_alignment()

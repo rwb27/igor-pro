@@ -77,6 +77,15 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 	modifygraph muloffset(''#1)={0,10000}
 	showinfo
 	
+	variable time_constant
+	lockin#purge()
+	lockin#aphs()	
+	time_constant = lockin#get_time_constant()
+	
+	lockin2#purge()
+	lockin2#aphs()
+	time_constant = lockin2#get_time_constant()
+	
 	variable freq = freq_start
 	variable/c data
 	variable i = 0
@@ -84,6 +93,7 @@ function resonance_scan(freq_start, freq_stop, freq_inc)
 		sig_gen#set_frequency(freq); sleep/s 0.1
 		redimension/n=(i+1) frequency
 		frequency[i] = freq
+		sleep/s time_constant*3
 		
 		// electronic alignment
 		data = lockin#measure_rtheta()

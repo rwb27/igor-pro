@@ -7,12 +7,12 @@
 
 static strconstant gv_folder = "root:global_variables:data_handling"
 // These folders must exist
-strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
-strconstant initial_data_path_server = "R:as2180:0 - data transfer:raw data"
-strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - PhD:0 - experiment:data:raw data"
+static strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
+static strconstant initial_data_path_server = "R:as2180:0 - data transfer:raw data"
+static strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - PhD:0 - experiment:data:raw data"
 
 // This must be run first
-function define_paths(pc)
+static function define_paths(pc)
 	string pc
 	if (stringmatch(pc, "lab"))
 		newpath/c/o/q data, initial_data_path_lab
@@ -47,7 +47,7 @@ function/s check_folder(data_folder)
 	return data_folder
 end
 
-function/s check_path(path, pathname)
+static function/s check_path(path, pathname)
 	string path, pathname
 	path = removeending(path, ":")
 	string path_rel = ""
@@ -119,7 +119,7 @@ function/s data_path(fname)
 	return data_path
 end
 
-function save_data(w, wname, data_path)
+static function save_data(w, wname, data_path)
 	wave w
 	string wname, data_path
 	pathinfo data

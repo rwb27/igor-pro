@@ -25,11 +25,11 @@ static function scan_function(i, j)
 	svar sf = $(gv_folder + ":current_scan_folder")
 	wave/sdfr=df hs_data = hyperspec_image
 	wave w=root:oo:data:current:spectra				// declare spectrum wave
-	hs_data[q1][q2][] = w[r]
+	hs_data[i][j][] = w[r]
 	if (num_spectrometers == 2)
 		wave/sdfr=df hs_data_t = hyperspec_image_t
 		wave/sdfr=sf w=root:oo:data:current:spectra_2				// declare spectrum wave
-		hs_data_t[q1][q2][] = w[r]
+		hs_data_t[i][j][] = w[r]
 	endif
 end
 
@@ -80,7 +80,7 @@ end
 
 static function display_scan(sf)
 	dfref sf
-	wave/sdfr=sf hs_data = hyperspec_image
+	wave/sdfr=sf hs_data = hyperspec_image, wavelength = wl_wave
 	nvar/sdfr=root: num_spectrometers
 	if (num_spectrometers)
 		wave/sdfr=sf hs_data_t = hyperspec_image_t
