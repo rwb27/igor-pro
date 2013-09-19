@@ -19,8 +19,7 @@ end
 
 static function display_scan(scan_folder)
 	dfref scan_folder
-	dfref spec_path = root:oo:globalvariables
-	nvar/sdfr=spec_path numspectrometers
+	nvar/sdfr=root:oo:globalvariables numspectrometers
 	nvar/sdfr=$gv_folder dual_pol_meas
 	
 	// load necessary waves
@@ -32,7 +31,7 @@ static function display_scan(scan_folder)
 	wave/sdfr=scan_folder psd_y
 	wave/sdfr=scan_folder spec2d
 	wave/sdfr=scan_folder wavelength
-	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
+	if (numspectrometers == 2)
 		wave/sdfr=scan_folder spec2d_t
 		wave/sdfr=scan_folder wavelength_t
 	endif
@@ -42,7 +41,7 @@ static function display_scan(scan_folder)
 	wave/sdfr=scan_folder wavelength_ax
 	//make_axis_wave(steps, "steps_ax")
 	//wave/sdfr=scan_folder steps_ax
-	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
+	if (numspectrometers == 2)
 		make_axis_wave(wavelength_t, "wavelength_ax_t")
 		wave/sdfr=scan_folder wavelength_ax_t
 	endif
@@ -71,7 +70,7 @@ static function display_scan(scan_folder)
 	setactivesubwindow ##
 	
 	// append transverse spectra
-	if (numspectrometers == 2 || (numspectrometers == 1 && dual_pol_meas == 1))
+	if (numspectrometers == 2)
 		modifygraph width = extra_width + 2*image_width - 2*spacer
 		display/w=(extra_width+image_width-2*spacer, 0, extra_width+2*image_width-2*spacer, image_length)/host=#; renamewindow #, g1
 		appendimage spec2d_t vs {wavelength_ax_t, *}

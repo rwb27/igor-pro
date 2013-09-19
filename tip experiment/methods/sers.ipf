@@ -3,5 +3,5 @@
 function convert(wavelength)
 	wave wavelength
 	make/o/n=(numpnts(wavelength)) wavenumber
-	wavenumber = 1e7 * ( (1/638) - (1/wavelength) )
+	wavenumber = 1e7 * ( (1/638e) - (1/wavelength) )
 end

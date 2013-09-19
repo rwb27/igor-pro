@@ -120,6 +120,7 @@ static function init_scan_waves(scan_folder)
 		make/o/n=(numpnts(wl_wave), 1) scan_folder:spec2d
 		// extra spectra data
 		if (numspectrometers == 2)
+			variable/g scan_folder:numspectrometers = 2
 			duplicate/o root:oo:data:current:wl_wave_2, scan_folder:wavelength_t
 			wave wl_wave_t = scan_folder:wavelength_t
 			wl_wave_t *= 1e-9
