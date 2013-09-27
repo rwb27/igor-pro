@@ -23,12 +23,22 @@ static function scan_function(i, j)
 	oo_read()
 	nvar/sdfr=root: num_spectrometers
 	svar sf = $(gv_folder + ":current_scan_folder")
+	
 	wave/sdfr=df hs_data = hyperspec_image
 	wave w=root:oo:data:current:spectra				// declare spectrum wave
 	hs_data[i][j][] = w[r]
+	
+	wave/sdfr=df hs_data = hyperspec_image_raw
+	wave w=root:oo:data:current:spectraraw				// declare spectrum wave
+	hs_data[i][j][] = w[r]
+	
 	if (num_spectrometers == 2)
 		wave/sdfr=df hs_data_t = hyperspec_image_t
 		wave/sdfr=sf w=root:oo:data:current:spectra_2				// declare spectrum wave
+		hs_data_t[i][j][] = w[r]
+		
+		wave/sdfr=df hs_data_t = hyperspec_image_t_raw
+		wave/sdfr=sf w=root:oo:data:current:spectraraw_2				// declare spectrum wave
 		hs_data_t[i][j][] = w[r]
 	endif
 end
@@ -45,15 +55,21 @@ static function scan(scan_size, scan_step)
 	// make hyperspectral image array
 	duplicate/o root:oo:data:current:wl_wave, $(scan_folder + ":wavelength")
 	wave wavelength = $(scan_folder + ":wavelength")
-	variable image_size = scan_size/scan_step + 1
+	variable image_size = scan_size/scan_step
 	make/o/n=(image_size, image_size, numpnts(wavelength)) $(scan_folder + ":hyperspec_image")
 	wave hs_data = $(scan_folder + ":hyperspec_image")
 	hs_data = 0
+	make/o/n=(image_size, image_size, numpnts(wavelength)) $(scan_folder + ":hyperspec_image_raw")
+	wave hs_data_raw = $(scan_folder + ":hyperspec_image_raw")
+	hs_data_raw = 0
 	nvar num_spectrometers
 	if (num_spectrometers == 2)
 		make/o/n=(image_size, image_size, numpnts(wavelength)) $(scan_folder + ":hyperspec_image_t")
 		wave hs_data_t = $(scan_folder + ":hyperspec_image_t")
 		hs_data_t = 0
+		make/o/n=(image_size, image_size, numpnts(wavelength)) $(scan_folder + ":hyperspec_image_t_raw")
+		wave hs_data_t_raw = $(scan_folder + ":hyperspec_image_t_raw")
+		hs_data_t_raw = 0
 	endif
 	
 	display_scan(sf)
