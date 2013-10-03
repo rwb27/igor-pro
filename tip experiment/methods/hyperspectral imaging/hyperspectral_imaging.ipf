@@ -21,8 +21,9 @@ end
 static function scan_function(i, j)
 	variable i, j
 	oo_read()
-	nvar/sdfr=root: num_spectrometers
-	svar sf = $(gv_folder + ":current_scan_folder")
+
+	svar sf_str = $(gv_folder + ":current_scan_folder")
+	dfref sf = $sf_str
 	
 	wave/sdfr=df hs_data = hyperspec_image
 	wave w=root:oo:data:current:spectra				// declare spectrum wave
@@ -31,8 +32,9 @@ static function scan_function(i, j)
 	wave/sdfr=df hs_data = hyperspec_image_raw
 	wave w=root:oo:data:current:spectraraw				// declare spectrum wave
 	hs_data[i][j][] = w[r]
-	
-	if (num_spectrometers == 2)
+
+	nvar/sdfr=root:oo:globalvariables numspectrometers
+	if (numspectrometers == 2)
 		wave/sdfr=df hs_data_t = hyperspec_image_t
 		wave/sdfr=sf w=root:oo:data:current:spectra_2				// declare spectrum wave
 		hs_data_t[i][j][] = w[r]
@@ -53,6 +55,7 @@ static function scan(scan_size, scan_step)
 	string/g $(gv_folder + ":current_scan_folder") = scan_folder
 	
 	// make hyperspectral image array
+	duplicatedatafolder root:oo:data:current, $(scan_folder + ":spectra_info")
 	duplicate/o root:oo:data:current:wl_wave, $(scan_folder + ":wavelength")
 	wave wavelength = $(scan_folder + ":wavelength")
 	variable image_size = scan_size/scan_step
@@ -62,8 +65,8 @@ static function scan(scan_size, scan_step)
 	make/o/n=(image_size, image_size, numpnts(wavelength)) $(scan_folder + ":hyperspec_image_raw")
 	wave hs_data_raw = $(scan_folder + ":hyperspec_image_raw")
 	hs_data_raw = 0
-	nvar num_spectrometers
-	if (num_spectrometers == 2)
+	nvar/sdfr=root:oo:globalvariables numspectrometers
+	if (numspectrometers == 2)
 		make/o/n=(image_size, image_size, numpnts(wavelength)) $(scan_folder + ":hyperspec_image_t")
 		wave hs_data_t = $(scan_folder + ":hyperspec_image_t")
 		hs_data_t = 0
@@ -72,7 +75,7 @@ static function scan(scan_size, scan_step)
 		hs_data_t_raw = 0
 	endif
 	
-	display_scan(sf)
+	display_scan($scan_folder)
 	
 	// get current pz positions
 	pi_stage#open_comms()
@@ -86,7 +89,7 @@ static function scan(scan_size, scan_step)
 	variable pos_b = init_b - scan_size/2
 	setscale/p x pos_a, scan_step, hs_data
 	setscale/p y pos_b, scan_step, hs_data
-	if (num_spectrometers == 2)
+	if (numspectrometers == 2)
 		setscale/p x pos_a, scan_step, hs_data_t
 		setscale/p y pos_b, scan_step, hs_data_t
 	endif
@@ -96,7 +99,7 @@ end
 
 static function display_scan(sf)
 	dfref sf
-	wave/sdfr=sf hs_data = hyperspec_image, wavelength = wl_wave
+	wave/sdfr=sf hs_data = hyperspec_image, wavelength
 	nvar/sdfr=root: num_spectrometers
 	if (num_spectrometers)
 		wave/sdfr=sf hs_data_t = hyperspec_image_t
@@ -120,11 +123,11 @@ static function display_scan(sf)
 		modifygraph axisEnab(bottom)={0, 0.45}, axisEnab(b1)={0.55, 1}
 		modifygraph width=400
 		modifygraph height={aspect, 1}
+		modifyimage ''#2 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
+		modifyimage ''#3 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
 	endif
 	
 	modifygraph tick=2,mirror=1,fSize=11,standoff=0
 	modifyimage ''#0 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
 	modifyimage ''#1 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
-	modifyimage ''#2 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
-	modifyimage ''#3 ctab= {*,*,ColdWarm,0}, ctabAutoscale=2,lookup= $""
 end

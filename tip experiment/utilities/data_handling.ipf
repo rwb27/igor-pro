@@ -8,7 +8,7 @@
 static strconstant gv_folder = "root:global_variables:data_handling"
 // These folders must exist
 static strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
-static strconstant initial_data_path_server = "R:as2180:0 - data transfer:raw data"
+static strconstant initial_data_path_server = "R:as2180:0 - data:raw data"
 static strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - PhD:0 - experiment:data:raw data"
 
 // This must be run first
@@ -249,9 +249,9 @@ function unpack_experiment(data_folder)
 		for(i = 0; i < num_folders; i += 1)
 			// create folders
 			new_data_folder = data_folder + ":" + getindexedobjnamedfr(data_folder_path, 4, i)
-			if (!stringmatch(new_data_folder, "*spectra*"))		
+			//if (!stringmatch(new_data_folder, "*spectra*"))		
 				unpack_experiment(new_data_folder)
-			endif
+			//endif
 			// append to path list
 			redimension/n=(dimsize(path_list, 0)+1) path_list
 			splitstring/e=(expr) new_data_folder, new_data_folder_rel

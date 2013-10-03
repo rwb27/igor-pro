@@ -22,7 +22,7 @@ static function temporal_measurements(sf, i)
 	duplicate $qc_name, $qcg_name
 	wave g_trace = $qcg_name
 	nvar/sdfr=root:global_variables:amplifiers gain = gain_dso
-	nvar/sdfr=$smy#gv_path() voltage
+	nvar/sdfr=$smu#gv_path() voltage
 	g_trace /= (gain * voltage * g0)
 	setscale d, 0, 0, "G\B0\M", g_trace
 	

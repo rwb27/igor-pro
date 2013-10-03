@@ -2,8 +2,9 @@
 
 static strconstant gv_folder = "root:global_variables:data_handling"
 // These folders must exist
-strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
-strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - PhD:0 - experiment:raw data"
+static strconstant initial_data_path_lab = "C:Users:Hera:Desktop:tip_exp:raw_data"
+static strconstant initial_data_path_server = "R:as2180:0 - data:raw data"
+static strconstant initial_data_path_laptop = "C:Users:Alan:Documents:0 - PhD:0 - experiment:raw data"
 
 // This must be run first
 function define_paths(pc)
@@ -12,6 +13,8 @@ function define_paths(pc)
 		newpath/c/o/q data, initial_data_path_lab
 	elseif (stringmatch(pc, "laptop"))
 		newpath/c/o/q data, initial_data_path_laptop
+	elseif (stringmatch(pc, "server"))
+		newpath/c/o/q data, initial_data_path_server
 	endif
 end
 

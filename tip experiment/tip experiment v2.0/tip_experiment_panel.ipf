@@ -25,7 +25,8 @@ static function restore_defaults_button(ba) : buttoncontrol
 	struct wmbuttonaction &ba
 	switch(ba.eventcode)
 		case 2:
-			tip_exp_init#restore_default_values()
+			//tip_exp_init#restore_default_values()
+			tip_exp_init#init_experiment()
 			break
 	endswitch
 	return 0
