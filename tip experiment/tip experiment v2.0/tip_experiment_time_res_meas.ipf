@@ -2,6 +2,10 @@
 #pragma version = 6.31
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
+#include "agilent_dsox2000_series_dso"
+#include "princeton_instruments_pixis_256e_ccd"
+#include "keithley_2635a_smu"
+
 static constant g0 = 7.7480917e-5
 static strconstant gv_folder = "root:global_variables:tip_experiment"
 
@@ -18,6 +22,7 @@ static function temporal_measurements(sf, i)
 	dso#import_data("1", "")
 	duplicate/o root:agilent_dsox2012a_dso:ch1_trace, $qc_name
 	duplicate/o root:agilent_dsox2012a_dso:ch1_trace_time, $(qc_name+"_time")
+	
 	// calculate time-resolved conductance
 	duplicate $qc_name, $qcg_name
 	wave g_trace = $qcg_name
@@ -34,6 +39,7 @@ static function temporal_measurements(sf, i)
 	// get time-resolved spectra
 	pixis#read()
 	duplicate root:pixis_256e:current:image, $qcs_name
+	duplicate root:pixis_256e:current:image_raw, $(qcs_name+"_raw")
 	duplicate root:pixis_256e:current:wavelength, $(qcs_name + "_wavelength")
 	duplicate root:pixis_256e:current:timing, $(qcs_name + "_time")
 	

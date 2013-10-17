@@ -59,8 +59,8 @@ function read()
 	duplicate/o temp0, $(current_folder + ":image")
 	killwaves temp0
 	duplicate/o $(current_folder + ":image"), $(current_folder + ":image_raw")
-	scale_kinetics()
 	correct_pixis()
+	scale_kinetics()
 	if (waveexists($(current_folder + ":bkgd_image")) && waveexists($(current_folder + ":ref_image")))
 		normalise_image()
 	endif
@@ -85,13 +85,17 @@ function scale_kinetics()
 	wave image = $(current_folder + ":image")
 	//ImageRotate/O/V image
 	matrixtranspose image
+	// timing
 	nvar exp_time = $(gv_folder + ":exp_time")
 	variable shiftrate = 9.2e-6, windowsize = 1
 	variable resolution = (exp_time*1e-6 + shiftrate)/windowsize
 	setscale/P x, 0, resolution, "s", image
+	// make separate timing wave
 	make/o/n=(dimsize(image, 0)) $(current_folder + ":timing")
 	wave timing = $(current_folder + ":timing")
 	timing = resolution*x
+	setscale d, 0, 0, "s", timing
+	// wavelength
 	if (waveexists($(current_folder + ":wavelength")))
 		wave wavelength = $(current_folder + ":wavelength")
 		setscale/i y, wavelength[0], wavelength[numpnts(wavelength)-2], "m", image
