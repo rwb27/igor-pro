@@ -71,7 +71,7 @@ function tip_scan()			// tip experiment master function
 		if (!set_point_reached)
 			pi_stage#move_rel("a", scan_direction * scan_step)
 		elseif (set_point_reached)
-			print "scan log: set point reached"
+			//print "scan log: set point reached", current_set_point
 			//force feedback experiments
 		endif
 		spatial_measurements(scan_folder)
@@ -80,7 +80,7 @@ function tip_scan()			// tip experiment master function
 			tip_exp_time_res#temporal_measurements(scan_folder, i)	// get time-resolved measurements
 		endif
 		nvar/sdfr=$smu#gv_path() current
-		if (current >= current_set_point)		// prevents movement once current limit reached
+		if (current >= current_set_point && current <= 1)		// prevents movement once current limit reached
 			print "scan log: set point reached - current (", current,") > set point (", current_set_point,")"
 			set_point_reached = 1
 		endif
