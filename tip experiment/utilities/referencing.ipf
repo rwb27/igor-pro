@@ -25,15 +25,17 @@ function load_references()
 	loaddata/d/o/p=ref/r/t "references"
 end
 
-function make_reference(df, [ref_date])
+function make_reference(df, [ref_date, power])
 	dfref df	// df is an OO scan folder
 	string ref_date
+	variable power
 	if (paramisdefault(ref_date))
 		string day, month, year
 		string gExp = "([0-9]+)/([0-9]+)/([0-9]+)"	
 		SplitString/E=(gExp) secs2date(datetime,-1), day, month, year
 		ref_date = year[2,3] + month + day
-	endif	
+	endif
+	power = paramIsDefault(power) ? 1100 : power	
 	svar/sdfr=df ref_name = datadescription
 	svar/sdfr=df sname = spectrometer_save
 	wave/sdfr=df raw = spectraraw, bkgd = spectrabkgd, wavelength = wl_wave
@@ -43,7 +45,7 @@ function make_reference(df, [ref_date])
 	newdatafolder/o root:references:axial:$sname
 	dfref rdf = root:references:axial:$sname
 	duplicate/o wavelength, rdf:wavelength
-	make/o/n=(numpnts(wavelength)) rdf:$(ref_date+"_"+num2str(int)+"ms_"+ref_name) = (raw - bkgd)
+	make/o/n=(numpnts(wavelength)) rdf:$(ref_date+"_"+num2str(power)+"_"+num2str(int)+"ms_"+ref_name) = (raw - bkgd)
 	nvar/sdfr=df ns = numspectrometers_save
 	if (ns == 2)
 		svar/sdfr=df sname = spectrometer_2_save
@@ -53,7 +55,7 @@ function make_reference(df, [ref_date])
 		newdatafolder/o root:references:transverse:$sname
 		dfref rdf = root:references:transverse:$sname
 		duplicate/o wavelength, rdf:wavelength
-		make/o/n=(numpnts(wavelength)) rdf:$(ref_date+"_"+num2str(int)+"ms_"+ref_name) = (raw - bkgd)
+		make/o/n=(numpnts(wavelength)) rdf:$(ref_date+"_"+num2str(power)+"_"+num2str(int)+"ms_"+ref_name) = (raw - bkgd)
 	endif
 end
 

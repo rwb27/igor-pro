@@ -5,8 +5,6 @@
 #include "data_handling"
 #include "pi_pi733_3cd_stage"
 #include "keithley_2635a_smu"
-#include "agilent_dsox2000_series_dso"
-#include "princeton_instruments_pixis_256e_ccd"
 #include "oo spectrometer v4.23"
 #include <NIDAQmxWaveScanProcs>
 
@@ -134,16 +132,33 @@ function spatial_measurements(sf)
 	// store spectra
 	dfref spec_path = root:oo:globalvariables
 	nvar/sdfr=spec_path numspectrometers
+	// store individual spectra
 	duplicate/o root:oo:data:current:spectra, $(sf_str + "spectra:spec_" + num2str(i))
 	duplicate/o root:oo:data:current:spectra_raw, $(sf_str + "spectra:raw_spec_" + num2str(i))
-	wave/sdfr=sf spec2d, spec = $(":spectra:spec_" + num2str(i))
+	// store referenced spectral image
+	wave/sdfr=sf spec2d
+	wave/sdfr=root:oo:data:current spectra
 	redimension/n=(dimsize(spec2d, 0), i+1) spec2d
-	spec2d[][i] = spec[p]
+	spec2d[][i] = spectra[p]
+	// raw image
+	wave/sdfr=sf spec2d_raw
+	wave/sdfr=root:oo:data:current spectraraw
+	redimension/n=(dimsize(spec2d_raw, 0), i+1) spec2d_raw
+	spec2d_raw[][i] = spectraraw[p]
+	
 	if (numspectrometers == 2)
+		// store individual spectra
 		duplicate/o root:oo:data:current:spectra_2, $(sf_str + "spectra:spec_t_" + num2str(i))
 		duplicate/o root:oo:data:current:spectra_2_raw, $(sf_str + "spectra:raw_spec_t_" + num2str(i))
-		wave/sdfr=sf spec2d_t, spec = $(":spectra:spec_t_" + num2str(i))
+		// store referenced spectra
+		wave/sdfr=sf spec2d_t
+		wave/sdfr=root:oo:data:current spectra_2
 		redimension/n=(dimsize(spec2d_t, 0), i+1) spec2d_t
-		spec2d_t[][i] = spec[p]
+		spec2d_t[][i] = spectra_2[p]
+		// raw image
+		wave/sdfr=sf spec2d_t_raw
+		wave/sdfr=root:oo:data:current spectraraw_2
+		redimension/n=(dimsize(spec2d_t_raw, 0), i+1) spec2d_t_raw
+		spec2d_t_raw[][i] = spectraraw_2[p]
 	endif
 end

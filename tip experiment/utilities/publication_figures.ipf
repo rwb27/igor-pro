@@ -3,7 +3,7 @@
 function publication_figure(wx, wy, fig_width, aspect_ratio, span_columns)
 	wave wx, wy
 	variable fig_width, aspect_ratio, span_columns
-	display wy vs wx
+	display/k=1 wy vs wx
 	modifygraph minor=1, fSize=10, btLen=5, stLen=2, font="SansSerif", mirror=1
 	setaxis/a=2 left
 	if (span_columns)
