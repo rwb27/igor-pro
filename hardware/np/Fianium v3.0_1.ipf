@@ -6,14 +6,14 @@
 //============Run function mypanel() to load control panel and initialize devices==============================
 
 Function Fianium_select()
-VDTOperationsPort2 COM27
+VDTOperationsPort2 COM11
 End
 
 Function Fianium_Initialization()  //Initialize communication with device
 // COM5 Lab 3, COM9 Lab 2, COM4 on NP-Carbon Lab 2, COM3 on NP-Magnesium Primary Fianium (COM7 secondary Fianium), 8 for Chris Fianium, 9 for spare fianium
-	VDT2/P=COM27 baud=19200, stopbits=1, databits=8, in=2, out=2
+	VDT2/P=COM11 baud=19200, stopbits=1, databits=8, in=2, out=2
 	Fianium_select()
-	VDTOpenPort2 COM27
+	VDTOpenPort2 COM11
 	Variable/G F_interval
 	Execute "Variable/G totalpower, oldpower, brpv, preampval,pumacur, DAClevel,pumac,LASERcontrolVal"
 	Execute "String/G getalarm, resetalarms, Fcmd"
